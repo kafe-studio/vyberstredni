@@ -1,0 +1,53 @@
+{
+  "name": "vyberstredni",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "wrangler types && astro dev",
+    "start": "wrangler types && astro dev",
+    "build": "wrangler types && astro check && astro build",
+    "preview": "wrangler types && astro preview",
+    "astro": "astro",
+    "lint": "eslint . --fix",
+    "lint:check": "eslint .",
+    "format": "prettier --write .",
+    "fix": "pnpm format && pnpm lint",
+    "test": "vitest",
+    "check": "astro check",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@astrojs/check": "0.9.9",
+    "@astrojs/cloudflare": "^14.1.1",
+    "@astrojs/markdown-remark": "^7.2.1",
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.3",
+    "@eslint/js": "^10.0.1",
+    "@iconify-json/lucide": "^1.2.116",
+    "@iconify-json/tabler": "^1.2.35",
+    "@tailwindcss/vite": "^4.3.2",
+    "astro": "^7.0.6",
+    "astro-icon": "^1.1.5",
+    "remark-reading-time": "^2.1.0",
+    "sharp": "^0.35.3",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^6.0.3"
+  },
+  "packageManager": "pnpm@10.12.1",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260706.1",
+    "@tailwindcss/typography": "^0.5.20",
+    "@types/node": "^26.1.0",
+    "@typescript-eslint/parser": "^8.62.1",
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-astro": "^2.1.1",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.4",
+    "prettier-plugin-astro": "^0.14.1",
+    "typescript-eslint": "^8.62.1",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.107.0"
+  }
+}

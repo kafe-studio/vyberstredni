@@ -1,0 +1,25 @@
+---
+import { siteConfig } from "../../config/site";
+---
+
+<footer class="border-t border-border mt-32">
+  <div class="mx-auto max-w-7xl px-6 py-12 md:py-16 lg:px-8">
+    <div class="grid grid-cols-1 gap-10 md:grid-cols-2">
+      <div>
+        <p class="text-lg font-bold mb-4">{siteConfig.name}</p>
+        <p class="text-sm text-muted-foreground max-w-sm leading-relaxed">{siteConfig.description}</p>
+      </div>
+      <nav aria-label="Navigace v paticce">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Navigace</h3>
+        <ul class="space-y-3">
+          {siteConfig.navLinks.map((link) => (
+            <li><a href={link.href} class="text-sm text-foreground/70 hover:text-primary transition-colors">{link.text}</a></li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+    <div class="mt-12 border-t border-border pt-8 text-center text-xs text-muted-foreground">
+      &copy; {new Date().getFullYear()} {siteConfig.author}
+    </div>
+  </div>
+</footer>

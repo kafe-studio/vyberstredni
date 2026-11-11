@@ -1,0 +1,15 @@
+---
+export const prerender = true;
+import BaseLayout from "../layouts/BaseLayout.astro";
+const metadata = { title: "404", description: "Stranka nenalezena.", ignoreTitleTemplate: true };
+---
+
+<BaseLayout {metadata}>
+  <section class="min-h-[60vh] flex items-center justify-center text-center px-6">
+    <div>
+      <p class="text-8xl font-extrabold text-primary mb-4">404</p>
+      <p class="text-xl text-muted-foreground mb-8">Stranka nenalezena</p>
+      <a href="/" class="btn-primary py-3 px-8">Zpet na hlavni stranku</a>
+    </div>
+  </section>
+</BaseLayout>

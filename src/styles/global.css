@@ -1,0 +1,98 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-border: var(--border);
+  --color-border-interactive: var(--border-interactive);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-inter);
+}
+
+:root {
+  --background: #0a0a0f;
+  --foreground: #f0ede8;
+  --primary: #3b82f6;
+  --primary-btn: #2563eb;
+  --primary-btn-hover: #1d4ed8;
+  --accent: #60a5fa;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-interactive: rgba(255, 255, 255, 0.35);
+  --muted: rgba(255, 255, 255, 0.04);
+  --muted-foreground: rgba(255, 255, 255, 0.55);
+  --card: rgba(255, 255, 255, 0.04);
+}
+
+:root[data-theme="light"] {
+  --background: #fafafa;
+  --foreground: #111111;
+  --primary: #2563eb;
+  --primary-btn: #2563eb;
+  --primary-btn-hover: #1d4ed8;
+  --accent: #3b82f6;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-interactive: rgba(0, 0, 0, 0.45);
+  --muted: rgba(0, 0, 0, 0.03);
+  --muted-foreground: rgba(0, 0, 0, 0.60);
+  --card: rgba(0, 0, 0, 0.03);
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+  :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  ::selection { background-color: color-mix(in srgb, var(--primary) 30%, transparent); }
+}
+
+.reveal {
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+html.reveal-ready .reveal:not(.active) {
+  opacity: 0;
+  transform: translateY(30px);
+}
+html.reveal-ready .reveal.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+:root[data-theme="light"] .glass {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 9999px; border: none; font-weight: 700; font-size: 1rem;
+  padding: 0.875rem 2rem; cursor: pointer; transition: all 0.2s;
+  background: var(--primary-btn); color: #fff;
+  box-shadow: 0 0 30px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+.btn-primary:hover { background: var(--primary-btn-hover); box-shadow: 0 0 40px color-mix(in srgb, var(--primary) 40%, transparent); }
+
+.btn-outline {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 9999px; border: 1px solid var(--border-interactive); background: transparent;
+  font-weight: 600; font-size: 1rem; padding: 0.875rem 2rem; cursor: pointer;
+  transition: all 0.2s; color: var(--foreground);
+}
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { transition: none; }
+  html.reveal-ready .reveal:not(.active) { opacity: 1; transform: none; }
+}

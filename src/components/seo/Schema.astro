@@ -1,0 +1,55 @@
+---
+import { siteConfig } from "../../config/site";
+
+interface Props {
+  type: "WebSite" | "BlogPosting";
+  data: {
+    title?: string;
+    description?: string;
+    image?: string;
+    pubDate?: Date;
+    author?: string;
+    url?: string;
+  };
+}
+
+const { type, data } = Astro.props;
+
+const sameAs = Object.values(siteConfig.socialLinks).filter(Boolean);
+
+let schema = {};
+
+if (type === "WebSite") {
+  schema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: siteConfig.name,
+    url: siteConfig.url,
+    description: siteConfig.description,
+    sameAs,
+  };
+} else if (type === "BlogPosting") {
+  schema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: data.title,
+    description: data.description,
+    image: data.image,
+    datePublished: data.pubDate,
+    author: {
+      "@type": "Person",
+      name: data.author,
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": data.url,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: siteConfig.name,
+    },
+  };
+}
+---
+
+<script is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />

@@ -1,0 +1,59 @@
+---
+interface Props {
+  title?: string; description?: string; ogImage?: string; canonical?: string;
+  metadata?: { title?: string; description?: string; ogImage?: string; canonical?: string; ignoreTitleTemplate?: boolean; };
+}
+import Seo from "../components/seo/Seo.astro";
+import Schema from "../components/seo/Schema.astro";
+import Navbar from "../components/layout/Navbar.astro";
+import Footer from "../components/layout/Footer.astro";
+import { ClientRouter } from "astro:transitions";
+import { Font } from "astro:assets";
+import "../styles/global.css";
+import { siteConfig } from "../config/site";
+
+const { title, description, ogImage, canonical, metadata } = Astro.props;
+const finalTitle = metadata?.title || title;
+const finalDescription = metadata?.description || description;
+const finalOgImage = metadata?.ogImage || ogImage;
+const finalCanonical = metadata?.canonical || canonical;
+const finalIgnoreTitleTemplate = metadata?.ignoreTitleTemplate || false;
+---
+
+<!doctype html>
+<html lang={siteConfig.lang} class="scroll-smooth">
+  <head>
+    <Seo title={finalTitle} description={finalDescription} ogImage={finalOgImage} canonical={finalCanonical} ignoreTitleTemplate={finalIgnoreTitleTemplate} />
+    <Schema type="WebSite" data={{}} />
+    <Font cssVariable="--font-inter" preload />
+    <ClientRouter />
+    <slot name="head" />
+  </head>
+  <body class="bg-background text-foreground antialiased tracking-tight">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 rounded-md bg-primary px-4 py-2 text-white">Preskocit</a>
+    <div class="relative flex min-h-screen flex-col overflow-x-hidden">
+      <Navbar />
+      <main id="main-content" class="relative grow"><slot /></main>
+      <Footer />
+    </div>
+    <script>
+      function setupReveal() {
+        const vh = window.innerHeight;
+        document.querySelectorAll(".reveal:not(.active)").forEach(el => {
+          const rect = el.getBoundingClientRect();
+          if (rect.top < vh + 60) el.classList.add("active");
+        });
+        document.documentElement.classList.add("reveal-ready");
+        const obs = new IntersectionObserver((entries, o) => {
+          entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("active"); o.unobserve(e.target); } });
+        }, { rootMargin: "0px 0px -60px 0px", threshold: 0.1 });
+        document.querySelectorAll(".reveal:not(.active)").forEach(el => obs.observe(el));
+      }
+      setupReveal();
+      document.addEventListener("astro:page-load", setupReveal);
+      document.addEventListener("astro:after-swap", () => {
+        document.querySelectorAll(".reveal").forEach(el => el.classList.add("active"));
+      });
+    </script>
+  </body>
+</html>

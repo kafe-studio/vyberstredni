@@ -1,0 +1,52 @@
+---
+import { siteConfig } from "../../config/site";
+---
+
+<nav class="fixed top-0 z-50 w-full bg-background/70 backdrop-blur-xl border-b border-border" aria-label="Hlavni navigace">
+  <div class="mx-auto max-w-7xl flex items-center justify-between px-6 py-4 lg:px-8">
+    <a href="/" class="text-lg font-bold text-foreground transition-opacity hover:opacity-80">
+      {siteConfig.name}
+    </a>
+    <div class="hidden md:flex items-center gap-8">
+      {siteConfig.navLinks.map((link) => (
+        <a href={link.href} class="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">{link.text}</a>
+      ))}
+    </div>
+    <button id="mobile-menu-button" type="button" class="p-2 rounded-lg text-foreground md:hidden" aria-controls="mobile-menu" aria-expanded="false" aria-label="Menu">
+      <svg id="menu-icon-closed" class="block h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16" /></svg>
+      <svg id="menu-icon-open" class="hidden h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" /></svg>
+    </button>
+  </div>
+  <div class="hidden md:hidden" id="mobile-menu">
+    <div class="glass mx-4 mb-4 p-2 rounded-xl space-y-1">
+      {siteConfig.navLinks.map((link) => (
+        <a href={link.href} class="block rounded-lg px-4 py-3 text-base font-medium text-foreground hover:text-primary transition-colors">{link.text}</a>
+      ))}
+    </div>
+  </div>
+</nav>
+<script>
+  function setupMobileMenu() {
+    const button = document.getElementById("mobile-menu-button");
+    const menu = document.getElementById("mobile-menu");
+    const ic = document.getElementById("menu-icon-closed");
+    const io = document.getElementById("menu-icon-open");
+    if (!button || !menu || !ic || !io) return;
+
+    menu.classList.add("hidden");
+    ic.classList.remove("hidden");
+    io.classList.add("hidden");
+    button.setAttribute("aria-expanded", "false");
+
+    const fresh = button.cloneNode(true) as HTMLElement;
+    button.replaceWith(fresh);
+    fresh.addEventListener("click", () => {
+      const exp = fresh.getAttribute("aria-expanded") === "true";
+      fresh.setAttribute("aria-expanded", String(!exp));
+      menu.classList.toggle("hidden");
+      document.getElementById("menu-icon-closed")?.classList.toggle("hidden");
+      document.getElementById("menu-icon-open")?.classList.toggle("hidden");
+    });
+  }
+  document.addEventListener("astro:page-load", setupMobileMenu);
+</script>
