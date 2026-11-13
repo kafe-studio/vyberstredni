@@ -7,7 +7,8 @@ import { unified } from "@astrojs/markdown-remark";
 import remarkReadingTime from "remark-reading-time";
 
 export default defineConfig({
-  site: "https://vyberstredni.ukazka.workers.dev/",
+  site: "https://georgeduckling.com",
+  base: "/vyberstredni",
   output: "server",
   trailingSlash: "always",
   adapter: cloudflare({

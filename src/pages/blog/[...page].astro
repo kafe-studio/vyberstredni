@@ -3,6 +3,7 @@ export const prerender = true;
 import type { GetStaticPathsOptions } from "astro";
 import { getCollection } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { withBase } from "../../lib/urls";
 
 export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
   const posts = (await getCollection("blog"))
@@ -25,7 +26,7 @@ const metadata = { title: "Blog", description: "Vsechny clanky." };
       <div class="space-y-8">
         {page.data.map((post) => (
           <article class="reveal border-b border-border pb-8">
-            <a href={`/blog/${post.id}/`} class="group">
+            <a href={withBase(`/blog/${post.id}/`)} class="group">
               <h2 class="text-xl font-bold group-hover:text-primary transition-colors">{post.data.title}</h2>
               <p class="text-sm text-muted-foreground mt-1">
                 <time datetime={post.data.pubDate.toISOString()}>{post.data.pubDate.toLocaleDateString("cs")}</time>

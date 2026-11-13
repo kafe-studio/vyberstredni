@@ -1,0 +1,455 @@
+---
+export const prerender = true;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../config/site";
+import { withBase } from "../lib/urls";
+
+const metadata = {
+  title: "Admin | " + siteConfig.name,
+  description: "Administrace dat pro školy, obory a doporučení ve výběru střední školy.",
+};
+---
+
+<BaseLayout {metadata}>
+  <section class="px-6 py-24">
+    <div class="mx-auto max-w-7xl">
+      <div id="admin-auth" class="mx-auto max-w-md rounded-[2rem] border border-border bg-card p-8 shadow-sm">
+        <p class="text-sm font-semibold uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
+        <h1 class="mt-4 text-3xl font-black">Přihlášení do administrace</h1>
+        <p class="mt-3 text-sm text-muted-foreground">
+          Přístup je chráněn session tokenem zabezpečeným na serveru. Po přihlášení se vytvoří krátkodobá admin relace, která je validována při každém požadavku na data.
+        </p>
+
+        <form id="admin-login-form" class="mt-6 space-y-4">
+          <div>
+            <label for="admin-password" class="mb-2 block text-sm font-medium">Heslo</label>
+            <input
+              id="admin-password"
+              type="password"
+              class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground"
+              placeholder="Zadejte heslo"
+            />
+          </div>
+          <button type="submit" class="btn-primary w-full">Přihlásit</button>
+        </form>
+
+        <p id="admin-login-error" class="mt-4 hidden rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          Nesprávné heslo.
+        </p>
+      </div>
+
+      <div id="admin-content" class="hidden">
+        <div class="mb-12 text-center reveal">
+          <p class="text-sm font-semibold uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
+          <h1 class="mt-4 text-4xl font-black md:text-5xl">Správa škol a dat</h1>
+          <p class="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
+            Seznam škol v této správě se ukládá do Cloudflare D1. Veřejný katalog se načítá z oficiálního snapshotu MŠMT a změny v administraci jej automaticky neupravují.
+          </p>
+        </div>
+
+        <div class="mb-6 flex justify-end">
+          <button type="button" id="admin-logout" class="btn-outline">Odhlásit</button>
+        </div>
+
+        <div class="grid gap-6 md:grid-cols-4 mb-10 reveal">
+          <div class="track-card p-5">
+            <p class="text-sm text-muted-foreground">Celkem škol</p>
+            <p id="total-schools" class="mt-3 text-3xl font-bold">0</p>
+          </div>
+          <div class="track-card p-5">
+            <p class="text-sm text-muted-foreground">Praha</p>
+            <p id="count-praha" class="mt-3 text-3xl font-bold">0</p>
+          </div>
+          <div class="track-card p-5">
+            <p class="text-sm text-muted-foreground">Středočeský kraj</p>
+            <p id="count-region" class="mt-3 text-3xl font-bold">0</p>
+          </div>
+          <div class="track-card p-5">
+            <p class="text-sm text-muted-foreground">Obory</p>
+            <p id="count-focus" class="mt-3 text-3xl font-bold">0</p>
+          </div>
+        </div>
+
+        <div class="grid gap-8 lg:grid-cols-[420px_1fr]">
+          <aside class="track-card reveal p-6">
+            <h2 class="text-2xl font-bold">Přidat nebo upravit školu</h2>
+            <form id="school-form" class="mt-6 space-y-4">
+              <input type="hidden" id="school-id" />
+
+              <div>
+                <label for="school-name" class="mb-2 block text-sm font-medium">Název školy</label>
+                <input id="school-name" name="name" required class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. Gymnázium Jana Keplera" />
+              </div>
+
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label for="school-region" class="mb-2 block text-sm font-medium">Region</label>
+                  <select id="school-region" name="region" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+                    <option value="Praha">Praha</option>
+                    <option value="Středočeský kraj">Středočeský kraj</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="school-type" class="mb-2 block text-sm font-medium">Typ</label>
+                  <select id="school-type" name="type" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+                    <option value="gymnázium">Gymnázium</option>
+                    <option value="střední škola">Střední škola</option>
+                    <option value="odborné lyceum">Odborné lyceum</option>
+                    <option value="učiliště">Učiliště</option>
+                    <option value="konzervatoř">Konzervatoř</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label for="school-focus" class="mb-2 block text-sm font-medium">Obor / zaměření</label>
+                <select id="school-focus" name="focus" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+                  <option value="technologie">Technologie</option>
+                  <option value="design">Design</option>
+                  <option value="ekonomie">Ekonomie</option>
+                  <option value="zdravotnictví">Zdravotnictví</option>
+                  <option value="společnost">Společnost</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="school-description" class="mb-2 block text-sm font-medium">Popis</label>
+                <textarea id="school-description" name="description" rows="3" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Krátký popis školy a zaměření."></textarea>
+              </div>
+
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label for="school-acceptance" class="mb-2 block text-sm font-medium">Přijímání</label>
+                  <input id="school-acceptance" name="acceptance" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. matematika a fyzika" />
+                </div>
+                <div>
+                  <label for="school-capacity" class="mb-2 block text-sm font-medium">Kapacita</label>
+                  <input id="school-capacity" name="capacity" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. 120 míst" />
+                </div>
+              </div>
+
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label for="school-commute" class="mb-2 block text-sm font-medium">Dojezd</label>
+                  <input id="school-commute" name="commute" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. Rychlý přístup po MHD" />
+                </div>
+                <div>
+                  <label for="school-fee" class="mb-2 block text-sm font-medium">Školné</label>
+                  <input id="school-fee" name="fee" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. Bez školného" />
+                </div>
+              </div>
+
+              <div class="flex gap-3 pt-2">
+                <button type="submit" class="btn-primary flex-1">Uložit školu</button>
+                <button type="button" id="reset-form" class="btn-outline flex-1">Reset</button>
+              </div>
+            </form>
+          </aside>
+
+          <div class="track-card reveal p-6">
+            <div class="mb-5 flex items-center justify-between gap-4">
+              <h2 class="text-2xl font-bold">Seznam škol</h2>
+              <a href={withBase("/skoly/")} class="text-sm font-medium text-primary hover:underline">Otevřít veřejný přehled</a>
+            </div>
+
+            <div id="school-table-wrap" class="overflow-hidden rounded-2xl border border-border">
+              <div class="overflow-x-auto">
+                <table class="min-w-full text-left text-sm">
+                  <thead class="bg-card text-muted-foreground">
+                    <tr>
+                      <th class="px-4 py-3 font-medium">Název</th>
+                      <th class="px-4 py-3 font-medium">Region</th>
+                      <th class="px-4 py-3 font-medium">Obor</th>
+                      <th class="px-4 py-3 font-medium">Typ</th>
+                      <th class="px-4 py-3 font-medium">Akce</th>
+                    </tr>
+                  </thead>
+                  <tbody id="school-table-body" class="divide-y divide-border bg-background/30"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script is:inline type="application/json" id="initial-schools">[]</script>
+  <script>
+    import { withBase } from "../lib/urls";
+
+    type SchoolRecord = {
+      id: string;
+      name: string;
+      region: string;
+      type: string;
+      focus: string;
+      description: string;
+      acceptance: string;
+      capacity: string;
+      commute: string;
+      fee: string;
+      tags: string[];
+      audience?: string[];
+      idealStudent?: string;
+      strengths?: string[];
+      challenges?: string[];
+    };
+
+    const adminAuth = document.getElementById("admin-auth");
+    const adminContent = document.getElementById("admin-content");
+    const adminLoginForm = document.getElementById("admin-login-form") as HTMLFormElement | null;
+    const adminLoginError = document.getElementById("admin-login-error") as HTMLElement | null;
+    const adminPasswordInput = document.getElementById("admin-password") as HTMLInputElement | null;
+    const adminLogoutButton = document.getElementById("admin-logout") as HTMLButtonElement | null;
+
+    const isAuthenticated = async () => {
+      try {
+        const response = await fetch(withBase("/api/schools/"), { credentials: "same-origin" });
+        return response.ok;
+      } catch {
+        return false;
+      }
+    };
+
+    const toggleAdminView = async () => {
+      const loggedIn = await isAuthenticated();
+      if (adminAuth) adminAuth.classList.toggle("hidden", loggedIn);
+      if (adminContent) adminContent.classList.toggle("hidden", !loggedIn);
+      if (!loggedIn && adminPasswordInput) adminPasswordInput.focus();
+    };
+
+    adminLoginForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const password = (adminPasswordInput?.value ?? "").trim();
+      let errorMessage = "Nesprávné heslo.";
+
+      try {
+        const response = await fetch(withBase("/api/admin/login"), {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password }),
+        });
+
+        if (response.ok) {
+          if (adminLoginError) adminLoginError.classList.add("hidden");
+          await toggleAdminView();
+          return;
+        }
+
+        if (response.status === 503) {
+          errorMessage = "Administrace není nakonfigurovaná. Nejdřív nastavte její secrets v Cloudflare.";
+        }
+      } catch {
+        errorMessage = "Přihlášení se nepodařilo. Zkontrolujte připojení a zkuste to znovu.";
+      }
+
+      if (adminLoginError) {
+        adminLoginError.textContent = errorMessage;
+        adminLoginError.classList.remove("hidden");
+      }
+    });
+
+    adminLogoutButton?.addEventListener("click", async () => {
+      await fetch(withBase("/api/admin/logout"), {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      await toggleAdminView();
+      if (adminPasswordInput) adminPasswordInput.value = "";
+    });
+
+    const seed = JSON.parse(document.getElementById("initial-schools")?.textContent || "[]") as SchoolRecord[];
+
+    const form = document.getElementById("school-form") as HTMLFormElement | null;
+    const tableBody = document.getElementById("school-table-body") as HTMLTableSectionElement | null;
+    const totalSchools = document.getElementById("total-schools") as HTMLElement | null;
+    const countPraha = document.getElementById("count-praha") as HTMLElement | null;
+    const countRegion = document.getElementById("count-region") as HTMLElement | null;
+    const countFocus = document.getElementById("count-focus") as HTMLElement | null;
+    const resetButton = document.getElementById("reset-form") as HTMLButtonElement | null;
+
+    const focusLabels: Record<string, string> = {
+      technologie: "Technologie",
+      design: "Design",
+      ekonomie: "Ekonomie",
+      zdravotnictví: "Zdravotnictví",
+      společnost: "Společnost",
+    };
+
+    const getAuthHeaders = () => ({
+      "Content-Type": "application/json",
+    });
+
+    const resetForm = () => {
+      if (!form) return;
+      form.reset();
+      const schoolIdInput = document.getElementById("school-id") as HTMLInputElement | null;
+      if (schoolIdInput) schoolIdInput.value = "";
+    };
+
+    const fetchSchools = async (): Promise<SchoolRecord[]> => {
+      try {
+        const response = await fetch(withBase("/api/schools/"), {
+          headers: getAuthHeaders(),
+          credentials: "same-origin",
+        });
+        if (!response.ok) {
+          throw new Error("API request failed");
+        }
+        return (await response.json()) as SchoolRecord[];
+      } catch {
+        return seed;
+      }
+    };
+
+    const saveSchool = async (item: SchoolRecord) => {
+      try {
+        const response = await fetch(withBase("/api/schools/"), {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(item),
+          credentials: "same-origin",
+        });
+
+        if (!response.ok) {
+          throw new Error("Save failed");
+        }
+
+        const next = await fetchSchools();
+        renderTable(next);
+        resetForm();
+      } catch {
+        renderTable(seed);
+      }
+    };
+
+    const deleteSchool = async (id: string) => {
+      try {
+        const response = await fetch(withBase(`/api/schools/?id=${encodeURIComponent(id)}`), {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+          credentials: "same-origin",
+        });
+
+        if (!response.ok) {
+          throw new Error("Delete failed");
+        }
+
+        const next = await fetchSchools();
+        renderTable(next);
+      } catch {
+        renderTable(seed);
+      }
+    };
+
+    const renderStats = (items: SchoolRecord[]) => {
+      if (totalSchools) totalSchools.textContent = String(items.length);
+      if (countPraha) countPraha.textContent = String(items.filter((item) => item.region === "Praha").length);
+      if (countRegion) countRegion.textContent = String(items.filter((item) => item.region === "Středočeský kraj").length);
+      if (countFocus) countFocus.textContent = String(new Set(items.map((item) => item.focus)).size);
+    };
+
+    const renderTable = (items: SchoolRecord[] = seed) => {
+      renderStats(items);
+      if (!tableBody) return;
+
+      tableBody.innerHTML = items
+        .map((school) => `
+          <tr>
+            <td class="px-4 py-3 font-medium text-foreground">${school.name}</td>
+            <td class="px-4 py-3 text-muted-foreground">${school.region}</td>
+            <td class="px-4 py-3 text-muted-foreground">${focusLabels[school.focus] || school.focus}</td>
+            <td class="px-4 py-3 text-muted-foreground">${school.type}</td>
+            <td class="px-4 py-3">
+              <div class="flex gap-2">
+                <button type="button" data-edit="${school.id}" class="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-foreground">Upravit</button>
+                <button type="button" data-delete="${school.id}" class="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-red-400">Smazat</button>
+              </div>
+            </td>
+          </tr>
+        `)
+        .join("");
+
+      document.querySelectorAll("[data-edit]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const item = items.find((school) => school.id === button.getAttribute("data-edit"));
+          if (!item) return;
+
+          const schoolIdInput = document.getElementById("school-id") as HTMLInputElement | null;
+          const schoolNameInput = document.getElementById("school-name") as HTMLInputElement | null;
+          const schoolRegionInput = document.getElementById("school-region") as HTMLSelectElement | null;
+          const schoolTypeInput = document.getElementById("school-type") as HTMLSelectElement | null;
+          const schoolFocusInput = document.getElementById("school-focus") as HTMLSelectElement | null;
+          const schoolDescriptionInput = document.getElementById("school-description") as HTMLTextAreaElement | null;
+          const schoolAcceptanceInput = document.getElementById("school-acceptance") as HTMLInputElement | null;
+          const schoolCapacityInput = document.getElementById("school-capacity") as HTMLInputElement | null;
+          const schoolCommuteInput = document.getElementById("school-commute") as HTMLInputElement | null;
+          const schoolFeeInput = document.getElementById("school-fee") as HTMLInputElement | null;
+
+          if (schoolIdInput) schoolIdInput.value = item.id;
+          if (schoolNameInput) schoolNameInput.value = item.name;
+          if (schoolRegionInput) schoolRegionInput.value = item.region;
+          if (schoolTypeInput) schoolTypeInput.value = item.type;
+          if (schoolFocusInput) schoolFocusInput.value = item.focus;
+          if (schoolDescriptionInput) schoolDescriptionInput.value = item.description;
+          if (schoolAcceptanceInput) schoolAcceptanceInput.value = item.acceptance;
+          if (schoolCapacityInput) schoolCapacityInput.value = item.capacity;
+          if (schoolCommuteInput) schoolCommuteInput.value = item.commute;
+          if (schoolFeeInput) schoolFeeInput.value = item.fee;
+          if (schoolNameInput) schoolNameInput.focus();
+        });
+      });
+
+      document.querySelectorAll("[data-delete]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const id = button.getAttribute("data-delete");
+          if (!id) return;
+          await deleteSchool(id);
+        });
+      });
+    };
+
+    if (form) {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const id = String(formData.get("school-id") || crypto.randomUUID());
+        const item: SchoolRecord = {
+          id,
+          name: String(formData.get("name") || ""),
+          region: String(formData.get("region") || "Praha"),
+          type: String(formData.get("type") || "gymnázium"),
+          focus: String(formData.get("focus") || "technologie"),
+          description: String(formData.get("description") || ""),
+          acceptance: String(formData.get("acceptance") || ""),
+          capacity: String(formData.get("capacity") || ""),
+          commute: String(formData.get("commute") || ""),
+          fee: String(formData.get("fee") || ""),
+          tags: [String(formData.get("focus") || "technologie")],
+          audience: [],
+          idealStudent: "",
+          strengths: [],
+          challenges: [],
+        };
+
+        await saveSchool(item);
+      });
+    }
+
+    if (resetButton) {
+      resetButton.addEventListener("click", resetForm);
+    }
+
+    toggleAdminView();
+    renderTable(seed);
+    void isAuthenticated().then((loggedIn) => {
+      if (loggedIn) {
+        fetchSchools().then((items) => renderTable(items)).catch(() => renderTable(seed));
+      }
+    });
+  </script>
+</BaseLayout>

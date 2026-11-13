@@ -1,0 +1,476 @@
+---
+export const prerender = true;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { siteConfig } from "../../config/site";
+import { schoolProgramSources, schoolProgramsSnapshotDate, schoolSnapshotDate, schoolSource, schools, uniqueSchoolPrograms } from "../../data/schools";
+import { withBase } from "../../lib/urls";
+
+const typeLabels = {
+  gymnázium: "Gymnázium",
+  "střední škola": "Střední škola",
+  "odborné lyceum": "Odborné lyceum",
+  učiliště: "Učiliště",
+  konzervatoř: "Konzervatoř",
+} as const;
+
+export function getStaticPaths() {
+  return schools.map((school) => ({ params: { id: school.id } }));
+}
+
+const school = schools.find((item) => item.id === Astro.params.id);
+if (!school) throw new Error("Škola nebyla nalezena.");
+
+const activePrograms = uniqueSchoolPrograms(school.programs.filter((program) => !program.isPhasingOut))
+  .sort((left, right) => left.name.localeCompare(right.name, "cs") || left.code.localeCompare(right.code, "cs"));
+const phasingOutPrograms = uniqueSchoolPrograms(school.programs.filter((program) => program.isPhasingOut))
+  .sort((left, right) => left.name.localeCompare(right.name, "cs") || left.code.localeCompare(right.code, "cs"));
+const programSource = schoolProgramSources[school.region === "Praha" ? 0 : 1];
+const hasCoordinates = school.latitude !== null && school.longitude !== null;
+const comparisonSchools = schools.map(({ id, name, region, founder, address, izo, redIzo, ico, officialTypeCode, capacity, phone, email, latitude, longitude }) => ({
+  id, name, region, founder, address, izo, redIzo, ico, officialTypeCode, capacity, phone, email, latitude, longitude,
+}));
+const metadata = {
+  title: `${school.name} | ${siteConfig.name}`,
+  description: `${school.name}, ${school.address}. Oficiálně evidované studijní obory podle MŠMT.`,
+};
+---
+
+<BaseLayout {metadata}>
+  <section class="px-6 pb-20 pt-28 md:pt-32">
+    <div class="mx-auto max-w-4xl">
+      <a href={withBase("/skoly/")} class="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">← Zpět na katalog škol</a>
+      <article class="track-card reveal mt-6 p-8 md:p-10">
+        <div class="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Orientační označení: {typeLabels[school.type]}</p>
+            <h1 class="mt-3 text-3xl font-black md:text-5xl">{school.name}</h1>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="inline-flex rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-muted-foreground">{school.region}</span>
+            <button id="favorite-school-btn" type="button" class="favorite-toggle inline-flex items-center gap-2 rounded-full border border-border bg-background/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-primary/50 hover:text-primary" data-school-id={school.id} aria-pressed="false">
+              <span class="favorite-icon text-sm">♡</span><span>Oblíbené</span>
+            </button>
+          </div>
+        </div>
+
+        <p class="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">{school.address}</p>
+        <div class="mt-8 grid gap-4 sm:grid-cols-2">
+          <div class="rounded-2xl border border-border bg-background/40 p-4">
+            <p class="text-sm text-muted-foreground">Typ v rejstříku</p>
+            <p class="mt-2 text-lg font-semibold text-foreground">{school.officialTypeCode === "D00" ? "Konzervatoř" : "Střední škola"}</p>
+          </div>
+          <div class="rounded-2xl border border-border bg-background/40 p-4">
+            <p class="text-sm text-muted-foreground">Zřizovatel</p>
+            <p class="mt-2 text-lg font-semibold text-foreground">{school.founder}</p>
+          </div>
+          <div class="rounded-2xl border border-border bg-background/40 p-4">
+            <p class="text-sm text-muted-foreground">Kapacita celé školy</p>
+            <p class="mt-2 text-lg font-semibold text-foreground">{school.capacity || "V rejstříku neuvedena"}</p>
+          </div>
+          <div class="rounded-2xl border border-border bg-background/40 p-4">
+            <p class="text-sm text-muted-foreground">Tematická oblast*</p>
+            <p class="mt-2 text-lg font-semibold text-foreground">{school.focus}</p>
+          </div>
+        </div>
+
+        <div class="mt-8 rounded-2xl border border-border bg-background/40 p-5">
+          <h2 class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Kontaktní údaje</h2>
+          <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div><dt class="text-xs text-muted-foreground">Telefon</dt><dd class="mt-1 text-sm font-medium">{school.phone || "V rejstříku neuveden"}</dd></div>
+            <div><dt class="text-xs text-muted-foreground">E-mail</dt><dd class="mt-1 text-sm font-medium">{school.email || "V rejstříku neuveden"}</dd></div>
+            <div><dt class="text-xs text-muted-foreground">IZO</dt><dd class="mt-1 text-sm font-medium">{school.izo}</dd></div>
+            <div><dt class="text-xs text-muted-foreground">RED-IZO</dt><dd class="mt-1 text-sm font-medium">{school.redIzo}</dd></div>
+            <div><dt class="text-xs text-muted-foreground">IČO</dt><dd class="mt-1 text-sm font-medium">{school.ico}</dd></div>
+            <div><dt class="text-xs text-muted-foreground">Web školy</dt><dd class="mt-1 text-sm font-medium">
+              {school.website ? <a class="text-primary underline" href={school.website.startsWith("http") ? school.website : `https://${school.website}`} target="_blank" rel="noreferrer">{school.website}</a> : "V rejstříku neuveden"}
+            </dd></div>
+          </dl>
+        </div>
+
+        <section class="mt-8 rounded-2xl border border-border bg-background/40 p-5" aria-labelledby="programs-heading">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="programs-heading" class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Obory evidované v rejstříku MŠMT</h2>
+            <span class="text-xs text-muted-foreground">{activePrograms.length} aktuálně evidovaných · {phasingOutPrograms.length} dobíhajících</span>
+          </div>
+          <p class="mt-2 text-sm leading-6 text-muted-foreground">
+            Kódy a názvy podle regionálního exportu MŠMT z {schoolProgramsSnapshotDate}. Zápis oboru v rejstříku nepotvrzuje jeho otevření v konkrétním přijímacím řízení.
+          </p>
+          {activePrograms.length > 0 ? (
+            <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+              {activePrograms.map((program) => (
+                <li class="rounded-xl border border-border bg-card p-4">
+                  <span class="text-xs font-semibold tracking-wide text-primary">{program.code}</span>
+                  <p class="mt-1 font-medium text-foreground">{program.name}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p class="mt-4 text-sm text-muted-foreground">V exportu není uveden žádný aktuálně evidovaný obor. Ověř nabídku přímo u školy.</p>
+          )}
+          {phasingOutPrograms.length > 0 && (
+            <details class="mt-4 rounded-xl border border-border p-4">
+              <summary class="cursor-pointer text-sm font-medium text-foreground">Zobrazit dobíhající obory ({phasingOutPrograms.length})</summary>
+              <ul class="mt-3 grid gap-2 sm:grid-cols-2">
+                {phasingOutPrograms.map((program) => (
+                  <li class="rounded-lg bg-card p-3">
+                    <span class="text-xs font-semibold tracking-wide text-muted-foreground">{program.code} · dobíhající</span>
+                    <p class="mt-1 text-sm font-medium text-foreground">{program.name}</p>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          <p class="mt-4 text-xs text-muted-foreground">
+            Zdroj: <a class="text-primary underline" href={programSource} target="_blank" rel="noreferrer">regionální export MŠMT</a>, párování školy přes IZO {school.izo}.
+          </p>
+        </section>
+
+        <div class="mt-5 rounded-2xl border border-dashed border-border bg-background/40 p-5 text-sm leading-6 text-muted-foreground">
+          * Tematická oblast je orientační zařazení podle názvu školy.
+          Rejstříková kapacita se vztahuje na celou školu, ne na počet míst v prvním ročníku.
+          Aktuální přijímací podmínky, skutečné otevření oboru a školné ověř přímo u školy.
+          <p class="mt-2">Zdroj údajů: <a class="text-primary underline" href={schoolSource} target="_blank" rel="noreferrer">Rejstřík škol MŠMT</a>, export {schoolSnapshotDate}.</p>
+        </div>
+
+        {hasCoordinates ? (
+          <section class="mt-8 rounded-2xl border border-border bg-background/40 p-5" aria-labelledby="location-heading">
+            <h2 id="location-heading" class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Mapa a vzdálenost</h2>
+            <p class="mt-2 text-sm text-muted-foreground">Vzdálenost je vzdušnou čarou od zvoleného místa, nejde o délku ani čas cesty.</p>
+            <div class="mt-4 flex flex-wrap gap-3">
+              <label class="sr-only" for="home-location-preset">Výchozí místo</label>
+              <select id="home-location-preset" class="min-w-52 rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+                <option value="praha-karlin">Praha - Karlín</option>
+                <option value="praha-liben">Praha - Libeň</option>
+                <option value="praha-cakovice">Praha - Čakovice</option>
+                <option value="praha-vinohrady">Praha - Vinohrady</option>
+                <option value="kladno">Kladno</option>
+                <option value="slany">Slaný</option>
+                <option value="benesov">Benešov</option>
+                <option value="melnik">Mělník</option>
+                <option value="kolin">Kolín</option>
+              </select>
+              <button id="use-geolocation-btn" type="button" class="btn-outline">Použít moji polohu</button>
+              <button id="open-map-location-btn" type="button" class="btn-outline">Zvolit místo na mapě</button>
+            </div>
+            <p id="location-status" class="mt-3 text-xs text-muted-foreground" aria-live="polite">Kliknutím do mapy zvol místo bydliště.</p>
+            <div class="mt-4 grid gap-4 md:grid-cols-[1fr_2fr]">
+              <div class="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Vzdušná vzdálenost</p>
+                <p id="distance-output" class="mt-3 text-2xl font-black text-foreground">—</p>
+              </div>
+              <div class="overflow-hidden rounded-2xl border border-border bg-card">
+                <div id="home-map" class="h-80 w-full"></div>
+              </div>
+            </div>
+            <div class="mt-5">
+              <h3 class="text-sm font-semibold text-foreground">Další školy v okolí zvoleného místa</h3>
+              <div id="nearby-schools-output" class="mt-3 grid gap-2 sm:grid-cols-2"></div>
+            </div>
+            <p class="mt-4 text-xs text-muted-foreground">Mapa používá OpenStreetMap. Souřadnice školy pocházejí z adresního místa RÚIAN.</p>
+          </section>
+        ) : (
+          <section class="mt-8 rounded-2xl border border-border bg-background/40 p-5">
+            <h2 class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Poloha školy</h2>
+            <p class="mt-2 text-sm text-muted-foreground">K této adrese se nepodařilo přiřadit souřadnice adresního místa RÚIAN, proto zde nelze spolehlivě zobrazit mapu ani vzdálenost.</p>
+            <a class="mt-3 inline-block text-primary underline" href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(school.address)}`} target="_blank" rel="noreferrer">Vyhledat adresu v OpenStreetMap</a>
+          </section>
+        )}
+
+        <section class="mt-8 rounded-[1.5rem] border border-border bg-card p-5">
+          <h2 class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Porovnat s jinou školou</h2>
+          <div class="mt-4 grid gap-4 md:grid-cols-2">
+            <label class="block">
+              <span class="mb-2 block text-sm font-medium">První škola</span>
+              <select id="compare-school-a" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+                {schools.map((item) => <option value={item.id} selected={item.id === school.id}>{item.name}</option>)}
+              </select>
+            </label>
+            <label class="block">
+              <span class="mb-2 block text-sm font-medium">Druhá škola</span>
+              <select id="compare-school-b" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+                {schools.map((item, index) => <option value={item.id} selected={item.id !== school.id && index === 1}>{item.name}</option>)}
+              </select>
+            </label>
+          </div>
+          <div id="compare-details" class="mt-6 grid gap-4 md:grid-cols-2"></div>
+        </section>
+
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href={withBase("/test/")} class="btn-primary">Zkusit test zájmů</a>
+          <a href={withBase("/skoly/")} class="btn-outline">Přejít na katalog</a>
+          <a href={withBase("/oblibene/")} class="btn-outline">Moje oblíbené</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  {hasCoordinates && (
+    <>
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    </>
+  )}
+  <div id="school-data" data-schools={JSON.stringify(comparisonSchools)} hidden></div>
+  <div
+    id="school-position-data"
+    data-school-name={school.name}
+    data-latitude={school.latitude ?? ""}
+    data-longitude={school.longitude ?? ""}
+    data-school-id={school.id}
+    data-has-coordinates={String(hasCoordinates)}
+    hidden
+  ></div>
+  <script>
+    import { withBase } from "../../lib/urls";
+
+    document.addEventListener("astro:page-load", () => {
+    type SchoolRecord = {
+      id: string;
+      name: string;
+      region: string;
+      type: string;
+      founder: string;
+      founderCode: string;
+      address: string;
+      izo: string;
+      redIzo: string;
+      ico: string;
+      officialTypeCode: string;
+      capacity: string;
+      phone: string;
+      email: string;
+      website: string;
+      latitude: number | null;
+      longitude: number | null;
+    };
+    type GeolocatedSchool = SchoolRecord & { latitude: number; longitude: number };
+    /* eslint-disable no-unused-vars */
+    type LatLng = { lat: number; lng: number };
+    type LeafletMap = {
+      setView: (...args: [[number, number], number]) => LeafletMap;
+      fitBounds: (...args: [[number, number][]]) => LeafletMap;
+      on: (...args: ["click", (event: { latlng: LatLng }) => void]) => LeafletMap;
+      invalidateSize(): void;
+    };
+    type LeafletMarker = {
+      addTo: (...args: [LeafletMap]) => LeafletMarker;
+      setLatLng: (...args: [[number, number]]) => LeafletMarker;
+      bindPopup: (...args: [string]) => LeafletMarker;
+      on: (...args: ["dragend", () => void]) => LeafletMarker;
+      getLatLng(): LatLng;
+    };
+    type LeafletApi = {
+      map: (...args: [string, { zoomControl: boolean; scrollWheelZoom: boolean }]) => LeafletMap;
+      tileLayer: (...args: [string, { attribution: string; maxZoom: number }]) => { addTo: (...args: [LeafletMap]) => void };
+      marker: (...args: [[number, number], { draggable: boolean }?]) => LeafletMarker;
+    };
+    /* eslint-enable no-unused-vars */
+    type WindowWithLeaflet = Window & { L?: LeafletApi };
+
+    const FAVORITES_KEY = "vyberstredni-favorites";
+    const dataElement = document.getElementById("school-data") as HTMLElement | null;
+    const schoolList: SchoolRecord[] = dataElement?.dataset.schools ? JSON.parse(dataElement.dataset.schools) : [];
+    const positionElement = document.getElementById("school-position-data") as HTMLElement | null;
+    const schoolName = positionElement?.dataset.schoolName ?? "Škola";
+    const schoolId = positionElement?.dataset.schoolId ?? "";
+    const hasCoordinates = positionElement?.dataset.hasCoordinates === "true";
+    const schoolLatitude = Number(positionElement?.dataset.latitude);
+    const schoolLongitude = Number(positionElement?.dataset.longitude);
+    const selectA = document.getElementById("compare-school-a") as HTMLSelectElement | null;
+    const selectB = document.getElementById("compare-school-b") as HTMLSelectElement | null;
+    const compareOutput = document.getElementById("compare-details");
+    const favoriteButton = document.getElementById("favorite-school-btn") as HTMLButtonElement | null;
+    const distanceOutput = document.getElementById("distance-output");
+    const nearbyOutput = document.getElementById("nearby-schools-output");
+    const locationStatus = document.getElementById("location-status");
+    const presetSelect = document.getElementById("home-location-preset") as HTMLSelectElement | null;
+    const geolocationButton = document.getElementById("use-geolocation-btn") as HTMLButtonElement | null;
+    const mapLocationButton = document.getElementById("open-map-location-btn") as HTMLButtonElement | null;
+    const mapElement = document.getElementById("home-map");
+
+    const escapeHtml = (value: string) =>
+      value.replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character] ?? character);
+
+    const getFavorites = (): string[] => {
+      try {
+        const value = localStorage.getItem(FAVORITES_KEY);
+        return value ? JSON.parse(value) : [];
+      } catch {
+        return [];
+      }
+    };
+
+    const updateFavoriteButton = () => {
+      if (!favoriteButton) return;
+      const active = getFavorites().includes(schoolId);
+      favoriteButton.classList.toggle("is-favorite", active);
+      favoriteButton.setAttribute("aria-pressed", String(active));
+      favoriteButton.classList.toggle("border-primary/50", active);
+      favoriteButton.classList.toggle("bg-primary/10", active);
+      favoriteButton.classList.toggle("text-primary", active);
+      const icon = favoriteButton.querySelector(".favorite-icon");
+      if (icon) icon.textContent = active ? "♥" : "♡";
+    };
+
+    const renderComparison = () => {
+      if (!selectA || !selectB || !compareOutput || schoolList.length < 2) return;
+      if (selectA.value === selectB.value) {
+        selectB.value = schoolList.find((item) => item.id !== selectA.value)?.id ?? "";
+      }
+      const selectedSchools = [selectA.value, selectB.value]
+        .map((id) => schoolList.find((item) => item.id === id))
+        .filter((item): item is SchoolRecord => Boolean(item));
+      compareOutput.innerHTML = selectedSchools.map((item) => {
+        const rows: Array<[string, string]> = [
+          ["Region", item.region],
+          ["Typ v rejstříku", item.officialTypeCode === "D00" ? "Konzervatoř" : "Střední škola"],
+          ["Zřizovatel", item.founder],
+          ["Adresa", item.address],
+          ["Kapacita celé školy", item.capacity || "V rejstříku neuvedena"],
+          ["IZO", item.izo],
+          ["RED-IZO", item.redIzo],
+          ["IČO", item.ico],
+          ["Telefon", item.phone || "Neuveden"],
+          ["E-mail", item.email || "Neuveden"],
+        ];
+        return `<article class="rounded-2xl border border-border bg-background/40 p-4">
+          <h3 class="text-lg font-semibold">${escapeHtml(item.name)}</h3>
+          <dl class="mt-4 space-y-3 text-sm">${rows.map(([label, value]) => `<div><dt class="font-medium text-foreground">${escapeHtml(label)}</dt><dd class="text-muted-foreground">${escapeHtml(value)}</dd></div>`).join("")}</dl>
+        </article>`;
+      }).join("");
+    };
+
+    const presets: Record<string, { label: string; latitude: number; longitude: number }> = {
+      "praha-karlin": { label: "Praha - Karlín", latitude: 50.0904, longitude: 14.4337 },
+      "praha-liben": { label: "Praha - Libeň", latitude: 50.1064, longitude: 14.4598 },
+      "praha-cakovice": { label: "Praha - Čakovice", latitude: 50.1176, longitude: 14.4977 },
+      "praha-vinohrady": { label: "Praha - Vinohrady", latitude: 50.0766, longitude: 14.4407 },
+      kladno: { label: "Kladno", latitude: 50.1474, longitude: 14.1034 },
+      slany: { label: "Slaný", latitude: 50.2312, longitude: 14.0877 },
+      benesov: { label: "Benešov", latitude: 49.7811, longitude: 14.6907 },
+      melnik: { label: "Mělník", latitude: 50.3502, longitude: 14.4757 },
+      kolin: { label: "Kolín", latitude: 50.0281, longitude: 15.1985 },
+    };
+    let activeHome = { ...presets["praha-karlin"] };
+    let map: LeafletMap | null = null;
+    let homeMarker: LeafletMarker | null = null;
+    const leaflet = (window as WindowWithLeaflet).L;
+
+    const toRadians = (degrees: number) => degrees * Math.PI / 180;
+    const distanceKm = (latitude: number, longitude: number) => {
+      const deltaLatitude = toRadians(schoolLatitude - latitude);
+      const deltaLongitude = toRadians(schoolLongitude - longitude);
+      const startLatitude = toRadians(latitude);
+      const endLatitude = toRadians(schoolLatitude);
+      const a = Math.sin(deltaLatitude / 2) ** 2 +
+        Math.sin(deltaLongitude / 2) ** 2 * Math.cos(startLatitude) * Math.cos(endLatitude);
+      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+    const formatDistance = (km: number) => km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+
+    const renderDistance = () => {
+      if (!hasCoordinates || !distanceOutput || !nearbyOutput) return;
+      distanceOutput.textContent = formatDistance(distanceKm(activeHome.latitude, activeHome.longitude));
+      const nearby = schoolList
+        .filter((item): item is GeolocatedSchool =>
+          item.id !== schoolId && item.latitude !== null && item.longitude !== null)
+        .map((item) => ({
+          id: item.id,
+          name: item.name,
+          distance: distanceKmBetween(activeHome.latitude, activeHome.longitude, item.latitude, item.longitude),
+        }))
+        .sort((left, right) => left.distance - right.distance)
+        .slice(0, 3);
+      nearbyOutput.innerHTML = nearby.map((item) => `
+        <a class="rounded-lg border border-border bg-background/40 px-3 py-2 text-sm hover:border-primary/50" href="${withBase(`/skoly/${encodeURIComponent(item.id)}/`)}">
+          <span class="font-medium">${escapeHtml(item.name)}</span>
+          <span class="ml-1 text-muted-foreground">${formatDistance(item.distance)}</span>
+        </a>`).join("") || '<span class="text-muted-foreground">V okolí nejsou další geolokované školy.</span>';
+    };
+
+    const distanceKmBetween = (fromLatitude: number, fromLongitude: number, toLatitude: number, toLongitude: number) => {
+      const deltaLatitude = toRadians(toLatitude - fromLatitude);
+      const deltaLongitude = toRadians(toLongitude - fromLongitude);
+      const startLatitude = toRadians(fromLatitude);
+      const endLatitude = toRadians(toLatitude);
+      const a = Math.sin(deltaLatitude / 2) ** 2 +
+        Math.sin(deltaLongitude / 2) ** 2 * Math.cos(startLatitude) * Math.cos(endLatitude);
+      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+
+    const applyHomeLocation = (label: string, latitude: number, longitude: number) => {
+      activeHome = { label, latitude, longitude };
+      if (locationStatus) locationStatus.textContent = `Zvolené místo: ${label}. Vzdálenost je vzdušnou čarou.`;
+      if (homeMarker && map) {
+        homeMarker.setLatLng([latitude, longitude]);
+        map.fitBounds([[latitude, longitude], [schoolLatitude, schoolLongitude]]);
+      }
+      renderDistance();
+    };
+
+    favoriteButton?.addEventListener("click", () => {
+      const favorites = getFavorites();
+      const next = favorites.includes(schoolId)
+        ? favorites.filter((id) => id !== schoolId)
+        : [...favorites, schoolId];
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+      updateFavoriteButton();
+    });
+    selectA?.addEventListener("change", renderComparison);
+    selectB?.addEventListener("change", renderComparison);
+    presetSelect?.addEventListener("change", () => {
+      const preset = presets[presetSelect.value];
+      if (preset) applyHomeLocation(preset.label, preset.latitude, preset.longitude);
+    });
+    geolocationButton?.addEventListener("click", () => {
+      if (!navigator.geolocation) {
+        if (locationStatus) locationStatus.textContent = "Tento prohlížeč geolokaci nepodporuje.";
+        return;
+      }
+      if (locationStatus) locationStatus.textContent = "Získávám vaši polohu…";
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => applyHomeLocation("Moje poloha", coords.latitude, coords.longitude),
+        () => {
+          if (locationStatus) locationStatus.textContent = "Polohu se nepodařilo získat. Zvol místo z nabídky nebo kliknutím do mapy.";
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+      );
+    });
+    mapLocationButton?.addEventListener("click", () => {
+      mapElement?.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (locationStatus) locationStatus.textContent = "Kliknutím do mapy nastav místo bydliště.";
+    });
+
+    if (hasCoordinates && mapElement && leaflet) {
+      map = leaflet.map("home-map", { zoomControl: true, scrollWheelZoom: true });
+      map.setView([activeHome.latitude, activeHome.longitude], 9);
+      leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      }).addTo(map);
+      leaflet.marker([schoolLatitude, schoolLongitude]).addTo(map).bindPopup(escapeHtml(schoolName));
+      homeMarker = leaflet.marker([activeHome.latitude, activeHome.longitude], { draggable: true }).addTo(map);
+      homeMarker.on("dragend", () => {
+        const position = homeMarker?.getLatLng();
+        if (position) applyHomeLocation("Vybrané místo na mapě", position.lat, position.lng);
+      });
+      map.on("click", ({ latlng }) => applyHomeLocation("Vybrané místo na mapě", latlng.lat, latlng.lng));
+      map.fitBounds([[activeHome.latitude, activeHome.longitude], [schoolLatitude, schoolLongitude]]);
+      window.setTimeout(() => map?.invalidateSize(), 0);
+    } else if (hasCoordinates && locationStatus) {
+      locationStatus.textContent = "Mapu se nepodařilo načíst. Zkontroluj připojení a zkus stránku obnovit.";
+    }
+
+    updateFavoriteButton();
+    renderComparison();
+    renderDistance();
+    });
+  </script>
+</BaseLayout>

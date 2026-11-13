@@ -4,34 +4,41 @@ Stav k 11. 11. 2026. Všechny soubory označené ✅ jsem stáhl a ověřil jeji
 
 ## Shrnutí
 
+Aplikace je nasazena jako podstránka [georgeduckling.com/vyberstredni/](https://georgeduckling.com/vyberstredni/); kořen domény patří hlavnímu webu George Duckling.
+
 | Požadavek | Zdroj | Stav | Klíč pro propojení |
 |---|---|---|---|
-| Seznam škol, obory, adresy | Rejstřík škol MŠMT (národní katalog otevřených dat) | ✅ ověřeno, JSON-LD, denně aktuální | REDIZO, IZO, KKOV, kód RÚIAN |
+| Seznam škol, adresy a kontakty | Rejstřík škol MŠMT (`https://isv.gov.cz/rssz/`) | ✅ snapshot zapojen do katalogu, 381 záznamů | RED-IZO, IZO, IČO, kód RÚIAN |
+| Evidované studijní obory | Regionální exporty Rejstříku škol MŠMT | ✅ 1 619 záznamů oborů propojeno se 381 školami | IZO |
 | Kapacita 1. ročníku, přihlášky, přijatí = **obsazenost** | CERMAT – agregovaná data JPZ po školách a oborech | ✅ ověřeno, XLSX, 2024–2026 | REDIZO, IZO, KKOV |
 | **Náročnost přijímaček** (kolik % stačilo na přijetí) | CERMAT – stejný soubor, výsledky přijatých | ✅ ověřeno | REDIZO, KKOV |
 | **Náročnost studia** (maturity) | CERMAT – výsledky MZ po školách | ✅ ověřeno, XLSX, 2015–2026 | REDIZO |
 | **Hodnocení školy** | ČŠI – seznam inspekčních zpráv | ✅ ověřeno, CSV/JSON/XML, odkazy na PDF | REDIZO |
-| **Dojezd** – poloha školy | RÚIAN (ČÚZK), CC BY 4.0 | ✅ ověřeno, 94 % míst výuky v Praze se napojí | kód RÚIAN |
+| **Poloha školy** | RÚIAN (ČÚZK) | ✅ souřadnice doplněny pro 378 z 381 škol | kód RÚIAN |
 | **Dojezd** – veřejná doprava | PID GTFS (Praha + Středočeský kraj, včetně vlaků), CC BY 4.0 | ✅ licence ověřena, data jsem nestahoval | – |
 | Popisy oborů, uplatnění | infoabsolvent.cz (NPI ČR) | ⚠️ obsah existuje, chybí licence a otevřená data | KKOV |
 | **Školné** | Jen weby soukromých a církevních škol | ❌ žádný centrální zdroj | ruční sběr |
 | **Test zájmů** | O\*NET Interest Profiler (licence USDOL) | ⚠️ překlad povolen, ale s povinnou validační studií | RIASEC → KKOV |
 
-**Rozsah regionu:** 373 středních škol (Praha 219, Středočeský kraj 154). V přijímacím řízení 2026 má CERMAT data pro 361 škol a 1 423 kombinací škola + obor. Z toho 804 kombinací má povinnou jednotnou přijímací zkoušku (JPZ).
+**Rozsah katalogu:** 381 záznamů (Praha 227, Středočeský kraj 154), z toho 373 středních škol (`C00`) a 8 konzervatoří (`D00`); 134 záznamů má soukromého zřizovatele. Seznam škol i oborů vychází z exportů MŠMT z 11. 11. 2026. CERMAT a přijímací data zatím nejsou do aplikace zapojeny.
 
 ---
 
 ## 1. Rejstřík škol a školských zařízení (MŠMT) ✅
 
-- **Kde:** Národní katalog otevřených dat, datové sady po krajích.
-  - Praha: `https://lkod-ftp.msmt.gov.cz/00022985/21e5fd4a-5378-4d64-90e9-759b15d01f28/RSSZ-Hl-m-Praha.jsonld`
-  - Středočeský kraj: `https://lkod-ftp.msmt.gov.cz/00022985/3d7ec2fb-4d53-46c4-a80e-542487c989b3/RSSZ-Stredocesky-kraj.jsonld`
-  - Celá ČR plus čtvrtletní snímky (vhodné pro historii) jsou také k dispozici.
-- **Aktualita:** Stažený soubor měl `datumVystupu: 2026-11-11`, tedy dnešní datum.
+- **Kde:** Rejstřík škol MŠMT, export `https://isv.gov.cz/rssz/`.
+- **Použitý snapshot:** `src/data/official-schools.json`, export z 11. 11. 2026; 381 unikátních IZO.
 - **Obsah:**
-  - Právnická osoba: REDIZO, IČO, název, adresa s kódem RÚIAN, typ zřizovatele (veřejná, soukromá, církevní), e-maily, ředitel.
-  - Škola (druh `C00` = střední škola): IZO, celková kapacita, místa výuky s adresou a kódem RÚIAN.
-  - Obor: kód KKOV (např. `18-20-M/01`), název, forma (denní, dálková…), délka, jazyk, kapacita a příznak „dobíhající obor“.
+  - Export katalogu: RED-IZO, IČO, IZO, název, adresa, kód zřizovatele, celková kapacita školy, telefon, e-mail, web a kód RÚIAN, pokud jsou uvedeny.
+  - Typy: `C00` = střední škola (373 záznamů), `D00` = konzervatoř (8 záznamů).
+  - Obory jsou doplněny z regionálních exportů ve formátu JSON-LD: [Praha](https://lkod-ftp.msmt.gov.cz/00022985/21e5fd4a-5378-4d64-90e9-759b15d01f28/RSSZ-Hl-m-Praha.jsonld) a [Středočeský kraj](https://lkod-ftp.msmt.gov.cz/00022985/3d7ec2fb-4d53-46c4-a80e-542487c989b3/RSSZ-Stredocesky-kraj.jsonld).
+  - 227 pražských škol má 867 evidovaných záznamů oborů; 154 škol ve Středočeském kraji má 752. Celkem jde o 1 619 záznamů oborů, z toho 1 543 aktuálně evidovaných a 76 označených jako dobíhající. Stejný obor v jiné formě studia je samostatný záznam.
+  - Propojení je provedeno přes IZO (381 unikátních IZO, bez duplicit a bez nepřiřazených škol). Zachovává se kód a název oboru, kódy formy, délky a jazyka vzdělávání, kapacita s kódem jednotky a příznak dobíhajícího oboru.
+  - Katalog a test zobrazují názvy a kódy. Osm otázek testu nabízí 12 tematických oblastí: digitální technologie, technika a doprava, matematika a přírodní vědy, zvířata a životní prostředí, zdravotnictví, bezpečnost a IZS, umění a média, obchod a podnikání, gastronomii a cestovní ruch, pedagogiku a sociální oblast, řemesla a všeobecné vzdělání. Vybraná témata se mapují na konkrétní obory podle skupin KKOV a u lyceí také podle kódu a zaměření; výsledky pak vypíší šest nejvýše hodnocených škol. Gymnázia (skupina 79) jsou oddělena jako všeobecné vzdělání a doporučí se jen při výběru všeobecného zaměření. Jde o orientační tematickou pomůcku, nikoli validovaný psychologický test, odhad přijetí ani hodnocení kvality školy.
+  - Před testem lze zadat přesnou adresu a vybrat našeptaný výsledek, zvolit bydliště z nabídky, použít polohu zařízení se souhlasem prohlížeče nebo rozbalit mapu a kliknutím označit místo. Našeptávání využívá veřejný demo server Photon nad daty OpenStreetMap; dotaz se odesílá až po zadání alespoň 4 znaků s prodlevou, výsledky jsou omezeny na Česko a oblast Prahy a Středočeského kraje. Aplikace zadaný text neukládá. Veřejný demo server nemá zaručenou dostupnost a nadměrné používání může být omezeno; pokrytí konkrétních adres závisí na datech OpenStreetMap. Po vyhodnocení mapa zobrazí bydliště a všechny školy odpovídající zájmům i nastavenému limitu vzdálenosti, nejen šest škol vypsaných na stránce. Při stejné shodě doporučených oborů se bližší škola řadí výše. Výpočet vzdušné vzdálenosti probíhá v prohlížeči a zvolené souřadnice se neukládají. Mapové dlaždice poskytuje OpenStreetMap.
+  - Stránka `/obory/` zobrazuje 228 unikátních kombinací názvu a kódu. Katalog lze filtrovat podle názvu nebo kódu, kraje a aktuálnosti záznamu; výběr oboru zobrazí všechny odpovídající školy a jejich souřadnice na mapě. Dobíhající záznamy jsou dostupné také samostatně, protože jejich přítomnost v rejstříku sama o sobě nepotvrzuje otevření oboru v přijímacím řízení.
+  - Zápis oboru v registru nepotvrzuje jeho otevření v konkrétním přijímacím řízení. Přijímací nabídku je nutné ověřit přímo u školy. Tato data neobsahují výsledky přijímaček ani kapacitu prvního ročníku.
+- **Poloha:** souřadnice pro 378 adresních míst jsou doplněny z RÚIAN/ČÚZK; pro 3 záznamy se nepodařilo bod dohledat. Vzdálenost v aplikaci je vzdušnou čarou, nikoli doba nebo trasa dojezdu.
 - **Pozor:** Kapacita v rejstříku je **maximální počet žáků ve všech ročnících**, ne počet míst pro nové žáky. Ten je v datech CERMATu.
 - **Podmínky užití:** Uvést MŠMT jako zdroj. MŠMT nezaručuje správnost dat.
 

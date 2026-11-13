@@ -1,8 +1,8 @@
 export const siteConfig = {
   name: "Vyber střední",
   description:
-    "Najdi střední školu, která ti sedí. Test zájmů, obory a školy v Praze a Středočeském kraji s ověřenými daty o přijímačkách, obsazenosti a dojezdu.",
-  url: "https://vyberstredni.ukazka.workers.dev/",
+    "Najdi střední školu, která ti sedí. Prohlédni si oficiální katalog škol a konzervatoří v Praze a Středočeském kraji, včetně soukromých škol.",
+  url: "https://georgeduckling.com/vyberstredni/",
   lang: "cs",
   locale: "cs_CZ",
   author: "Kafe studio",
@@ -15,5 +15,15 @@ export const siteConfig = {
     instagram: "",
     facebook: "",
   },
-  navLinks: [{ text: "Domů", href: "/" }],
+  navLinks: [
+    { text: "Domů", href: "/" },
+    { text: "Test zájmů", href: "/test/" },
+    { text: "Školy", href: "/skoly/" },
+    { text: "Obory", href: "/obory/" },
+    { text: "Oblíbené", href: "/oblibene/" },
+    { text: "Admin", href: "/admin/" },
+    { text: "Vhodné školy", href: "/#schools" },
+    { text: "Jak to funguje", href: "/#how-it-works" },
+    { text: "Kontakt", href: "/#contact" },
+  ],
 };

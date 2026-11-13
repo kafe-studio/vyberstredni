@@ -1,0 +1,203 @@
+---
+export const prerender = true;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../config/site";
+import { withBase } from "../lib/urls";
+import { schools } from "../data/schools";
+
+const favoriteSchools = schools.map(({ id, name, region, type, focus, address, founder, izo, capacity }) => ({
+  id, name, region, type, focus, address, founder, izo, capacity,
+}));
+
+const metadata = {
+  title: "Oblíbené školy | " + siteConfig.name,
+  description: "Spravujte si svůj shortlist škol a porovnávejte jen ty nejvhodnější možnosti.",
+};
+---
+
+<BaseLayout {metadata}>
+  <section class="px-6 py-24">
+    <div class="mx-auto max-w-6xl">
+      <div class="mb-10 text-center reveal">
+        <p class="text-sm font-semibold uppercase tracking-[0.22em] text-muted-foreground">Oblíbené</p>
+        <h1 class="mt-4 text-4xl font-black md:text-5xl">Můj shortlist škol</h1>
+        <p class="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
+          Ulož si školy, které se ti líbí, a porovnávej je snadno před rozhodnutím.
+        </p>
+      </div>
+
+      <div class="mb-6 flex items-center justify-between gap-4 reveal">
+        <a href={withBase("/skoly/")} class="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">← Zpět na seznam škol</a>
+        <p class="text-sm text-muted-foreground">Počet oblíbených: <span id="favorite-total">0</span></p>
+      </div>
+
+      <div id="favorite-summary" class="mb-8 hidden rounded-[2rem] border border-border bg-card p-6 reveal">
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Souhrn shortlistu</p>
+        <div class="mt-4 grid gap-4 md:grid-cols-3">
+          <div class="rounded-2xl border border-border bg-background/40 p-4">
+            <p class="text-sm text-muted-foreground">Školy v shortlistu</p>
+            <p id="shortlist-count" class="mt-2 text-xl font-bold text-foreground">0</p>
+          </div>
+          <div class="rounded-2xl border border-border bg-background/40 p-4">
+            <p class="text-sm text-muted-foreground">Nejčastější orientační oblast</p>
+            <p id="best-focus" class="mt-2 text-xl font-bold text-foreground">—</p>
+          </div>
+          <div class="rounded-2xl border border-border bg-background/40 p-4">
+            <p class="text-sm text-muted-foreground">Rozložení regionů</p>
+            <p id="region-mix" class="mt-2 text-xl font-bold text-foreground">—</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="favorite-empty" class="hidden rounded-[2rem] border border-dashed border-border bg-card p-8 text-center reveal">
+        <p class="text-lg font-semibold text-foreground">Zatím nemáš žádné oblíbené školy.</p>
+        <p class="mt-2 text-sm text-muted-foreground">Klikni na „Oblíbené“ u škol v katalogu nebo na detailu školy a vytvoř si shortlist.</p>
+      </div>
+
+      <div id="favorite-grid" class="grid gap-6 md:grid-cols-2 xl:grid-cols-3"></div>
+    </div>
+  </section>
+
+  <div id="school-data" data-schools={JSON.stringify(favoriteSchools)} hidden></div>
+  <script>
+    import { withBase } from "../lib/urls";
+
+    document.addEventListener("astro:page-load", () => {
+    type FavoriteSchool = {
+      id: string;
+      name: string;
+      region: string;
+      type: string;
+      focus: string;
+      address: string;
+      founder: string;
+      izo: string;
+      capacity: string;
+    };
+
+    const FAVORITES_KEY = "vyberstredni-favorites";
+    const schoolPayload = document.getElementById("school-data");
+    const schoolData: FavoriteSchool[] = schoolPayload?.dataset.schools ? JSON.parse(schoolPayload.dataset.schools) : [];
+    const favoriteGrid = document.getElementById("favorite-grid");
+    const emptyState = document.getElementById("favorite-empty");
+    const favoriteTotal = document.getElementById("favorite-total");
+    const favoriteSummary = document.getElementById("favorite-summary");
+    const shortlistCount = document.getElementById("shortlist-count");
+    const bestFocusEl = document.getElementById("best-focus");
+    const regionMixEl = document.getElementById("region-mix");
+
+    const escapeHtml = (value: string) =>
+      value.replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character] ?? character);
+
+    const getFavorites = (): string[] => {
+      try {
+        const raw = localStorage.getItem(FAVORITES_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    };
+
+    const setFavoriteTotal = (count: number) => {
+      if (favoriteTotal) {
+        favoriteTotal.textContent = String(count);
+      }
+    };
+
+    const renderFavorites = () => {
+      const favorites = getFavorites();
+      const items: FavoriteSchool[] = schoolData.filter((school: FavoriteSchool) => favorites.includes(school.id));
+
+      setFavoriteTotal(items.length);
+
+      if (favoriteSummary && bestFocusEl && regionMixEl) {
+        if (items.length === 0) {
+          favoriteSummary.classList.add("hidden");
+        } else {
+          favoriteSummary.classList.remove("hidden");
+
+          const focusMap = new Map<string, number>();
+          items.forEach((school: FavoriteSchool) => {
+            focusMap.set(school.focus, (focusMap.get(school.focus) ?? 0) + 1);
+          });
+          const bestFocus = [...focusMap.entries()].sort((a, b) => b[1] - a[1])[0];
+          const regionMap = new Map<string, number>();
+          items.forEach((school: FavoriteSchool) => {
+            regionMap.set(school.region, (regionMap.get(school.region) ?? 0) + 1);
+          });
+          if (shortlistCount) shortlistCount.textContent = String(items.length);
+          bestFocusEl.textContent = bestFocus ? bestFocus[0] : "—";
+          regionMixEl.textContent = [...regionMap.entries()].map(([region, count]) => `${region} (${count})`).join(", ") || "—";
+        }
+      }
+
+      if (!favoriteGrid || !emptyState) return;
+
+      if (items.length === 0) {
+        favoriteGrid.innerHTML = "";
+        emptyState.classList.remove("hidden");
+        return;
+      }
+
+      emptyState.classList.add("hidden");
+      if (shortlistCount) shortlistCount.textContent = String(items.length);
+      favoriteGrid.innerHTML = items
+        .map(
+          (school: FavoriteSchool) => `
+            <article class="school-card reveal flex h-full flex-col p-6">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">${escapeHtml(school.type)}</p>
+                  <h2 class="mt-2 text-xl font-semibold">${escapeHtml(school.name)}</h2>
+                </div>
+                <span class="rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">${escapeHtml(school.region)}</span>
+              </div>
+
+              <p class="mt-4 flex-1 text-sm leading-6 text-muted-foreground">${escapeHtml(school.address)}</p>
+
+              <div class="mt-5 flex flex-wrap gap-2">
+                <span class="rounded-full border border-border bg-background/40 px-2.5 py-1 text-[11px] text-muted-foreground">${escapeHtml(school.founder)}</span>
+                <span class="rounded-full border border-border bg-background/40 px-2.5 py-1 text-[11px] text-muted-foreground">IZO ${escapeHtml(school.izo)}</span>
+              </div>
+
+              <div class="mt-6 space-y-3 border-t border-border pt-4 text-sm">
+                <div><span class="font-semibold text-foreground">Orientační oblast:</span> <span class="ml-2 text-muted-foreground">${escapeHtml(school.focus)}</span></div>
+                <div><span class="font-semibold text-foreground">Kapacita školy:</span> <span class="ml-2 text-muted-foreground">${escapeHtml(school.capacity)}</span></div>
+              </div>
+
+              <div class="mt-6 flex items-center justify-between gap-3 border-t border-border pt-4">
+                <button type="button" data-remove-school="${escapeHtml(school.id)}" class="inline-flex items-center gap-2 rounded-full border border-border bg-background/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-primary/50 hover:text-primary">
+                  <span>Odebrat</span>
+                </button>
+                <a href="${withBase(`/skoly/${encodeURIComponent(school.id)}/`)}" class="btn-outline">Detail</a>
+              </div>
+            </article>
+          `
+        )
+        .join("");
+    };
+
+    favoriteGrid?.addEventListener("click", (event) => {
+      const target = event.target;
+      const removeButton = target instanceof HTMLElement ? target.closest("[data-remove-school]") : null;
+      if (!removeButton) return;
+
+      const schoolId = removeButton.getAttribute("data-remove-school");
+      if (!schoolId) return;
+
+      const favorites = getFavorites().filter((id: string) => id !== schoolId);
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+      renderFavorites();
+    });
+
+    renderFavorites();
+    });
+  </script>
+</BaseLayout>

@@ -2,6 +2,7 @@
 export const prerender = true;
 import { getCollection, render } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { withBase } from "../../lib/urls";
 
 export async function getStaticPaths() {
   const posts = await getCollection("blog");
@@ -31,7 +32,7 @@ const metadata = { title, description };
         <Content />
       </div>
       <div class="mt-12 pt-8 border-t border-border">
-        <a href="/blog/" class="btn-outline py-2 px-6 text-sm">Zpet na blog</a>
+        <a href={withBase("/blog/")} class="btn-outline py-2 px-6 text-sm">Zpet na blog</a>
       </div>
     </div>
   </article>
