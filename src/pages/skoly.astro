@@ -7,206 +7,153 @@ import { schoolSnapshotDate, schoolSource, schools, schoolsByName, uniqueSchoolP
 
 /** Cards rendered into the HTML; the rest is rendered on demand from /data/*.json. */
 const PAGE_SIZE = 24;
+const PROGRAMS_ON_CARD = 3;
 
-const privateCount = schools.filter((school) => school.founderCode === "5").length;
-const pragueCount = schools.filter((school) => school.region === "Praha").length;
-const centralBohemiaCount = schools.length - pragueCount;
-const programRecordCount = schools.reduce((count, school) => count + school.programs.length, 0);
-const currentPrograms = (school: (typeof schools)[number]) =>
-  uniqueSchoolPrograms(school.programs.filter((program) => !program.isPhasingOut));
-const initialSchools = schoolsByName.slice(0, PAGE_SIZE);
+const founderBadge = (founderCode: string) =>
+  founderCode === "5" ? "soukromá" : founderCode === "6" ? "církevní" : "";
+
+/** Current program names without duplicates (the same name can exist under several codes). */
+const programNames = (school: (typeof schools)[number]) => [
+  ...new Set(uniqueSchoolPrograms(school.programs.filter((program) => !program.isPhasingOut)).map((program) => program.name)),
+];
+
+const initialSchools = schoolsByName.slice(0, PAGE_SIZE).map((school) => ({
+  ...school,
+  badge: founderBadge(school.founderCode),
+  names: programNames(school),
+}));
 
 const metadata = {
   title: "Katalog škol",
-  description: "Oficiální katalog středních škol a konzervatoří v Praze a Středočeském kraji včetně evidovaných studijních oborů.",
+  description: "Střední školy a konzervatoře v Praze a Středočeském kraji. Hledej podle názvu, oboru nebo místa.",
 };
 ---
 
 <BaseLayout {metadata}>
   <section class="px-6 pb-16 pt-28 md:pt-32">
     <div class="mx-auto max-w-6xl">
-      <div class="mb-10 text-center reveal">
-        <p class="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">Oficiální katalog MŠMT</p>
-        <h1 class="mt-4 text-4xl font-black md:text-5xl">Střední školy a konzervatoře</h1>
-        <p class="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
-          {schools.length} aktivních záznamů pro Prahu a Středočeský kraj, včetně soukromých a církevních škol.
+      <header class="mb-8">
+        <h1 class="text-4xl font-black md:text-5xl">Katalog škol</h1>
+        <p class="mt-3 text-lg text-muted-foreground">
+          {schools.length} středních škol a konzervatoří v Praze a Středočeském kraji.
         </p>
-        <p class="mx-auto mt-3 max-w-3xl text-sm text-muted-foreground">
-          Zdroj: <a class="text-primary underline" href={schoolSource} target="_blank" rel="noreferrer">Rejstřík škol MŠMT</a>.
-          Export: {schoolSnapshotDate}. Praha: {pragueCount}, Středočeský kraj: {centralBohemiaCount},
-          soukromé: {privateCount}.
-        </p>
-        <p class="mx-auto mt-2 max-w-3xl text-sm text-muted-foreground">
-          V katalogu je {programRecordCount} záznamů oborů evidovaných u škol podle IZO.
-          Jde o zápis v rejstříku, nikoli potvrzení, že škola obor otevře v nejbližším přijímacím řízení.
-        </p>
-      </div>
+      </header>
 
-      <div class="mb-6 flex items-center justify-between gap-4 reveal">
-        <p class="text-sm text-muted-foreground">Oblíbené školy: <span id="favorites-count">0</span></p>
-        <p class="text-sm text-muted-foreground" aria-live="polite"><span id="school-count">{schools.length}</span> škol odpovídá výběru</p>
-      </div>
-
-      <div class="mb-8 flex flex-wrap gap-3 reveal" data-filter-group>
-        <button type="button" class="filter-pill is-active" data-filter="all">Vše</button>
-        <button type="button" class="filter-pill" data-filter="Praha">Praha</button>
-        <button type="button" class="filter-pill" data-filter="Středočeský kraj">Středočeský kraj</button>
-        <button type="button" class="filter-pill" data-filter="soukromé">Soukromé</button>
-        <button type="button" class="filter-pill" data-filter="církevní">Církevní</button>
-        <button type="button" class="filter-pill" data-filter="veřejné">Veřejné</button>
-        <button type="button" class="filter-pill" data-filter="technologie">Technologie*</button>
-        <button type="button" class="filter-pill" data-filter="design">Umění a design*</button>
-        <button type="button" class="filter-pill" data-filter="ekonomie">Ekonomie*</button>
-        <button type="button" class="filter-pill" data-filter="zdravotnictví">Zdravotnictví*</button>
-        <button type="button" class="filter-pill" data-filter="společnost">Ostatní*</button>
-      </div>
-
-      <div class="mb-4 grid gap-4 md:grid-cols-[1fr_220px] reveal">
+      <div class="mb-6 rounded-[1.5rem] border border-border bg-card p-4 md:p-5">
         <label class="block">
-          <span class="mb-2 block text-sm font-medium text-foreground">Hledat školu nebo obor</span>
-          <input id="school-search" type="search" placeholder="Název školy či oboru, kód oboru, adresa, IZO..." class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground" />
+          <span class="sr-only">Hledat</span>
+          <input
+            id="school-search"
+            type="search"
+            placeholder="🔍 Hledej školu, obor nebo město…"
+            class="w-full rounded-xl border border-border bg-background/40 px-4 py-3 text-lg text-foreground placeholder:text-muted-foreground"
+          />
         </label>
-        <label class="block">
-          <span class="mb-2 block text-sm font-medium text-foreground">Řazení</span>
-          <select id="school-sort" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
-            <option value="name">Název A–Z</option>
-            <option value="region">Region</option>
-            <option value="founder">Zřizovatel</option>
-            <option value="type">Typ školy</option>
-          </select>
-        </label>
-      </div>
-      <p class="mb-8 text-xs text-muted-foreground">
-        * Tematická oblast je pouze orientační zařazení podle názvu školy. Nabízené obory jsou převzaty z regionálního exportu MŠMT a ověřeny podle IZO.
-        Rejstříková kapacita je kapacita celé školy, ne počet míst v prvním ročníku.
-      </p>
-
-      <div class="track-card reveal mb-8 p-6">
-        <div class="mb-5">
-          <p class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Porovnání škol</p>
-          <h2 class="mt-2 text-2xl font-bold">Vyber dvě školy a srovnej jejich údaje v rejstříku</h2>
-        </div>
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="mt-3 grid gap-3 sm:grid-cols-3">
           <label class="block">
-            <span class="mb-2 block text-sm font-medium text-foreground">První škola</span>
-            <select id="school-compare-a" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground" disabled>
-              <option value="">Načítám školy…</option>
+            <span class="mb-1 block text-xs font-medium text-muted-foreground">Kraj</span>
+            <select id="filter-region" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+              <option value="">Praha i Středočeský kraj</option>
+              <option value="Praha">Praha</option>
+              <option value="Středočeský kraj">Středočeský kraj</option>
             </select>
           </label>
           <label class="block">
-            <span class="mb-2 block text-sm font-medium text-foreground">Druhá škola</span>
-            <select id="school-compare-b" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground" disabled>
-              <option value="">Načítám školy…</option>
+            <span class="mb-1 block text-xs font-medium text-muted-foreground">Typ studia</span>
+            <select id="filter-track" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+              <option value="">Všechny</option>
+              <option value="general">Gymnázium</option>
+              <option value="maturita">Odborná škola s maturitou</option>
+              <option value="vyucni">Učební obor (výuční list)</option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="mb-1 block text-xs font-medium text-muted-foreground">Zřizovatel</span>
+            <select id="filter-founder" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+              <option value="">Všechny</option>
+              <option value="public">Veřejné</option>
+              <option value="private">Soukromé</option>
+              <option value="church">Církevní</option>
             </select>
           </label>
         </div>
-        <div id="compare-results" class="mt-6 grid gap-4 md:grid-cols-2"></div>
       </div>
 
-      <p id="catalog-status" class="mb-4 hidden rounded-xl border border-border p-4 text-sm text-muted-foreground" role="status"></p>
+      <div class="mb-4 flex items-center justify-between gap-4 text-sm text-muted-foreground">
+        <p aria-live="polite"><span id="school-count" class="font-semibold text-foreground">{schools.length}</span> škol</p>
+        <button id="reset-filters" type="button" class="font-medium text-primary hover:underline" hidden>Zrušit filtry</button>
+      </div>
 
-      <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3" id="school-grid" data-page-size={PAGE_SIZE}>
+      <p id="catalog-status" class="mb-4 rounded-xl border border-border p-4 text-sm text-muted-foreground" role="status" hidden></p>
+
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" id="school-grid" data-page-size={PAGE_SIZE} data-programs-on-card={PROGRAMS_ON_CARD}>
         {initialSchools.map((school) => (
-          <article class="school-card flex h-full flex-col p-6">
+          <article class="school-card flex flex-col p-5">
             <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{school.officialTypeCode === "D00" ? "Konzervatoř" : "Střední škola"}</p>
-                <h2 class="mt-2 text-xl font-semibold">{school.name}</h2>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <span class="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">{school.region}</span>
+                {school.badge && <span class="rounded-full bg-primary/10 px-2.5 py-1 text-primary">{school.badge}</span>}
               </div>
-              <span class="rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">{school.region}</span>
-            </div>
-            <p class="mt-4 flex-1 text-sm leading-6 text-muted-foreground">{school.address}</p>
-            <div class="mt-4">
-              <p class="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Evidované obory</p>
-              <ul class="mt-2 space-y-1 text-sm text-foreground">
-                {currentPrograms(school).slice(0, 3).map((program) => (
-                  <li>{program.name} <span class="text-xs text-muted-foreground">({program.code})</span></li>
-                ))}
-              </ul>
-              {currentPrograms(school).length > 3 && (
-                <p class="mt-1 text-xs text-muted-foreground">+ {currentPrograms(school).length - 3} dalších oborů</p>
-              )}
-            </div>
-            <div class="mt-4 flex flex-wrap gap-2">
-              <span class="rounded-full border border-border bg-background/40 px-2.5 py-1 text-[11px] text-muted-foreground">{school.founder}</span>
-              <span class="rounded-full border border-border bg-background/40 px-2.5 py-1 text-[11px] text-muted-foreground">IZO {school.izo}</span>
-            </div>
-            <div class="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
-              <button type="button" class="favorite-toggle inline-flex items-center gap-2 rounded-full border border-border bg-background/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-primary/50 hover:text-primary" data-school-id={school.id} aria-pressed="false">
-                <span class="favorite-icon text-sm">♡</span><span>Oblíbené</span>
+              <button type="button" class="favorite-toggle -m-1 p-1 text-xl leading-none text-muted-foreground transition hover:text-primary" data-school-id={school.id} aria-pressed="false" aria-label={`Přidat do oblíbených: ${school.name}`}>
+                <span class="favorite-icon" aria-hidden="true">♡</span>
               </button>
-              <a href={withBase(`/skoly/${school.id}/`)} class="btn-outline">Detail</a>
             </div>
+            <a href={withBase(`/skoly/${school.id}/`)} class="mt-3 text-lg font-semibold leading-snug text-foreground hover:text-primary">{school.name}</a>
+            <p class="mt-1 text-sm text-muted-foreground">{school.address}</p>
+            {school.names.length > 0 && (
+              <p class="mt-3 text-sm text-foreground/80">
+                {school.names.slice(0, PROGRAMS_ON_CARD).join(" · ")}
+                {school.names.length > PROGRAMS_ON_CARD && <span class="text-muted-foreground"> · +{school.names.length - PROGRAMS_ON_CARD}</span>}
+              </p>
+            )}
           </article>
         ))}
       </div>
-      <div id="empty-results" class="hidden rounded-2xl border border-dashed border-border p-8 text-center text-muted-foreground">
-        Žádné školy neodpovídají zadanému hledání.
+      <div id="empty-results" class="rounded-2xl border border-dashed border-border p-8 text-center text-muted-foreground" hidden>
+        Nic jsme nenašli. Zkus jiné slovo nebo zruš filtry.
       </div>
-      <div class="mt-8 flex flex-col items-center gap-2">
-        <p id="shown-count" class="text-sm text-muted-foreground">Zobrazeno {initialSchools.length} z {schools.length} škol</p>
-        <button id="load-more" type="button" class="btn-outline" disabled>Zobrazit další školy</button>
-      </div>
-      <p class="mt-8 rounded-2xl border border-border bg-card p-5 text-sm leading-6 text-muted-foreground">
-        Seznam oborů zachycuje zápis v rejstříku MŠMT k datu exportu; aktuální přijímací řízení, otevření oboru a školné si ověř přímo u školy.
-        Souřadnice na detailu jsou z adresních míst RÚIAN; vzdálenost se počítá vzdušnou čarou.
+      <button id="load-more" type="button" class="btn-outline mt-8 w-full" disabled>Zobrazit další školy</button>
+
+      <p class="mt-10 text-xs leading-5 text-muted-foreground">
+        Zdroj: <a class="underline" href={schoolSource} target="_blank" rel="noreferrer">Rejstřík škol MŠMT</a>, stav k {schoolSnapshotDate}.
+        Obory odpovídají zápisu v rejstříku; jestli škola obor letos otevírá, si ověř na jejím webu.
       </p>
     </div>
   </section>
 
   <script>
     import { withBase } from "../lib/urls";
-    import {
-      escapeHtml,
-      getFavorites,
-      loadSchoolPrograms,
-      loadSchools,
-      toggleFavorite,
-      type CatalogProgram,
-      type SchoolSummary,
-    } from "../lib/school-data";
+    import { escapeHtml, getFavorites, loadSchoolPrograms, loadSchools, toggleFavorite, type SchoolSummary } from "../lib/school-data";
+    import { isNotForNinthGraders, isStudyTrack, matchesTrack, type StudyTrack } from "../lib/interest-test";
 
-    type CatalogSchool = SchoolSummary & { programs: CatalogProgram[]; searchText: string };
+    type CatalogSchool = SchoolSummary & { programNames: string[]; tracks: Set<StudyTrack>; searchText: string };
+
+    const FILTER_TRACKS: StudyTrack[] = ["general", "maturita", "vyucni"];
 
     document.addEventListener("astro:page-load", () => {
       const schoolGrid = document.getElementById("school-grid");
-      if (!schoolGrid || !document.getElementById("school-search")) return;
+      const searchInput = document.getElementById("school-search") as HTMLInputElement | null;
+      if (!schoolGrid || !searchInput) return;
 
       const pageSize = Number(schoolGrid.dataset.pageSize) || 24;
+      const programsOnCard = Number(schoolGrid.dataset.programsOnCard) || 3;
+      const regionSelect = document.getElementById("filter-region") as HTMLSelectElement | null;
+      const trackSelect = document.getElementById("filter-track") as HTMLSelectElement | null;
+      const founderSelect = document.getElementById("filter-founder") as HTMLSelectElement | null;
+      const resetButton = document.getElementById("reset-filters") as HTMLButtonElement | null;
       const schoolCount = document.getElementById("school-count");
-      const shownCount = document.getElementById("shown-count");
       const emptyResults = document.getElementById("empty-results");
       const catalogStatus = document.getElementById("catalog-status");
       const loadMoreButton = document.getElementById("load-more") as HTMLButtonElement | null;
-      const searchInput = document.getElementById("school-search") as HTMLInputElement | null;
-      const sortSelect = document.getElementById("school-sort") as HTMLSelectElement | null;
-      const selectA = document.getElementById("school-compare-a") as HTMLSelectElement | null;
-      const selectB = document.getElementById("school-compare-b") as HTMLSelectElement | null;
-      const compareResults = document.getElementById("compare-results");
-      const favoritesCount = document.getElementById("favorites-count");
 
       let entries: CatalogSchool[] = [];
       let visibleLimit = pageSize;
 
-      const getQuery = () => searchInput?.value.trim().toLocaleLowerCase("cs") ?? "";
-
-      const getCardPrograms = (school: CatalogSchool, query: string) => {
-        const current = school.programs.filter((program) => !program.isPhasingOut);
-        const matching = query
-          ? school.programs.filter((program) => `${program.name} ${program.code}`.toLocaleLowerCase("cs").includes(query))
-          : [];
-        return matching.length ? matching : current;
-      };
-
       const updateFavoriteButtons = () => {
         const favorites = new Set(getFavorites());
-        if (favoritesCount) favoritesCount.textContent = String(favorites.size);
         schoolGrid.querySelectorAll<HTMLButtonElement>(".favorite-toggle").forEach((button) => {
           const active = favorites.has(button.dataset.schoolId ?? "");
-          button.classList.toggle("is-favorite", active);
           button.setAttribute("aria-pressed", String(active));
-          button.classList.toggle("border-primary/50", active);
-          button.classList.toggle("bg-primary/10", active);
           button.classList.toggle("text-primary", active);
           const icon = button.querySelector(".favorite-icon");
           if (icon) icon.textContent = active ? "♥" : "♡";
@@ -214,113 +161,64 @@ const metadata = {
       };
 
       const getFilteredItems = () => {
-        const filter = document.querySelector<HTMLButtonElement>("[data-filter].is-active")?.dataset.filter ?? "all";
-        const query = getQuery();
-        const items = entries.filter((school) => {
-          const matchesFilter =
-            filter === "all" ||
-            school.region === filter ||
-            school.focus === filter ||
-            (filter === "soukromé" && school.founderCode === "5") ||
-            (filter === "církevní" && school.founderCode === "6") ||
-            (filter === "veřejné" && !["5", "6"].includes(school.founderCode));
-          return matchesFilter && school.searchText.includes(query);
-        });
-
-        const mode = sortSelect?.value ?? "name";
-        items.sort((a, b) => {
-          if (mode === "region") return a.region.localeCompare(b.region, "cs") || a.name.localeCompare(b.name, "cs");
-          if (mode === "founder") return a.founder.localeCompare(b.founder, "cs") || a.name.localeCompare(b.name, "cs");
-          if (mode === "type") return a.type.localeCompare(b.type, "cs") || a.name.localeCompare(b.name, "cs");
-          return a.name.localeCompare(b.name, "cs");
-        });
-        return items;
+        const query = searchInput.value.trim().toLocaleLowerCase("cs");
+        const region = regionSelect?.value ?? "";
+        const trackValue = trackSelect?.value ?? "";
+        const track = isStudyTrack(trackValue) ? trackValue : null;
+        const founder = founderSelect?.value ?? "";
+        return entries.filter((school) =>
+          (!region || school.region === region) &&
+          (!track || school.tracks.has(track)) &&
+          (!founder ||
+            (founder === "private" && school.founderCode === "5") ||
+            (founder === "church" && school.founderCode === "6") ||
+            (founder === "public" && !["5", "6"].includes(school.founderCode))) &&
+          school.searchText.includes(query));
       };
 
-      const renderCard = (school: CatalogSchool, query: string) => {
-        const programs = getCardPrograms(school, query);
+      const renderCard = (school: CatalogSchool) => {
+        const badge = school.founderCode === "5" ? "soukromá" : school.founderCode === "6" ? "církevní" : "";
+        const names = school.programNames;
+        const extra = names.length > programsOnCard ? `<span class="text-muted-foreground"> · +${names.length - programsOnCard}</span>` : "";
         return `
-        <article class="school-card flex h-full flex-col p-6">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">${school.officialTypeCode === "D00" ? "Konzervatoř" : "Střední škola"}</p>
-              <h2 class="mt-2 text-xl font-semibold">${escapeHtml(school.name)}</h2>
+          <article class="school-card flex flex-col p-5">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex flex-wrap gap-2 text-xs">
+                <span class="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">${escapeHtml(school.region)}</span>
+                ${badge ? `<span class="rounded-full bg-primary/10 px-2.5 py-1 text-primary">${badge}</span>` : ""}
+              </div>
+              <button type="button" class="favorite-toggle -m-1 p-1 text-xl leading-none text-muted-foreground transition hover:text-primary" data-school-id="${escapeHtml(school.id)}" aria-pressed="false" aria-label="Přidat do oblíbených: ${escapeHtml(school.name)}">
+                <span class="favorite-icon" aria-hidden="true">♡</span>
+              </button>
             </div>
-            <span class="rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">${escapeHtml(school.region)}</span>
-          </div>
-          <p class="mt-4 flex-1 text-sm leading-6 text-muted-foreground">${escapeHtml(school.address)}</p>
-          <div class="mt-4">
-            <p class="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Evidované obory</p>
-            <ul class="mt-2 space-y-1 text-sm text-foreground">
-              ${programs.slice(0, 3).map((program) => `<li>${escapeHtml(program.name)} <span class="text-xs text-muted-foreground">(${escapeHtml(program.code)}${program.isPhasingOut ? " · dobíhající" : ""})</span></li>`).join("")}
-            </ul>
-            ${programs.length > 3 ? `<p class="mt-1 text-xs text-muted-foreground">+ ${programs.length - 3} dalších oborů</p>` : ""}
-          </div>
-          <div class="mt-4 flex flex-wrap gap-2">
-            <span class="rounded-full border border-border bg-background/40 px-2.5 py-1 text-[11px] text-muted-foreground">${escapeHtml(school.founder)}</span>
-            <span class="rounded-full border border-border bg-background/40 px-2.5 py-1 text-[11px] text-muted-foreground">IZO ${escapeHtml(school.izo)}</span>
-          </div>
-          <div class="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
-            <button type="button" class="favorite-toggle inline-flex items-center gap-2 rounded-full border border-border bg-background/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-primary/50 hover:text-primary" data-school-id="${escapeHtml(school.id)}" aria-pressed="false">
-              <span class="favorite-icon text-sm">♡</span><span>Oblíbené</span>
-            </button>
-            <a href="${withBase(`/skoly/${encodeURIComponent(school.id)}/`)}" class="btn-outline">Detail</a>
-          </div>
-        </article>`;
+            <a href="${withBase(`/skoly/${encodeURIComponent(school.id)}/`)}" class="mt-3 text-lg font-semibold leading-snug text-foreground hover:text-primary">${escapeHtml(school.name)}</a>
+            <p class="mt-1 text-sm text-muted-foreground">${escapeHtml(school.address)}</p>
+            ${names.length ? `<p class="mt-3 text-sm text-foreground/80">${names.slice(0, programsOnCard).map(escapeHtml).join(" · ")}${extra}</p>` : ""}
+          </article>`;
       };
 
-      const renderSchoolCards = () => {
+      const render = () => {
         if (!entries.length) return;
         const items = getFilteredItems();
-        const query = getQuery();
         const visible = items.slice(0, visibleLimit);
         if (schoolCount) schoolCount.textContent = String(items.length);
-        if (emptyResults) emptyResults.classList.toggle("hidden", items.length > 0);
-        if (shownCount) shownCount.textContent = items.length ? `Zobrazeno ${visible.length} z ${items.length} škol` : "";
+        if (emptyResults) emptyResults.hidden = items.length > 0;
         if (loadMoreButton) {
-          loadMoreButton.disabled = visible.length >= items.length;
-          loadMoreButton.classList.toggle("hidden", visible.length >= items.length);
+          const remaining = items.length - visible.length;
+          loadMoreButton.hidden = remaining <= 0;
+          loadMoreButton.disabled = remaining <= 0;
+          loadMoreButton.textContent = `Zobrazit další školy (${remaining})`;
         }
-        schoolGrid.innerHTML = visible.map((school) => renderCard(school, query)).join("");
+        if (resetButton) {
+          resetButton.hidden = !searchInput.value && !regionSelect?.value && !trackSelect?.value && !founderSelect?.value;
+        }
+        schoolGrid.innerHTML = visible.map(renderCard).join("");
         updateFavoriteButtons();
       };
 
       const resetAndRender = () => {
         visibleLimit = pageSize;
-        renderSchoolCards();
-      };
-
-      const renderComparison = () => {
-        if (!compareResults || !entries.length) return;
-        compareResults.innerHTML = [selectA?.value, selectB?.value].map((id) => {
-          const school = entries.find((entry) => entry.id === id);
-          if (!school) return "";
-          const rows = [
-            ["Typ v rejstříku", school.officialTypeCode === "D00" ? "Konzervatoř" : "Střední škola"],
-            ["Zřizovatel", school.founder],
-            ["Adresa", school.address],
-            ["IZO", school.izo],
-            ["RED-IZO", school.redIzo],
-            ["IČO", school.ico],
-            ["Kapacita školy", school.capacity || "V rejstříku neuvedena"],
-            ["Telefon", school.phone || "Neuveden"],
-            ["E-mail", school.email || "Neuveden"],
-          ];
-          return `<article class="rounded-2xl border border-border bg-background/40 p-5">
-            <h3 class="text-lg font-semibold">${escapeHtml(school.name)}</h3>
-            <dl class="mt-4 space-y-3 text-sm">${rows.map(([label, value]) => `<div><dt class="font-semibold text-foreground">${escapeHtml(label)}</dt><dd class="text-muted-foreground">${escapeHtml(value)}</dd></div>`).join("")}</dl>
-          </article>`;
-        }).join("");
-      };
-
-      const populateCompareSelects = () => {
-        // schools.json is already sorted by name.
-        [selectA, selectB].forEach((select, selectIndex) => {
-          if (!select) return;
-          select.replaceChildren(...entries.map((school) => new Option(school.name, school.id)));
-          select.selectedIndex = Math.min(selectIndex, entries.length - 1);
-          select.disabled = false;
-        });
+        render();
       };
 
       schoolGrid.addEventListener("click", (event) => {
@@ -331,20 +229,16 @@ const metadata = {
         toggleFavorite(id);
         updateFavoriteButtons();
       });
-      document.querySelectorAll<HTMLButtonElement>("[data-filter]").forEach((button) => {
-        button.addEventListener("click", () => {
-          document.querySelector("[data-filter].is-active")?.classList.remove("is-active");
-          button.classList.add("is-active");
-          resetAndRender();
-        });
+      searchInput.addEventListener("input", resetAndRender);
+      [regionSelect, trackSelect, founderSelect].forEach((select) => select?.addEventListener("change", resetAndRender));
+      resetButton?.addEventListener("click", () => {
+        searchInput.value = "";
+        [regionSelect, trackSelect, founderSelect].forEach((select) => { if (select) select.value = ""; });
+        resetAndRender();
       });
-      searchInput?.addEventListener("input", resetAndRender);
-      sortSelect?.addEventListener("change", resetAndRender);
-      selectA?.addEventListener("change", renderComparison);
-      selectB?.addEventListener("change", renderComparison);
       loadMoreButton?.addEventListener("click", () => {
         visibleLimit += pageSize;
-        renderSchoolCards();
+        render();
       });
 
       updateFavoriteButtons();
@@ -352,25 +246,24 @@ const metadata = {
       Promise.all([loadSchools(), loadSchoolPrograms()])
         .then(([schoolList, programsById]) => {
           entries = schoolList.map((school) => {
-            const programs = programsById[school.id] ?? [];
+            const programs = (programsById[school.id] ?? []).filter((program) => !program.isPhasingOut);
+            const programNames = [...new Set(programs.map((program) => program.name))];
             const searchText = [
-              school.name, school.region, school.type, school.focus, school.founder, school.address,
-              `IZO ${school.izo}`, `RED-IZO ${school.redIzo}`, `IČO ${school.ico}`,
-              school.phone, school.email, school.website,
+              school.name, school.region, school.founder, school.address, school.izo,
               ...programs.flatMap((program) => [program.name, program.code]),
             ].join(" ").toLocaleLowerCase("cs");
-            return { ...school, programs, searchText };
+            // Same rules as the quiz: only programs a 9th grader can apply to count for the study-type filter.
+            const tracks = new Set(FILTER_TRACKS.filter((filterTrack) =>
+              programs.some((program) => !isNotForNinthGraders(program.code) && matchesTrack(program.code, filterTrack))));
+            return { ...school, programNames, tracks, searchText };
           });
-          populateCompareSelects();
-          renderSchoolCards();
-          renderComparison();
+          render();
         })
         .catch(() => {
           if (catalogStatus) {
-            catalogStatus.textContent = "Data katalogu se nepodařilo načíst, filtrování a porovnání proto nefungují. Zkus stránku obnovit.";
-            catalogStatus.classList.remove("hidden");
+            catalogStatus.textContent = "Data katalogu se nepodařilo načíst, hledání a filtry proto nefungují. Zkus stránku obnovit.";
+            catalogStatus.hidden = false;
           }
-          if (loadMoreButton) loadMoreButton.disabled = true;
         });
     });
   </script>

@@ -112,8 +112,7 @@ export const programCategories = (program: CatalogProgram): Category[] => {
       "78-42-M/05": ["science", "nature"],
       "78-42-M/06": ["general", "people"],
     };
-    const mapped = program.code.startsWith("78-62-C") ? ["practical", "people"] as Category[] : lyceum[program.code] ?? ["general"];
-    mapped.forEach((category) => categories.add(category));
+    (lyceum[program.code] ?? ["general"]).forEach((category) => categories.add(category));
   }
 
   if (/-[EH]\//.test(program.code) && codeGroup !== "78") categories.add("practical");
@@ -124,15 +123,16 @@ export const programCategories = (program: CatalogProgram): Category[] => {
  * Level letter in the program code: K = gymnázium, M/L = vocational with maturita,
  * P = conservatory, H/E = apprenticeship.
  */
-const programLevel = (code: string) => /^\d{2}-\d{2}-([A-Z])/.exec(code)?.[1] ?? "";
+export const programLevel = (code: string) => /^\d{2}-\d{2}-([A-Z])/.exec(code)?.[1] ?? "";
 
 /**
  * Programs a 9th grader cannot apply to: follow-up studies for apprenticeship graduates (L/5x)
  * and 8-/6-year gymnázia entered from 5th or 7th grade (K/8x, K/6x).
  */
-const isNotForNinthGraders = (code: string) => /-L\/5\d$/.test(code) || /-K\/[68]\d$/.test(code);
+export const isNotForNinthGraders = (code: string) => /-L\/5\d$/.test(code) || /-K\/[68]\d$/.test(code);
 
-const matchesTrack = (code: string, track: StudyTrack) => {
+/** Shared by the quiz and the catalog filter so both agree on what each study track contains. */
+export const matchesTrack = (code: string, track: StudyTrack) => {
   const level = programLevel(code);
   // C = praktická škola for pupils with special educational needs; not a general recommendation.
   if (level === "C") return false;
@@ -141,6 +141,9 @@ const matchesTrack = (code: string, track: StudyTrack) => {
   if (track === "vyucni") return ["H", "E"].includes(level);
   return true;
 };
+
+/** Bonus for gymnázium programs when the gymnázium track is chosen, so they rank even without a "general" answer. */
+const GYMNASIUM_TRACK_BONUS = 3;
 
 /** Keeps the best-scoring program per name; cards show names only, so names must not repeat. */
 const uniqueByName = <T extends { name: string }>(programs: readonly T[]) => {
@@ -156,6 +159,7 @@ const uniqueByName = <T extends { name: string }>(programs: readonly T[]) => {
 export type HomeLocation = { label: string; latitude: number; longitude: number };
 export type MatchedProgram = CatalogProgram & { score: number };
 export type Recommendation = SchoolSummary & { score: number; distanceKm: number | null; programs: MatchedProgram[] };
+export type RankingResult = { schools: Recommendation[]; withoutLocation: number };
 
 export const rankSchools = (
   schools: readonly SchoolSummary[],
@@ -164,14 +168,17 @@ export const rankSchools = (
   track: StudyTrack,
   home: HomeLocation | null,
   maxDistanceKm: number | null,
-): Recommendation[] =>
-  schools
+): RankingResult => {
+  const matching = schools
     .map((school): Recommendation => {
       const programs = uniqueByName((programsById[school.id] ?? [])
         .filter((program) => !program.isPhasingOut && !isNotForNinthGraders(program.code) && matchesTrack(program.code, track))
         .map((program) => ({
           ...program,
-          score: programCategories(program).reduce((sum, category) => sum + totals[category], 0),
+          score: programCategories(program).reduce(
+            (sum, category) => sum + totals[category] + (track === "general" && category === "general" ? GYMNASIUM_TRACK_BONUS : 0),
+            0,
+          ),
         }))
         .filter((program) => program.score > 0)
         .sort((left, right) => right.score - left.score || left.name.localeCompare(right.name, "cs")));
@@ -180,10 +187,15 @@ export const rankSchools = (
         : null;
       return { ...school, score: programs[0]?.score ?? 0, distanceKm: distance, programs };
     })
-    .filter((school) =>
-      school.programs.length > 0 &&
-      (maxDistanceKm === null || (school.distanceKm !== null && school.distanceKm <= maxDistanceKm)))
+    .filter((school) => school.programs.length > 0);
+
+  // A distance limit cannot be checked for schools without coordinates; report how many were left out.
+  const withoutLocation = maxDistanceKm === null ? 0 : matching.filter((school) => school.distanceKm === null).length;
+  const ranked = matching
+    .filter((school) => maxDistanceKm === null || (school.distanceKm !== null && school.distanceKm <= maxDistanceKm))
     .sort((left, right) =>
       right.score - left.score ||
       (left.distanceKm ?? Number.POSITIVE_INFINITY) - (right.distanceKm ?? Number.POSITIVE_INFINITY) ||
       left.name.localeCompare(right.name, "cs"));
+  return { schools: ranked, withoutLocation };
+};

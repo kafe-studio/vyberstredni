@@ -2,176 +2,147 @@
 export const prerender = true;
 
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { schools, uniqueSchoolPrograms } from "../data/schools";
+import { schoolSnapshotDate, schoolSource, schools, uniqueSchoolPrograms } from "../data/schools";
+import { programLevel } from "../lib/interest-test";
 
-const programGroups = new Map<string, {
-  key: string;
-  code: string;
-  name: string;
-  schoolIds: Set<string>;
-  activeSchoolIds: Set<string>;
-}>();
+/** Plain-language label for the level letter (and gymnázium length) in a program code. */
+const programKind = (code: string) => {
+  const level = programLevel(code);
+  if (level === "K") return `gymnázium ${/\/(\d)/.exec(code)?.[1] ?? "4"}leté`;
+  if (level === "M" || level === "L") return "s maturitou";
+  if (level === "P") return "konzervatoř";
+  if (level === "H" || level === "E") return "výuční list";
+  if (level === "C") return "praktická škola";
+  return "";
+};
 
+const programGroups = new Map<string, { code: string; name: string; schoolIds: Set<string> }>();
 for (const school of schools) {
-  for (const program of uniqueSchoolPrograms(school.programs)) {
+  for (const program of uniqueSchoolPrograms(school.programs.filter((item) => !item.isPhasingOut))) {
     const key = JSON.stringify([program.code, program.name]);
-    const group = programGroups.get(key) ?? {
-      key,
-      code: program.code,
-      name: program.name,
-      schoolIds: new Set<string>(),
-      activeSchoolIds: new Set<string>(),
-    };
+    const group = programGroups.get(key) ?? { code: program.code, name: program.name, schoolIds: new Set<string>() };
     group.schoolIds.add(school.id);
-    if (!program.isPhasingOut) group.activeSchoolIds.add(school.id);
     programGroups.set(key, group);
   }
 }
 
+// Only programs some school currently offers; the rendered list and the JSON payload share this order.
 const programCatalog = [...programGroups.values()]
-  .map((program) => ({
-    key: program.key,
-    code: program.code,
-    name: program.name,
-    schoolIds: [...program.schoolIds],
-    activeSchoolIds: [...program.activeSchoolIds],
-  }))
+  .map((program) => ({ code: program.code, name: program.name, kind: programKind(program.code), schoolIds: [...program.schoolIds] }))
   .sort((left, right) => left.name.localeCompare(right.name, "cs") || left.code.localeCompare(right.code, "cs"));
 
-// Same array (and index) as the rendered buttons, so data-program-index always points at the right program.
-const clientPrograms = programCatalog.map(({ code, name, schoolIds, activeSchoolIds }) => ({ code, name, schoolIds, activeSchoolIds }));
-
 const metadata = {
-  title: "Přehled oborů",
-  description: "Vyhledej evidované studijní obory v Praze a Středočeském kraji a zobraz školy, které je nabízejí, na mapě.",
+  title: "Obory",
+  description: "Najdi studijní obor a podívej se, které školy v Praze a Středočeském kraji ho nabízejí.",
 };
 ---
 
 <BaseLayout {metadata}>
   <section class="px-6 pb-16 pt-28 md:pt-32">
-    <div class="mx-auto max-w-7xl">
-      <header class="mb-10 text-center reveal">
-        <p class="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">Katalog studijních oborů</p>
-        <h1 class="mt-4 text-4xl font-black md:text-5xl">Najdi obor a školy, které ho nabízejí</h1>
-        <p class="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
-          Prohledej všechny {programCatalog.length} evidované kombinace oboru a kódu. Vyber obor a zobraz školy v Praze a Středočeském kraji na mapě.
-        </p>
-        <p class="mx-auto mt-3 max-w-3xl text-sm text-muted-foreground">
-          Data pocházejí z rejstříku MŠMT. Evidence oboru nezaručuje jeho otevření v konkrétním přijímacím řízení.
-        </p>
+    <div class="mx-auto max-w-6xl">
+      <header class="mb-8">
+        <h1 class="text-4xl font-black md:text-5xl">Obory</h1>
+        <p class="mt-3 text-lg text-muted-foreground">Vyber obor a uvidíš, které školy ho nabízejí.</p>
       </header>
 
-      <div id="program-catalog" class="grid gap-6 lg:grid-cols-[minmax(18rem,0.8fr)_minmax(0,1.2fr)]">
-        <section class="rounded-[2rem] border border-border bg-card p-5 reveal" aria-labelledby="program-list-heading">
-          <h2 id="program-list-heading" class="text-xl font-bold">Všechny obory</h2>
-          <label class="mt-4 block">
-            <span class="mb-2 block text-sm font-medium text-foreground">Hledat název nebo kód</span>
-            <input id="program-search" type="search" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground" placeholder="Např. informatika nebo 18-20-M/01" />
+      <div class="grid gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
+        <section class="rounded-[1.5rem] border border-border bg-card p-4" aria-label="Seznam oborů">
+          <label class="block">
+            <span class="sr-only">Hledat obor</span>
+            <input id="program-search" type="search" class="w-full rounded-xl border border-border bg-background/40 px-4 py-3 text-foreground placeholder:text-muted-foreground" placeholder="🔍 Hledej obor, např. kuchař" />
           </label>
-          <label class="mt-3 block">
-            <span class="mb-2 block text-sm font-medium text-foreground">Kraj školy</span>
-            <select id="program-region" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
-              <option value="all">Praha i Středočeský kraj</option>
-              <option value="Praha">Praha</option>
-              <option value="Středočeský kraj">Středočeský kraj</option>
-            </select>
-          </label>
-          <label class="mt-3 flex items-center gap-2 text-sm text-foreground">
-            <input id="current-programs-only" type="checkbox" class="h-4 w-4 accent-primary" />
-            Jen aktuálně evidované nabídky
-          </label>
-          <p id="program-count" class="mt-4 text-sm text-muted-foreground" aria-live="polite"></p>
-          <ul id="program-list" class="mt-3 max-h-[34rem] space-y-2 overflow-y-auto pr-1">
+          <select id="program-region" class="mt-3 w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground" aria-label="Kraj">
+            <option value="">Praha i Středočeský kraj</option>
+            <option value="Praha">Praha</option>
+            <option value="Středočeský kraj">Středočeský kraj</option>
+          </select>
+          <p id="program-count" class="mt-3 text-xs text-muted-foreground" aria-live="polite">{programCatalog.length} oborů</p>
+          <ul id="program-list" class="mt-2 max-h-[32rem] space-y-1 overflow-y-auto pr-1">
             {programCatalog.map((program, index) => (
               <li>
                 <button
                   type="button"
-                  class="program-option w-full rounded-xl border border-border bg-background/40 p-3 text-left transition hover:border-primary/50"
+                  class="program-option flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-muted aria-pressed:bg-primary/15"
                   data-program-index={index}
+                  aria-pressed="false"
+                  title={program.code}
                 >
-                  <span class="block font-medium text-foreground">{program.name}</span>
-                  <span class="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                    <span>{program.code}</span>
-                    <span>{program.activeSchoolIds.length} aktuálních / {program.schoolIds.length} celkem škol</span>
+                  <span>
+                    <span class="block font-medium text-foreground">{program.name}</span>
+                    {program.kind && <span class="text-xs text-muted-foreground">{program.kind}</span>}
                   </span>
-                  {program.activeSchoolIds.length === 0 && (
-                    <span class="mt-2 inline-block rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">Pouze dobíhající záznamy</span>
-                  )}
+                  <span class="program-school-count shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{program.schoolIds.length}</span>
                 </button>
               </li>
             ))}
           </ul>
-          <p id="program-empty" class="hidden rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-            Žádný obor neodpovídá filtru.
+          <p id="program-empty" class="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground" hidden>
+            Žádný obor neodpovídá hledání.
           </p>
         </section>
 
-        <section id="program-selection" class="rounded-[2rem] border border-border bg-card p-5 reveal" aria-labelledby="selected-program-name">
-          <div id="program-placeholder" class="flex min-h-64 items-center justify-center rounded-xl border border-dashed border-border p-6 text-center text-muted-foreground">
-            Vyhledej obor vlevo a vyber ho. Zobrazí se školy, které ho mají zapsaný v rejstříku, a jejich poloha na mapě.
+        <section id="program-selection" class="scroll-mt-24 rounded-[1.5rem] border border-border bg-card p-5 md:p-6">
+          <div id="program-placeholder" class="flex min-h-64 flex-col items-center justify-center gap-2 p-6 text-center text-muted-foreground">
+            <span class="text-4xl" aria-hidden="true">👈</span>
+            Vyber obor ze seznamu.
           </div>
-          <div id="program-results" class="hidden">
-            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Vybraný obor</p>
-            <h2 id="selected-program-name" class="mt-2 text-2xl font-bold"></h2>
-            <p id="selected-program-count" class="mt-2 text-sm text-muted-foreground"></p>
-            <ul id="program-school-list" class="mt-5 grid gap-3 sm:grid-cols-2"></ul>
-            <p id="program-map-status" class="mt-5 text-sm text-muted-foreground" aria-live="polite"></p>
-            <div id="program-map" class="mt-3 h-[26rem] w-full overflow-hidden rounded-xl border border-border"></div>
-            <p class="mt-2 text-xs text-muted-foreground">
-              Mapa používá podklady OpenStreetMap. Zobrazené umístění odpovídá dostupným souřadnicím školy; před přihláškou ověř přesnou adresu místa výuky.
-            </p>
+          <div id="program-results" hidden>
+            <h2 id="selected-program-name" class="text-2xl font-bold" tabindex="-1"></h2>
+            <p id="selected-program-count" class="mt-1 text-muted-foreground"></p>
+            <ul id="program-school-list" class="mt-5 divide-y divide-border rounded-xl border border-border"></ul>
+            <div id="program-map" class="mt-5 h-80 w-full overflow-hidden rounded-xl border border-border"></div>
+            <p id="program-map-status" class="mt-2 text-xs text-muted-foreground" aria-live="polite"></p>
           </div>
         </section>
       </div>
+
+      <p class="mt-10 text-xs leading-5 text-muted-foreground">
+        Zdroj: <a class="underline" href={schoolSource} target="_blank" rel="noreferrer">Rejstřík škol MŠMT</a>, stav k {schoolSnapshotDate}.
+        Obor zapsaný v rejstříku škola nemusí každý rok otevírat, ověř si to na jejím webu. Mapa: © OpenStreetMap.
+      </p>
     </div>
   </section>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <div id="program-data" data-programs={JSON.stringify(clientPrograms)} hidden></div>
+  <div id="program-data" data-programs={JSON.stringify(programCatalog)} hidden></div>
   <script>
     import { withBase } from "../lib/urls";
     import { escapeHtml, loadSchools, type SchoolSummary } from "../lib/school-data";
 
+    type Program = { code: string; name: string; kind: string; schoolIds: string[] };
+    /* eslint-disable no-unused-vars */
+    type LeafletMap = {
+      fitBounds: (...args: [Array<[number, number]>, { padding: [number, number]; maxZoom: number }]) => LeafletMap;
+      invalidateSize(): void;
+    };
+    type Marker = {
+      addTo: (...args: [LeafletMap]) => Marker;
+      bindPopup: (...args: [string]) => Marker;
+      remove(): Marker;
+    };
+    type Leaflet = {
+      map: (...args: [string, { zoomControl: boolean; scrollWheelZoom: boolean }]) => LeafletMap;
+      tileLayer: (...args: [string, { attribution: string; maxZoom: number }]) => { addTo: (...args: [LeafletMap]) => void };
+      marker: (...args: [[number, number]]) => Marker;
+    };
+    /* eslint-enable no-unused-vars */
+    type WindowWithLeaflet = Window & { L?: Leaflet };
+
+    const pluralSchools = (count: number) => count === 1 ? "1 škola" : count > 1 && count < 5 ? `${count} školy` : `${count} škol`;
+    const pluralPrograms = (count: number) => count === 1 ? "1 obor" : count > 1 && count < 5 ? `${count} obory` : `${count} oborů`;
+
     document.addEventListener("astro:page-load", () => {
       const payload = document.getElementById("program-data");
-      if (!payload || !document.getElementById("program-list")) return;
-
-      type Program = {
-        code: string;
-        name: string;
-        schoolIds: string[];
-        activeSchoolIds: string[];
-      };
-      type School = SchoolSummary;
-      /* eslint-disable no-unused-vars */
-      type LeafletMap = {
-        fitBounds: (...args: [Array<[number, number]>, { padding: [number, number]; maxZoom: number }]) => LeafletMap;
-        invalidateSize(): void;
-      };
-      type Marker = {
-        addTo: (...args: [LeafletMap]) => Marker;
-        bindPopup: (...args: [string]) => Marker;
-        remove(): Marker;
-      };
-      type Leaflet = {
-        map: (...args: [string, { zoomControl: boolean; scrollWheelZoom: boolean }]) => LeafletMap;
-        tileLayer: (...args: [string, { attribution: string; maxZoom: number }]) => { addTo: (...args: [LeafletMap]) => void };
-        marker: (...args: [[number, number]]) => Marker;
-      };
-      type WindowWithLeaflet = Window & { L?: Leaflet };
-      /* eslint-enable no-unused-vars */
+      const programList = document.getElementById("program-list");
+      if (!payload || !programList) return;
 
       const programs: Program[] = JSON.parse(payload.dataset.programs ?? "[]");
-      let pendingProgramIndex: number | null = null;
-      let schoolsById = new Map<string, School>();
-      let schoolsLoaded = false;
       const searchInput = document.getElementById("program-search") as HTMLInputElement | null;
       const regionSelect = document.getElementById("program-region") as HTMLSelectElement | null;
-      const currentOnly = document.getElementById("current-programs-only") as HTMLInputElement | null;
-      const programList = document.getElementById("program-list");
       const programCount = document.getElementById("program-count");
       const emptyState = document.getElementById("program-empty");
+      const selection = document.getElementById("program-selection");
       const placeholder = document.getElementById("program-placeholder");
       const results = document.getElementById("program-results");
       const selectedName = document.getElementById("selected-program-name");
@@ -180,161 +151,130 @@ const metadata = {
       const mapStatus = document.getElementById("program-map-status");
       const mapElement = document.getElementById("program-map");
       const leaflet = (window as WindowWithLeaflet).L;
-      let selectedProgramIndex: number | null = null;
+
+      let schoolsById = new Map<string, SchoolSummary>();
+      let schoolsLoaded = false;
+      let selectedIndex: number | null = null;
+      let pendingIndex: number | null = null;
+      let schoolCounts: number[] = programs.map((program) => program.schoolIds.length);
       let map: LeafletMap | null = null;
       let markers: Marker[] = [];
 
-      const getMatchingSchools = (program: Program) => {
-        const availableIds = new Set(currentOnly?.checked ? program.activeSchoolIds : program.schoolIds);
-        return [...availableIds]
+      const schoolsFor = (program: Program) => {
+        const region = regionSelect?.value ?? "";
+        return program.schoolIds
           .map((id) => schoolsById.get(id))
-          .filter((school): school is School =>
-            school !== undefined && (regionSelect?.value === "all" || school.region === regionSelect?.value))
-          .sort((left, right) => left.region.localeCompare(right.region, "cs") || left.name.localeCompare(right.name, "cs"));
+          .filter((school): school is SchoolSummary => school !== undefined && (!region || school.region === region))
+          .sort((left, right) => left.name.localeCompare(right.name, "cs"));
       };
 
-      const renderProgramList = () => {
-        if (!programList || !schoolsLoaded) return;
+      const updateCounts = () => {
+        const region = regionSelect?.value ?? "";
+        schoolCounts = programs.map((program) => region
+          ? program.schoolIds.filter((id) => schoolsById.get(id)?.region === region).length
+          : program.schoolIds.length);
+      };
+
+      const renderList = () => {
         const query = searchInput?.value.trim().toLocaleLowerCase("cs") ?? "";
-        let visibleCount = 0;
-
-        programList.querySelectorAll<HTMLLIElement>("li").forEach((item) => {
-          const button = item.querySelector<HTMLButtonElement>(".program-option");
-          const index = Number(button?.dataset.programIndex);
+        let visible = 0;
+        programList.querySelectorAll<HTMLButtonElement>(".program-option").forEach((button) => {
+          const index = Number(button.dataset.programIndex);
           const program = programs[index];
-          const matchesQuery = Boolean(program) &&
-            `${program.name} ${program.code}`.toLocaleLowerCase("cs").includes(query);
-          const matchesSchools = Boolean(program) && getMatchingSchools(program).length > 0;
-          const visible = matchesQuery && matchesSchools;
-          item.classList.toggle("hidden", !visible);
-          if (visible) visibleCount += 1;
-          button?.classList.toggle("border-primary", index === selectedProgramIndex);
-          button?.classList.toggle("bg-primary/5", index === selectedProgramIndex);
+          const count = schoolCounts[index] ?? 0;
+          const matches = Boolean(program) && count > 0 && `${program.name} ${program.code}`.toLocaleLowerCase("cs").includes(query);
+          const item = button.closest("li");
+          if (item) item.hidden = !matches;
+          const badge = button.querySelector(".program-school-count");
+          if (badge) badge.textContent = String(count);
+          button.setAttribute("aria-pressed", String(index === selectedIndex));
+          if (matches) visible += 1;
         });
-
-        if (programCount) {
-          const label = visibleCount === 1
-            ? "1 obor odpovídá filtru."
-            : visibleCount < 5
-              ? `${visibleCount} obory odpovídají filtru.`
-              : `${visibleCount} oborů odpovídá filtru.`;
-          programCount.textContent = label;
-        }
-        emptyState?.classList.toggle("hidden", visibleCount > 0);
+        if (programCount) programCount.textContent = pluralPrograms(visible);
+        if (emptyState) emptyState.hidden = visible > 0;
       };
 
-      const renderMap = (matchingSchools: School[]) => {
-        if (!map || !leaflet) return;
+      const renderMap = (matching: SchoolSummary[]) => {
+        if (!mapElement || !leaflet) {
+          if (mapStatus) mapStatus.textContent = "Mapu se nepodařilo načíst.";
+          return;
+        }
+        if (!map) {
+          map = leaflet.map("program-map", { zoomControl: true, scrollWheelZoom: false });
+          leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 19,
+          }).addTo(map);
+        }
         markers.forEach((marker) => marker.remove());
         markers = [];
-        const coordinates: Array<[number, number]> = [];
-
-        for (const school of matchingSchools) {
+        const points: Array<[number, number]> = [];
+        for (const school of matching) {
           if (school.latitude === null || school.longitude === null) continue;
           const point: [number, number] = [school.latitude, school.longitude];
-          coordinates.push(point);
-          markers.push(
-            leaflet.marker(point)
-              .bindPopup(`<strong>${escapeHtml(school.name)}</strong><br>${escapeHtml(school.address)}`)
-              .addTo(map),
-          );
+          points.push(point);
+          markers.push(leaflet.marker(point).bindPopup(`<strong>${escapeHtml(school.name)}</strong>`).addTo(map));
         }
-
-        const missingCoordinates = matchingSchools.filter((school) =>
-          school.latitude === null || school.longitude === null);
-        if (mapStatus) {
-          mapStatus.textContent = missingCoordinates.length
-            ? `Na mapě je ${markers.length} z ${matchingSchools.length} škol. Souřadnice nemají: ${missingCoordinates.map((school) => school.name).join("; ")}.`
-            : `Na mapě jsou všechny školy nabízející tento obor (${markers.length}).`;
-        }
-        if (coordinates.length) {
-          map.fitBounds(coordinates, { padding: [24, 24], maxZoom: 12 });
-        }
+        const missing = matching.length - points.length;
+        if (mapStatus) mapStatus.textContent = missing > 0 ? `${pluralSchools(missing)} bez polohy na mapě.` : "";
+        map.invalidateSize();
+        if (points.length) map.fitBounds(points, { padding: [24, 24], maxZoom: 12 });
       };
 
-      const initializeMap = () => {
-        if (map || !mapElement || !leaflet) return;
-        map = leaflet.map("program-map", { zoomControl: true, scrollWheelZoom: true });
-        leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19,
-        }).addTo(map);
-      };
-
-      const selectProgram = (index: number) => {
+      const selectProgram = (index: number, scroll: boolean) => {
         if (!schoolsLoaded) {
-          // Remember the click and apply it once the school data arrives.
-          pendingProgramIndex = index;
+          pendingIndex = index;
           if (programCount) programCount.textContent = "Načítám školy…";
           return;
         }
         const program = programs[index];
         if (!program || !results || !placeholder || !selectedName || !selectedCount || !schoolList) return;
-        selectedProgramIndex = index;
-        const matchingSchools = getMatchingSchools(program);
-        const activeIds = new Set(program.activeSchoolIds);
-        selectedName.textContent = `${program.name} (${program.code})`;
-        const activeCount = matchingSchools.filter((school) => activeIds.has(school.id)).length;
-        const offeringLabel = matchingSchools.length === 1
-          ? "1 škola má"
-          : matchingSchools.length < 5
-            ? `${matchingSchools.length} školy mají`
-            : `${matchingSchools.length} škol má`;
-        const activeLabel = activeCount === 1
-          ? "1 aktuální záznam"
-          : activeCount < 5
-            ? `${activeCount} aktuální záznamy`
-            : `${activeCount} aktuálních záznamů`;
-        selectedCount.textContent = `${offeringLabel} obor uvedený v rejstříku; ${activeLabel}.`;
-        schoolList.innerHTML = matchingSchools.map((school) => `
-          <li class="rounded-xl border border-border bg-background/40 p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">${escapeHtml(school.region)}</p>
-            <a class="mt-1 block font-semibold text-primary hover:underline" href="${withBase(`/skoly/${encodeURIComponent(school.id)}/`)}">${escapeHtml(school.name)}</a>
-            <p class="mt-1 text-sm text-muted-foreground">${escapeHtml(school.address)}</p>
-            <p class="mt-2 text-xs ${activeIds.has(school.id) ? "text-primary" : "text-muted-foreground"}">${activeIds.has(school.id) ? "Aktuálně evidovaný obor" : "Pouze dobíhající záznam"}</p>
-          </li>
-        `).join("");
-        placeholder.classList.add("hidden");
-        results.classList.remove("hidden");
-        initializeMap();
-        renderMap(matchingSchools);
-        window.setTimeout(() => {
-          map?.invalidateSize();
-          renderMap(matchingSchools);
-        }, 0);
-        renderProgramList();
+        selectedIndex = index;
+        const matching = schoolsFor(program);
+        selectedName.textContent = program.name;
+        selectedCount.textContent = `${program.kind ? `${program.kind[0]?.toLocaleUpperCase("cs")}${program.kind.slice(1)} · ` : ""}nabízí ${pluralSchools(matching.length)}`;
+        schoolList.innerHTML = matching.map((school) => `
+          <li>
+            <a class="flex flex-col gap-0.5 px-4 py-3 hover:bg-muted" href="${withBase(`/skoly/${encodeURIComponent(school.id)}/`)}">
+              <span class="font-medium text-foreground">${escapeHtml(school.name)}</span>
+              <span class="text-sm text-muted-foreground">${escapeHtml(school.address)}</span>
+            </a>
+          </li>`).join("");
+        placeholder.hidden = true;
+        results.hidden = false;
+        renderList();
+        window.setTimeout(() => renderMap(matching), 0);
+        // Only move focus/scroll for an explicit pick, not when the region select changes.
+        if (!scroll) return;
+        if (selection && window.matchMedia("(max-width: 1023px)").matches) {
+          selection.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        selectedName.focus({ preventScroll: true });
       };
 
-      programList?.addEventListener("click", (event) => {
+      programList.addEventListener("click", (event) => {
         const target = event.target;
-        if (!(target instanceof Element)) return;
-        const button = target.closest<HTMLButtonElement>(".program-option");
-        if (!button) return;
-        selectProgram(Number(button.dataset.programIndex));
+        const button = target instanceof Element ? target.closest<HTMLButtonElement>(".program-option") : null;
+        if (button) selectProgram(Number(button.dataset.programIndex), true);
       });
-
-      searchInput?.addEventListener("input", renderProgramList);
+      searchInput?.addEventListener("input", renderList);
       regionSelect?.addEventListener("change", () => {
-        renderProgramList();
-        if (selectedProgramIndex !== null) selectProgram(selectedProgramIndex);
-      });
-      currentOnly?.addEventListener("change", () => {
-        renderProgramList();
-        if (selectedProgramIndex !== null) selectProgram(selectedProgramIndex);
+        updateCounts();
+        renderList();
+        if (selectedIndex !== null) selectProgram(selectedIndex, false);
       });
 
-      if (programCount) programCount.textContent = "Načítám školy…";
       loadSchools()
         .then((schools) => {
           schoolsById = new Map(schools.map((school) => [school.id, school]));
           schoolsLoaded = true;
-          renderProgramList();
-          if (pendingProgramIndex !== null) selectProgram(pendingProgramIndex);
+          updateCounts();
+          renderList();
+          if (pendingIndex !== null) selectProgram(pendingIndex, true);
         })
         .catch(() => {
           if (programCount) programCount.textContent = "Seznam škol se nepodařilo načíst. Zkus stránku obnovit.";
         });
-      if (!leaflet && mapStatus) mapStatus.textContent = "Mapu se nepodařilo načíst. Seznam škol zůstává dostupný.";
     });
   </script>
 </BaseLayout>

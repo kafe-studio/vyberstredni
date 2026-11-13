@@ -192,7 +192,7 @@ const totalSteps = questions.length + 1;
                 <option value="">Nezáleží</option>
                 <option value="10">Do 10 km</option>
                 <option value="20">Do 20 km</option>
-                <option value="30" selected>Do 30 km</option>
+                <option value="30">Do 30 km</option>
                 <option value="50">Do 50 km</option>
               </select>
             </label>
@@ -269,6 +269,7 @@ const totalSteps = questions.length + 1;
       let ranked: Recommendation[] = [];
       let shown = 0;
       let advanceTimer: number | null = null;
+      let answersVersion = 0;
       // Bumped on every location change, so a late geolocation answer cannot override a newer choice.
       let locationRequest = 0;
 
@@ -324,6 +325,7 @@ const totalSteps = questions.length + 1;
         if (!option || !step || !questionId || !value) return;
 
         answers.set(questionId, value);
+        answersVersion += 1;
         step.querySelectorAll(".quiz-option").forEach((button) => {
           button.setAttribute("aria-pressed", String(button === option));
         });
@@ -349,7 +351,7 @@ const totalSteps = questions.length + 1;
 
       geolocationButton?.addEventListener("click", () => {
         if (!navigator.geolocation) {
-          setHome(null, "Tento prohlížeč polohu nepodporuje. Vyber místo ze seznamu.");
+          if (homeStatus) homeStatus.textContent = "Tento prohlížeč polohu nepodporuje. Vyber místo ze seznamu.";
           return;
         }
         if (homeStatus) homeStatus.textContent = "Zjišťuji polohu…";
@@ -358,16 +360,25 @@ const totalSteps = questions.length + 1;
         navigator.geolocation.getCurrentPosition(
           ({ coords }) => {
             if (request !== locationRequest) return;
+            if (!isInSupportedRegion(coords.latitude, coords.longitude)) {
+              if (homeStatus) homeStatus.textContent = "Tvoje poloha je mimo Prahu a Středočeský kraj. Vyber místo ze seznamu.";
+              return;
+            }
             if (homeSelect) homeSelect.value = "";
             setHome({ label: "tvoje poloha", latitude: coords.latitude, longitude: coords.longitude }, "✓ Použijeme tvoji aktuální polohu.");
           },
           () => {
-            if (request !== locationRequest) return;
-            setHome(null, "Polohu se nepodařilo zjistit. Vyber místo ze seznamu.");
+            // Keep whatever location was chosen before; only explain what happened.
+            if (request !== locationRequest || !homeStatus) return;
+            homeStatus.textContent = "Polohu se nepodařilo zjistit. Vyber místo ze seznamu.";
           },
           { timeout: 10000, maximumAge: 300000 },
         );
       });
+
+      /** Rough bounding box of Praha and Středočeský kraj. */
+      const isInSupportedRegion = (latitude: number, longitude: number) =>
+        latitude >= 49.45 && latitude <= 50.8 && longitude >= 13.35 && longitude <= 15.6;
 
       const pluralPrograms = (count: number) => count === 1 ? "další obor" : count < 5 ? "další obory" : "dalších oborů";
       const pluralSchools = (count: number) => count === 1 ? "škola" : count > 1 && count < 5 ? "školy" : "škol";
@@ -418,12 +429,19 @@ const totalSteps = questions.length + 1;
         });
         const trackAnswer = answers.get("track") ?? "any";
         const track = isStudyTrack(trackAnswer) ? trackAnswer : "any";
-        if (track === "general") totals.general += 3;
         const maxDistance = home && maxDistanceSelect?.value ? Number(maxDistanceSelect.value) : null;
+        const requestedVersion = answersVersion;
+        let withoutLocation: number;
 
         try {
           const [schools, programsById] = await loadData();
-          ranked = rankSchools(schools, programsById, totals, track, home, maxDistance);
+          if (requestedVersion !== answersVersion || currentStep !== totalSteps - 1 || quiz.hidden) {
+            resetResultsButton();
+            return;
+          }
+          const result = rankSchools(schools, programsById, totals, track, home, maxDistance);
+          ranked = result.schools;
+          withoutLocation = result.withoutLocation;
         } catch {
           if (homeStatus) homeStatus.textContent = "Data škol se nepodařilo načíst. Zkontroluj připojení a zkus to znovu.";
           resetResultsButton();
@@ -444,7 +462,10 @@ const totalSteps = questions.length + 1;
           const order = home
             ? `Seřazeno podle shody, pak podle vzdálenosti od: ${home.label}${maxDistance ? ` (do ${maxDistance} km)` : ""}.`
             : "Seřazeno podle toho, jak obory odpovídají tvým odpovědím.";
-          resultsNote.textContent = `${ranked.length} ${pluralSchools(ranked.length)} s vhodným oborem. ${order}`;
+          const skipped = withoutLocation > 0
+            ? ` ${withoutLocation} ${pluralSchools(withoutLocation)} bez známé polohy jsme v limitu vzdálenosti nemohli započítat.`
+            : "";
+          resultsNote.textContent = `${ranked.length} ${pluralSchools(ranked.length)} s vhodným oborem. ${order}${skipped}`;
         }
         if (recommendationsList) {
           recommendationsList.innerHTML = ranked.length
@@ -475,7 +496,7 @@ const totalSteps = questions.length + 1;
         locationRequest += 1;
         quiz.querySelectorAll(".quiz-option").forEach((button) => button.setAttribute("aria-pressed", "false"));
         if (homeSelect) homeSelect.value = "";
-        if (maxDistanceSelect) maxDistanceSelect.value = "30";
+        if (maxDistanceSelect) maxDistanceSelect.value = "";
         setHome(null, "");
         backToQuiz();
       });
