@@ -2,1090 +2,485 @@
 export const prerender = true;
 
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { schools } from "../data/schools";
 
 const metadata = {
   title: "Test zájmů",
-  description: "Osm otázek pokrývá 12 oblastí zájmu a propojí tvoje odpovědi s konkrétními středoškolskými obory.",
+  description: "Pět krátkých otázek o tom, co tě baví. Na konci uvidíš obory a školy v Praze a Středočeském kraji, které ti sedí.",
 };
 
-const totalSchoolCount = schools.length;
-const questions = [
+type Option = { value: string; label: string; icon: string };
+type Question = { id: string; prompt: string; hint?: string; weight: number; options: Option[] };
+
+/** Option values are interest categories (see src/lib/interest-test.ts), except the study track question. */
+const questions: Question[] = [
   {
-    id: "interests",
-    prompt: "Který obor z nabídky tě nejvíc zajímá?",
+    id: "interest",
+    prompt: "Co tě baví nejvíc?",
+    hint: "Vyber jednu věc, která tě láká nejvíc.",
+    weight: 2,
     options: [
-      { value: "science", label: "Matematika a přírodní vědy (např. Aplikovaná chemie, Přírodovědné lyceum)" },
-      { value: "nature", label: "Zvířata a příroda (např. Veterinářství, Chovatelství, Ekologie a životní prostředí)" },
-      { value: "digital", label: "Programování a počítače (např. Informační technologie)" },
-      { value: "engineering", label: "Stroje a stavby (např. Strojírenství, Elektrotechnika, Stavebnictví)" },
-      { value: "health", label: "Zdravotnictví (např. Praktická sestra, Ošetřovatel)" },
-      { value: "safety", label: "Bezpečnost a IZS (např. Požární ochrana, Bezpečnostně právní činnost)" },
-      { value: "design", label: "Umění a média (např. Multimediální tvorba, Užitá fotografie a média)" },
-      { value: "business", label: "Obchod a podnikání (např. Obchodní akademie, Ekonomika a podnikání)" },
-      { value: "hospitality", label: "Gastronomie a cestovní ruch (např. Hotelnictví, Kuchař - číšník, Cestovní ruch)" },
-      { value: "people", label: "Vzdělávání a sociální práce (např. Pedagogické lyceum, Sociální činnost)" },
-      { value: "practical", label: "Řemesla (např. Truhlář, Instalatér, Mechanik opravář motorových vozidel)" },
-      { value: "general", label: "Všeobecné studium (např. Gymnázium)" },
+      { value: "digital", label: "Počítače a programování", icon: "💻" },
+      { value: "engineering", label: "Technika, stroje a auta", icon: "⚙️" },
+      { value: "nature", label: "Příroda a zvířata", icon: "🌿" },
+      { value: "health", label: "Péče o zdraví lidí", icon: "🩺" },
+      { value: "design", label: "Kreslení, foto a video", icon: "🎨" },
+      { value: "business", label: "Obchod a peníze", icon: "💼" },
+      { value: "hospitality", label: "Vaření a cestování", icon: "🍳" },
+      { value: "people", label: "Práce s dětmi a lidmi", icon: "🤝" },
     ],
   },
   {
-    id: "project",
-    prompt: "Který školní projekt by sis nejraději vybral/a?",
+    id: "subject",
+    prompt: "Který předmět ve škole máš nejradši?",
+    weight: 1,
     options: [
-      { value: "nature", label: "Navrhnout, jak lépe pečovat o zvířata nebo přírodu" },
-      { value: "science", label: "Zkoumat vzorky a zjistit, jak se chovají různé látky" },
-      { value: "engineering", label: "Postavit nebo opravit stroj, zařízení či model budovy" },
-      { value: "safety", label: "Připravit postup pro zásah při požáru nebo nehodě" },
-      { value: "health", label: "Vymyslet, jak pomoci pacientovi nebo pečovat o jeho zdraví" },
-      { value: "business", label: "Rozjet malý podnik a spočítat jeho rozpočet" },
-      { value: "hospitality", label: "Připravit menu, akci nebo plán výletu pro hosty" },
-      { value: "people", label: "Vytvořit program, který pomůže dětem učit se a rozvíjet" },
-      { value: "practical", label: "Vyrobit užitečný předmět vlastníma rukama" },
-      { value: "design", label: "Navrhnout grafiku, video nebo vizuální kampaň" },
+      { value: "science", label: "Matematika, fyzika, chemie", icon: "🧪" },
+      { value: "nature", label: "Přírodopis", icon: "🐞" },
+      { value: "digital", label: "Informatika", icon: "🖱️" },
+      { value: "design", label: "Výtvarka nebo hudebka", icon: "🎵" },
+      { value: "general", label: "Jazyky, dějepis, společenské vědy", icon: "📚" },
+      { value: "practical", label: "Pracovní činnosti a dílny", icon: "🔨" },
+      { value: "sport", label: "Tělocvik a sport", icon: "🏃" },
     ],
   },
   {
     id: "workplace",
-    prompt: "Kde bys chtěl/a nejraději trávit pracovní den?",
+    prompt: "Kde by sis představil/a svou práci?",
+    weight: 1,
     options: [
-      { value: "digital", label: "U počítače, kde tvořím programy nebo spravuji sítě" },
-      { value: "science", label: "V laboratoři, kde zkoumám vzorky a výsledky pokusů" },
-      { value: "engineering", label: "V dílně, na stavbě nebo u dopravní techniky" },
-      { value: "nature", label: "Venku, na farmě, v přírodě nebo u zvířat" },
-      { value: "health", label: "V nemocnici, ordinaci nebo zdravotnickém zařízení" },
-      { value: "safety", label: "V terénu při ochraně lidí a řešení krizových situací" },
-      { value: "design", label: "V ateliéru, redakci nebo grafickém studiu" },
-      { value: "business", label: "Ve firmě, obchodě nebo při organizování projektů" },
-      { value: "hospitality", label: "V kuchyni, hotelu nebo při práci s cestujícími a hosty" },
-      { value: "people", label: "Ve škole, poradně nebo sociální službě" },
-      { value: "practical", label: "V dílně při výrobě, opravách nebo řemeslné práci" },
+      { value: "digital", label: "U počítače", icon: "🖥️" },
+      { value: "engineering", label: "V dílně nebo na stavbě", icon: "🏗️" },
+      { value: "science", label: "V laboratoři", icon: "🔬" },
+      { value: "health", label: "V nemocnici", icon: "🏥" },
+      { value: "design", label: "V ateliéru nebo studiu", icon: "📸" },
+      { value: "business", label: "V kanceláři nebo obchodě", icon: "🏢" },
+      { value: "hospitality", label: "V hotelu nebo restauraci", icon: "🏨" },
+      { value: "safety", label: "U hasičů nebo policie", icon: "🚒" },
+      { value: "people", label: "Ve škole nebo školce", icon: "🏫" },
+      { value: "nature", label: "Venku v přírodě", icon: "🌳" },
     ],
   },
   {
-    id: "problem",
-    prompt: "Jaký problém by tě nejvíc bavilo vyřešit?",
+    id: "activity",
+    prompt: "Co bys dělal/a nejraději?",
+    weight: 1,
     options: [
-      { value: "digital", label: "Jak vytvořit aplikaci, která lidem usnadní práci" },
-      { value: "science", label: "Proč se látka nebo přírodní jev chová určitým způsobem" },
-      { value: "nature", label: "Jak zlepšit podmínky pro zvířata a chránit krajinu" },
-      { value: "engineering", label: "Jak opravit porouchaný stroj nebo navrhnout bezpečnou stavbu" },
-      { value: "safety", label: "Jak rychle a bezpečně pomoci při nehodě nebo požáru" },
-      { value: "health", label: "Jak pečovat o člověka, který je nemocný nebo zraněný" },
-      { value: "business", label: "Jak naplánovat rozpočet, zásobování nebo prodej" },
-      { value: "hospitality", label: "Jak připravit dobré jídlo nebo služby pro hosty" },
-      { value: "people", label: "Jak podpořit člověka, který potřebuje pomoc nebo vedení" },
-      { value: "practical", label: "Jak něco vyrobit, opravit nebo připravit k použití" },
+      { value: "practical", label: "Vyrobit něco vlastníma rukama", icon: "🪚" },
+      { value: "design", label: "Vymyslet, jak něco bude vypadat", icon: "✏️" },
+      { value: "science", label: "Spočítat a vyřešit úlohu", icon: "🧮" },
+      { value: "business", label: "Zorganizovat akci", icon: "📋" },
+      { value: "people", label: "Pomoct někomu, kdo to potřebuje", icon: "💬" },
+      { value: "nature", label: "Postarat se o zvíře", icon: "🐕" },
+      { value: "engineering", label: "Opravit rozbitý stroj", icon: "🔧" },
+      { value: "digital", label: "Naprogramovat hru nebo aplikaci", icon: "🎮" },
     ],
   },
   {
-    id: "activities",
-    prompt: "Která činnost tě dokáže nejvíc vtáhnout?",
+    id: "track",
+    prompt: "Jakou školu chceš?",
+    hint: "Nevadí, když ještě nevíš.",
+    weight: 0,
     options: [
-      { value: "nature", label: "Pozorovat přírodu, pěstovat rostliny nebo pečovat o zvířata" },
-      { value: "science", label: "Počítat, dělat pokusy a hledat vysvětlení" },
-      { value: "design", label: "Kreslit, fotit, tvořit video nebo navrhovat vzhled věcí" },
-      { value: "digital", label: "Zkoušet nové aplikace, programovat nebo skládat techniku" },
-      { value: "hospitality", label: "Vařit, připravovat akce nebo plánovat cestování" },
-      { value: "business", label: "Vymýšlet, jak něco nabídnout lidem a dobře zorganizovat" },
-      { value: "people", label: "Vysvětlovat, učit nebo pomáhat ostatním" },
-      { value: "practical", label: "Pracovat s nástroji, materiálem a něco konkrétního dokončit" },
-      { value: "safety", label: "Trénovat první pomoc a postupy pro krizové situace" },
-    ],
-  },
-  {
-    id: "school-subjects",
-    prompt: "Který okruh předmětů by sis vybral/a jako svůj oblíbený?",
-    options: [
-      { value: "science", label: "Matematika, fyzika, chemie a přírodovědné pokusy" },
-      { value: "nature", label: "Biologie, ekologie a život zvířat" },
-      { value: "engineering", label: "Technika, elektřina, stroje a konstrukce" },
-      { value: "digital", label: "Informatika, programování a digitální tvorba" },
-      { value: "health", label: "Biologie člověka, zdraví a péče o pacienty" },
-      { value: "safety", label: "Bezpečnost, právo a fungování záchranných složek" },
-      { value: "business", label: "Ekonomie, finance, obchod a podnikání" },
-      { value: "design", label: "Výtvarná tvorba, média, hudba a design" },
-      { value: "people", label: "Pedagogika, psychologie a společenská témata" },
-      { value: "hospitality", label: "Cestování, jídlo, hotelnictví a služby hostům" },
-    ],
-  },
-  {
-    id: "impact",
-    prompt: "S čím bys chtěl/a v budoucnu pomáhat nebo něco zlepšit?",
-    options: [
-      { value: "nature", label: "Chrání přírodu, zvířata a udržitelné hospodaření" },
-      { value: "health", label: "Zdraví, léčbu a každodenní péči o lidi" },
-      { value: "safety", label: "Bezpečnost lidí, prevenci a pomoc při mimořádných událostech" },
-      { value: "people", label: "Vzdělávání dětí a podporu lidí v náročné situaci" },
-      { value: "digital", label: "Užitečné digitální nástroje a dostupnost informací" },
-      { value: "engineering", label: "Dopravu, budovy a technická řešení pro okolí" },
-      { value: "business", label: "Fungování firem, obchodů a místních služeb" },
-      { value: "hospitality", label: "Cestovní ruch, kvalitní služby pro návštěvníky a hosty" },
-      { value: "design", label: "Kulturu, média a způsob, jak lidé sdílejí nápady" },
-      { value: "practical", label: "Kvalitní výrobky, opravy a poctivé řemeslo" },
-    ],
-  },
-  {
-    id: "future",
-    prompt: "Když si představíš své budoucí povolání, které zadání tě láká nejvíc?",
-    options: [
-      { value: "science", label: "Zkoumat vzorky, přírodní jevy nebo nové materiály" },
-      { value: "nature", label: "Pracovat se zvířaty, rostlinami nebo ochranou krajiny" },
-      { value: "health", label: "Pečovat o zdraví lidí nebo jim pomáhat v léčbě" },
-      { value: "safety", label: "Být součástí policie, požární ochrany nebo krizové pomoci" },
-      { value: "engineering", label: "Navrhovat, opravovat nebo obsluhovat technická zařízení" },
-      { value: "digital", label: "Programovat, spravovat počítače nebo tvořit digitální služby" },
-      { value: "business", label: "Vést obchod, finance nebo vlastní podnikání" },
-      { value: "hospitality", label: "Vařit, pracovat s hosty nebo organizovat cestovní ruch" },
-      { value: "design", label: "Tvořit grafiku, média, hudbu nebo umělecké projekty" },
-      { value: "people", label: "Učit, vychovávat nebo podporovat lidi a jejich rozvoj" },
-      { value: "practical", label: "Vyrábět, opravovat a každý den vidět konkrétní výsledek práce" },
+      { value: "general", label: "Gymnázium – široký základ, pak vysoká škola", icon: "🎓" },
+      { value: "maturita", label: "Odborná škola s maturitou", icon: "📘" },
+      { value: "vyucni", label: "Učební obor s výučním listem", icon: "🛠️" },
+      { value: "any", label: "Ještě nevím", icon: "🤔" },
     ],
   },
 ];
 
+const towns = [
+  {
+    group: "Praha",
+    items: [
+      { id: "praha-centrum", label: "Praha – centrum", latitude: 50.0833, longitude: 14.4254 },
+      { id: "praha-sever", label: "Praha – sever (Kobylisy, Prosek)", latitude: 50.1197, longitude: 14.4718 },
+      { id: "praha-vychod", label: "Praha – východ (Černý Most, Hostivař)", latitude: 50.0866, longitude: 14.5481 },
+      { id: "praha-jih", label: "Praha – jih (Chodov, Jižní Město)", latitude: 50.0313, longitude: 14.5003 },
+      { id: "praha-zapad", label: "Praha – západ (Stodůlky, Smíchov)", latitude: 50.0491, longitude: 14.3524 },
+      { id: "praha-dejvice", label: "Praha – Dejvice, Břevnov", latitude: 50.1003, longitude: 14.3907 },
+    ],
+  },
+  {
+    group: "Středočeský kraj",
+    items: [
+      { id: "benesov", label: "Benešov", latitude: 49.7816, longitude: 14.687 },
+      { id: "beroun", label: "Beroun", latitude: 49.9638, longitude: 14.072 },
+      { id: "brandys", label: "Brandýs nad Labem", latitude: 50.1872, longitude: 14.6633 },
+      { id: "kladno", label: "Kladno", latitude: 50.1474, longitude: 14.1028 },
+      { id: "kolin", label: "Kolín", latitude: 50.0281, longitude: 15.2006 },
+      { id: "kutna-hora", label: "Kutná Hora", latitude: 49.9484, longitude: 15.2682 },
+      { id: "melnik", label: "Mělník", latitude: 50.3505, longitude: 14.4741 },
+      { id: "mlada-boleslav", label: "Mladá Boleslav", latitude: 50.4114, longitude: 14.9032 },
+      { id: "nymburk", label: "Nymburk", latitude: 50.1861, longitude: 15.0417 },
+      { id: "pribram", label: "Příbram", latitude: 49.6899, longitude: 14.0104 },
+      { id: "rakovnik", label: "Rakovník", latitude: 50.1037, longitude: 13.7334 },
+      { id: "ricany", label: "Říčany", latitude: 49.9917, longitude: 14.6543 },
+      { id: "slany", label: "Slaný", latitude: 50.2305, longitude: 14.0869 },
+    ],
+  },
+];
+
+const totalSteps = questions.length + 1;
 ---
 
 <BaseLayout {metadata}>
-  <section class="px-6 py-24">
-    <div class="mx-auto max-w-5xl">
-      <div class="mb-10 text-center reveal">
+  <section class="px-6 pb-20 pt-28 md:pt-32">
+    <div class="mx-auto max-w-2xl">
+      <header class="mb-8 text-center">
         <p class="text-sm font-semibold uppercase tracking-[0.24em] text-muted-foreground">Test zájmů</p>
-        <h1 class="mt-4 text-4xl font-black md:text-5xl">Najdi obory, které odpovídají tvým zájmům</h1>
-        <p class="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-          Osm otázek pokrývá obory od zvířat a přírody přes matematiku a přírodní vědy až po techniku, zdravotnictví, bezpečnost a IZS, umění, podnikání i řemesla.
-        </p>
-        <p class="mx-auto mt-3 max-w-3xl text-sm text-muted-foreground">
-          Každá odpověď se propojuje s konkrétními obory z nabídky škol; doporučení se řadí podle jejich shody se všemi odpověďmi a tvým volitelným zaměřením. Gymnázium se doporučí jen tehdy, když zvolíš všeobecné studium.
-          Nejde o odborně validovaný psychologický test, hodnocení školy ani odhad šance na přijetí.
-        </p>
-      </div>
+        <h1 class="mt-3 text-3xl font-black md:text-4xl">Co ti sedí?</h1>
+        <p class="mt-3 text-muted-foreground">{questions.length} krátkých otázek, zabere to asi 2 minuty.</p>
+      </header>
 
-      <div class="hidden" data-school-count={totalSchoolCount}></div>
-      <div class="mb-8 rounded-[2rem] border border-border bg-card p-6 reveal">
-        <fieldset class="mb-6 border-b border-border pb-6">
-          <legend class="text-lg font-semibold text-foreground">Bydliště: kde bydlíš?</legend>
-          <p class="mt-1 text-sm text-muted-foreground">Začni psát ulici, číslo domu a obec. Adresa se vyhledává v Praze a Středočeském kraji; souřadnice se počítají jen v prohlížeči.</p>
-          <label for="home-address-input" class="mt-4 block text-sm font-medium text-foreground">Přesná adresa</label>
-          <input
-            id="home-address-input"
-            type="search"
-            role="combobox"
-            aria-autocomplete="list"
-            aria-controls="home-address-options"
-            aria-expanded="false"
-            aria-describedby="address-search-help"
-            autocomplete="off"
-            class="mt-2 w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground"
-            placeholder="Např. Cyrila Boudy 2954, Kladno"
-          />
-          <ul id="home-address-options" role="listbox" class="mt-1 hidden max-h-64 overflow-y-auto rounded-xl border border-border bg-card shadow-lg"></ul>
-          <p id="address-search-help" class="mt-2 text-xs text-muted-foreground">
-            Našeptávání využívá <a href="https://photon.komoot.io/" target="_blank" rel="noreferrer" class="underline">Photon</a> nad daty OpenStreetMap. Po zadání alespoň 4 znaků se hledaný text odešle službě Photon; aplikace ho neukládá. <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" class="underline">O zdrojových datech</a>.
-          </p>
-          <div class="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
-            <label>
-              <span class="mb-2 block text-sm font-medium text-foreground">Nebo rychle vyber město</span>
-              <select id="home-location-preset" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
-                <option value="">Vyber město…</option>
-                <option value="praha-karlin">Praha – Karlín</option>
-                <option value="praha-liben">Praha – Libeň</option>
-                <option value="praha-cakovice">Praha – Čakovice</option>
-                <option value="praha-vinohrady">Praha – Vinohrady</option>
-                <option value="kladno">Kladno</option>
-                <option value="slany">Slaný</option>
-                <option value="benesov">Benešov</option>
-                <option value="melnik">Mělník</option>
-                <option value="kolin">Kolín</option>
-              </select>
-            </label>
-            <button id="use-geolocation-btn" type="button" class="btn-outline">Použít moji polohu</button>
-          </div>
-          <p id="home-location-status" class="mt-3 text-sm text-muted-foreground" aria-live="polite">Pro pokračování zvol místo bydliště.</p>
-          <details id="home-map-disclosure" class="mt-4 rounded-xl border border-border p-4">
-            <summary class="cursor-pointer font-medium text-foreground">Zobrazit mapu pro výběr bydliště</summary>
-            <div id="home-map" class="mt-3 h-72 w-full overflow-hidden rounded-xl border border-border"></div>
-            <p id="recommendation-map-status" class="mt-2 text-sm text-muted-foreground" aria-live="polite"></p>
-            <p class="mt-2 text-xs text-muted-foreground">Po vyhodnocení se zde mohou zobrazit také doporučené školy. Souřadnice využíváme jen pro výpočet v prohlížeči. OpenStreetMap načítá mapové dlaždice; podrobnosti najdeš v jeho zásadách ochrany soukromí.</p>
-          </details>
-          <label class="mt-4 block max-w-sm">
-            <span class="mb-2 block text-sm font-medium text-foreground">Největší vzdálenost od bydliště</span>
-            <select id="max-distance" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
-              <option value="">Bez limitu</option>
-              <option value="10">Do 10 km</option>
-              <option value="20">Do 20 km</option>
-              <option value="30">Do 30 km</option>
-              <option value="50">Do 50 km</option>
-              <option value="100">Do 100 km</option>
-            </select>
-          </label>
-        </fieldset>
-
-        <div class="grid gap-4 md:grid-cols-2">
-          <div>
-            <label for="student-profile" class="mb-2 block text-sm font-medium text-foreground">Máš už vybranou oblast zájmu? (nepovinné)</label>
-            <select id="student-profile" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
-              <option value="balanced">Zatím nemám jednu vybranou</option>
-              <option value="digital">Digitální technologie a informatika</option>
-              <option value="engineering">Technika, stroje, doprava a stavby</option>
-              <option value="science">Matematika, chemie a přírodní vědy</option>
-              <option value="nature">Zvířata, zemědělství a životní prostředí</option>
-              <option value="health">Zdravotnictví a péče o zdraví</option>
-              <option value="safety">Bezpečnost, veřejná správa a IZS</option>
-              <option value="design">Umění, média, grafika a design</option>
-              <option value="business">Ekonomie, podnikání a obchod</option>
-              <option value="hospitality">Gastronomie, hotelnictví a cestovní ruch</option>
-              <option value="people">Pedagogika, sociální práce a vzdělávání</option>
-              <option value="practical">Řemesla, výroba a praktické služby</option>
-              <option value="general">Všeobecné studium</option>
-            </select>
-          </div>
-          <div>
-            <label for="priority-profile" class="mb-2 block text-sm font-medium text-foreground">Jaký typ školy preferuješ?</label>
-            <select id="priority-profile" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
-              <option value="fit">Bez preference</option>
-              <option value="private">Soukromou školu</option>
-              <option value="public">Veřejnou školu</option>
-              <option value="conservatory">Konzervatoř</option>
-              <option value="apprenticeship">Učiliště</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="mt-6">
+      <div id="quiz" class="scroll-mt-24 rounded-[2rem] border border-border bg-card p-6 md:p-8" data-question-count={questions.length}>
+        <div class="mb-6">
           <div class="mb-2 flex items-center justify-between text-sm text-muted-foreground">
-            <span>Průběh testu</span>
-            <span id="progress-text">0/{questions.length}</span>
+            <span id="step-label" aria-live="polite">Otázka 1 z {questions.length}</span>
+            <span class="flex gap-4">
+              <button id="back-button" type="button" class="font-medium text-primary hover:underline disabled:invisible" disabled>← Zpět</button>
+              <button id="next-button" type="button" class="font-medium text-primary hover:underline disabled:invisible" disabled>Další →</button>
+            </span>
           </div>
-          <div class="h-2.5 overflow-hidden rounded-full bg-muted">
-            <div id="progress-bar" class="h-full w-0 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-300"></div>
+          <div class="h-2 overflow-hidden rounded-full bg-muted">
+            <div id="progress-bar" class="h-full rounded-full bg-primary transition-all duration-300" style={`width: ${100 / totalSteps}%`}></div>
           </div>
         </div>
-      </div>
 
-      <form id="quiz-form" class="space-y-8" data-question-count={questions.length}>
         {questions.map((question, index) => (
-          <fieldset data-question class="rounded-[2rem] border border-border bg-card p-6 reveal">
-            <legend class="mb-5 block text-lg font-semibold">
-              {index + 1}. {question.prompt}
-            </legend>
-            <div class="grid gap-3 md:grid-cols-2">
+          <section class="quiz-step" data-question={question.id} data-weight={question.weight} hidden={index !== 0}>
+            <h2 class="text-2xl font-bold" tabindex="-1">{question.prompt}</h2>
+            {question.hint && <p class="mt-1 text-sm text-muted-foreground">{question.hint}</p>}
+            <div class="mt-5 grid gap-3 sm:grid-cols-2">
               {question.options.map((option) => (
-                <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background/40 p-4 transition-colors hover:border-primary/50">
-                  <input type="radio" name={question.id} value={option.value} required class="mt-1 h-4 w-4 accent-primary" />
-                  <span class="text-sm text-foreground">{option.label}</span>
-                </label>
+                <button
+                  type="button"
+                  class="quiz-option flex items-center gap-3 rounded-2xl border border-border bg-background/40 p-4 text-left transition hover:border-primary/60 aria-pressed:border-primary aria-pressed:bg-primary/10"
+                  data-value={option.value}
+                  aria-pressed="false"
+                >
+                  <span class="text-2xl" aria-hidden="true">{option.icon}</span>
+                  <span class="font-medium text-foreground">{option.label}</span>
+                </button>
               ))}
             </div>
-          </fieldset>
+          </section>
         ))}
 
-        <div class="pt-4 text-center">
-          <button type="submit" class="btn-primary">Vyhodnotit výsledek</button>
-        </div>
-      </form>
-
-      <div id="results" class="mt-12 hidden rounded-[2rem] border border-border bg-card p-6 md:p-8 reveal">
-        <div class="mb-6 flex items-center justify-between gap-4">
-          <div>
-            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Výsledek</p>
-            <h2 class="mt-2 text-3xl font-bold">Obory, které odpovídají tvým odpovědím</h2>
+        <section class="quiz-step" hidden>
+          <h2 class="text-2xl font-bold" tabindex="-1">Kde bydlíš?</h2>
+          <p class="mt-1 text-sm text-muted-foreground">Nepovinné. Pomůže seřadit školy podle vzdálenosti.</p>
+          <div class="mt-5 space-y-4">
+            <label class="block">
+              <span class="mb-2 block text-sm font-medium">Nejbližší místo</span>
+              <select id="home-select" class="w-full rounded-xl border border-border bg-background/40 px-3 py-3 text-foreground">
+                <option value="">Vyber místo…</option>
+                {towns.map((town) => (
+                  <optgroup label={town.group}>
+                    {town.items.map((item) => (
+                      <option value={item.id} data-latitude={item.latitude} data-longitude={item.longitude}>{item.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </label>
+            <button id="geolocation-button" type="button" class="btn-outline w-full">📍 Použít moji polohu</button>
+            <p id="home-status" class="text-sm text-muted-foreground" aria-live="polite"></p>
+            <label id="distance-field" class="block" hidden>
+              <span class="mb-2 block text-sm font-medium">Jak daleko můžeš dojíždět?</span>
+              <select id="max-distance" class="w-full rounded-xl border border-border bg-background/40 px-3 py-3 text-foreground">
+                <option value="">Nezáleží</option>
+                <option value="10">Do 10 km</option>
+                <option value="20">Do 20 km</option>
+                <option value="30" selected>Do 30 km</option>
+                <option value="50">Do 50 km</option>
+              </select>
+            </label>
           </div>
-          <span id="top-pill" class="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary"></span>
+          <button id="show-results" type="button" class="btn-primary mt-6 w-full">Zobrazit výsledky</button>
+        </section>
+      </div>
+
+      <div id="results" class="scroll-mt-24" hidden>
+        <div class="rounded-[2rem] border border-border bg-card p-6 md:p-8">
+          <p class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Tvůj výsledek</p>
+          <h2 class="mt-2 text-2xl font-bold">Nejvíc tě táhne</h2>
+          <div id="top-interests" class="mt-4 flex flex-wrap gap-2"></div>
+          <p id="results-note" class="mt-4 text-sm text-muted-foreground"></p>
+          <div class="mt-5 flex flex-wrap gap-3">
+            <button id="edit-answers" type="button" class="btn-outline">Upravit odpovědi</button>
+            <button id="restart" type="button" class="btn-outline">Začít znovu</button>
+          </div>
         </div>
 
-        <div id="result-summary" class="mb-8 text-base text-muted-foreground"></div>
-        <button id="show-recommendation-map" type="button" class="btn-outline mb-6 hidden">Zobrazit doporučené školy na mapě</button>
-
-        <div>
-          <h3 class="mb-4 text-xl font-semibold">Doporučené obory a školy</h3>
-          <div id="recommendations" class="grid gap-4 md:grid-cols-2"></div>
-        </div>
+        <h2 class="mb-4 mt-10 text-xl font-bold">Školy, které by ti mohly sednout</h2>
+        <div id="recommendations" class="space-y-4"></div>
+        <button id="more-results" type="button" class="btn-outline mt-6 w-full" hidden>Zobrazit další školy</button>
+        <p class="mt-8 text-xs leading-5 text-muted-foreground">
+          Orientační doporučení podle oborů zapsaných v rejstříku MŠMT, nejde o psychologický test ani odhad šance na přijetí.
+          Vzdálenost je vzdušnou čarou. Otevření oboru a přijímací podmínky si ověř na webu školy.
+        </p>
       </div>
     </div>
   </section>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     import { withBase } from "../lib/urls";
-    import { distanceKm as getDistanceKm, escapeHtml, formatDistance, loadSchoolPrograms, loadSchools } from "../lib/school-data";
+    import { escapeHtml, formatDistance, loadSchoolPrograms, loadSchools } from "../lib/school-data";
+    import {
+      categoryLabels,
+      emptyTotals,
+      isCategory,
+      isStudyTrack,
+      rankSchools,
+      type HomeLocation,
+      type Recommendation,
+    } from "../lib/interest-test";
+
+    const PAGE_SIZE = 6;
+    const ADVANCE_DELAY_MS = 220;
 
     document.addEventListener("astro:page-load", () => {
-    if (!document.getElementById("quiz-form")) return;
-    /* eslint-disable no-unused-vars */
-    type Category = "digital" | "engineering" | "science" | "nature" | "health" | "safety" | "design" | "business" | "hospitality" | "people" | "practical" | "general";
-    type StudentProfile = "balanced" | Category;
-    type PriorityProfile = "fit" | "private" | "public" | "conservatory" | "apprenticeship";
-    type SchoolProgram = { code: string; name: string; isPhasingOut: boolean };
-    type HomeLocation = { label: string; latitude: number; longitude: number };
-    type PhotonFeature = {
-      geometry: { coordinates: [number, number] };
-      properties: {
-        countrycode?: string;
-        state?: string;
-        city?: string;
-        county?: string;
-        district?: string;
-        street?: string;
-        housenumber?: string;
-        postcode?: string;
-        name?: string;
-        type?: string;
+      const quiz = document.getElementById("quiz");
+      const results = document.getElementById("results");
+      if (!quiz || !results) return;
+
+      const steps = [...quiz.querySelectorAll<HTMLElement>(".quiz-step")];
+      const totalSteps = steps.length;
+      const questionCount = Number(quiz.dataset.questionCount) || totalSteps - 1;
+      const stepLabel = document.getElementById("step-label");
+      const progressBar = document.getElementById("progress-bar");
+      const backButton = document.getElementById("back-button") as HTMLButtonElement | null;
+      const nextButton = document.getElementById("next-button") as HTMLButtonElement | null;
+      const homeSelect = document.getElementById("home-select") as HTMLSelectElement | null;
+      const geolocationButton = document.getElementById("geolocation-button") as HTMLButtonElement | null;
+      const homeStatus = document.getElementById("home-status");
+      const distanceField = document.getElementById("distance-field");
+      const maxDistanceSelect = document.getElementById("max-distance") as HTMLSelectElement | null;
+      const showResultsButton = document.getElementById("show-results") as HTMLButtonElement | null;
+      const topInterests = document.getElementById("top-interests");
+      const resultsNote = document.getElementById("results-note");
+      const recommendationsList = document.getElementById("recommendations");
+      const moreButton = document.getElementById("more-results") as HTMLButtonElement | null;
+
+      const answers = new Map<string, string>();
+      let currentStep = 0;
+      let home: HomeLocation | null = null;
+      let ranked: Recommendation[] = [];
+      let shown = 0;
+      let advanceTimer: number | null = null;
+      // Bumped on every location change, so a late geolocation answer cannot override a newer choice.
+      let locationRequest = 0;
+
+      const cancelAdvance = () => {
+        if (advanceTimer !== null) window.clearTimeout(advanceTimer);
+        advanceTimer = null;
       };
-    };
-    type PhotonResponse = { features?: PhotonFeature[] };
-    type LatLng = { lat: number; lng: number };
-    type LeafletMap = {
-      setView: (...args: [[number, number], number]) => LeafletMap;
-      fitBounds: (...args: [Array<[number, number]>, { padding: [number, number]; maxZoom: number }]) => LeafletMap;
-      on: (...args: ["click", (event: { latlng: LatLng }) => void]) => LeafletMap;
-      invalidateSize(): void;
-    };
-    type LeafletMarker = {
-      addTo: (...args: [LeafletMap]) => LeafletMarker;
-      bindPopup: (...args: [string]) => LeafletMarker;
-      remove(): LeafletMarker;
-      setLatLng: (...args: [[number, number]]) => LeafletMarker;
-    };
-    type LeafletApi = {
-      map: (...args: [string, { zoomControl: boolean; scrollWheelZoom: boolean }]) => LeafletMap;
-      tileLayer: (...args: [string, { attribution: string; maxZoom: number }]) => { addTo: (...args: [LeafletMap]) => void };
-      marker: (...args: [[number, number]]) => LeafletMarker;
-    };
-    type WindowWithLeaflet = Window & { L?: LeafletApi };
-    /* eslint-enable no-unused-vars */
-    type SchoolRecord = {
-      id: string;
-      name: string;
-      region: string;
-      type: string;
-      focus: string;
-      address: string;
-      founder: string;
-      founderCode: string;
-      officialTypeCode: string;
-      izo: string;
-      phone: string;
-      latitude: number | null;
-      longitude: number | null;
-      programs: SchoolProgram[];
-    };
-    type RankedProgram = SchoolProgram & { categories: Category[]; score: number };
-    type RankedSchool = SchoolRecord & { score: number; distanceKm: number | null; reasons: string[]; matchedPrograms: RankedProgram[] };
 
-    // Only currently registered programs are relevant for recommendations.
-    // Loads are cached in school-data; a failed load is retried on the next call.
-    const getSchoolData = (): Promise<SchoolRecord[] | null> => Promise.all([loadSchools(), loadSchoolPrograms()])
-      .then(([schools, programsById]) => schools.map((school) => ({
-        ...school,
-        programs: (programsById[school.id] ?? []).filter((program) => !program.isPhasingOut),
-      })))
-      .catch(() => null);
-    void getSchoolData();
+      // Loads are cached in school-data; start downloading while the user answers.
+      const loadData = () => Promise.all([loadSchools(), loadSchoolPrograms()]);
+      void loadData().catch(() => undefined);
 
-    const getFitReasons = (school: SchoolRecord, program: SchoolProgram, priorityValue: PriorityProfile) => {
-      const reasons: string[] = [];
+      const showStep = (index: number, moveFocus = true) => {
+        cancelAdvance();
+        currentStep = Math.max(0, Math.min(index, totalSteps - 1));
+        steps.forEach((step, stepIndex) => { step.hidden = stepIndex !== currentStep; });
+        if (stepLabel) {
+          stepLabel.textContent = currentStep >= questionCount
+            ? "Poslední krok: bydliště"
+            : `Otázka ${currentStep + 1} z ${questionCount}`;
+        }
+        if (progressBar) progressBar.style.width = `${((currentStep + 1) / totalSteps) * 100}%`;
+        if (backButton) backButton.disabled = currentStep === 0;
+        if (nextButton) {
+          const questionId = steps[currentStep]?.dataset.question;
+          nextButton.disabled = !questionId || !answers.has(questionId);
+        }
+        if (!moveFocus) return;
+        steps[currentStep]?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+        // On phones the option list is long; bring the start of the next question back into view.
+        const navbarHeight = document.querySelector("nav")?.getBoundingClientRect().height ?? 0;
+        if (quiz.getBoundingClientRect().top < navbarHeight) quiz.scrollIntoView({ behavior: "smooth", block: "start" });
+      };
 
-      if (priorityValue === "private" && school.founderCode === "5") reasons.push("Soukromý zřizovatel");
-      if (priorityValue === "public" && !["5", "6"].includes(school.founderCode)) reasons.push("Veřejný zřizovatel");
-      if (priorityValue === "conservatory" && school.officialTypeCode === "D00") reasons.push("Konzervatoř");
-      if (priorityValue === "apprenticeship" && /-[EH]\//.test(program.code)) reasons.push("Učební obor");
+      const setHome = (location: HomeLocation | null, message: string) => {
+        home = location;
+        if (homeStatus) homeStatus.textContent = message;
+        if (distanceField) distanceField.hidden = location === null;
+      };
 
-      return reasons.slice(0, 2);
-    };
+      const resetResultsButton = () => {
+        if (!showResultsButton) return;
+        showResultsButton.disabled = false;
+        showResultsButton.textContent = "Zobrazit výsledky";
+      };
 
-    const form = document.getElementById("quiz-form") as HTMLFormElement | null;
-    const results = document.getElementById("results") as HTMLElement | null;
-    const summary = document.getElementById("result-summary") as HTMLElement | null;
-    const recommendations = document.getElementById("recommendations") as HTMLElement | null;
-    const topPill = document.getElementById("top-pill") as HTMLElement | null;
-    const studentProfileSelect = document.getElementById("student-profile") as HTMLSelectElement | null;
-    const priorityProfileSelect = document.getElementById("priority-profile") as HTMLSelectElement | null;
-    const progressText = document.getElementById("progress-text") as HTMLElement | null;
-    const progressBar = document.getElementById("progress-bar") as HTMLElement | null;
-    const homeLocationPreset = document.getElementById("home-location-preset") as HTMLSelectElement | null;
-    const homeAddressInput = document.getElementById("home-address-input") as HTMLInputElement | null;
-    const homeAddressOptions = document.getElementById("home-address-options");
-    const homeLocationStatus = document.getElementById("home-location-status");
-    const geolocationButton = document.getElementById("use-geolocation-btn") as HTMLButtonElement | null;
-    const maxDistanceSelect = document.getElementById("max-distance") as HTMLSelectElement | null;
-    const homeMapDisclosure = document.getElementById("home-map-disclosure") as HTMLDetailsElement | null;
-    const homeMapElement = document.getElementById("home-map");
-    const recommendationMapStatus = document.getElementById("recommendation-map-status");
-    const recommendationMapButton = document.getElementById("show-recommendation-map") as HTMLButtonElement | null;
+      quiz.addEventListener("click", (event) => {
+        const target = event.target;
+        const option = target instanceof Element ? target.closest<HTMLButtonElement>(".quiz-option") : null;
+        const step = option?.closest<HTMLElement>(".quiz-step");
+        const questionId = step?.dataset.question;
+        const value = option?.dataset.value;
+        if (!option || !step || !questionId || !value) return;
 
-    const categoryLabels: Record<Category, string> = {
-      digital: "Digitální technologie a informatika",
-      engineering: "Technika, stroje, doprava a stavby",
-      science: "Matematika, chemie a přírodní vědy",
-      nature: "Zvířata, zemědělství a životní prostředí",
-      health: "Zdravotnictví a péče o zdraví",
-      safety: "Bezpečnost, veřejná správa a IZS",
-      design: "Umění, média, grafika a design",
-      business: "Ekonomie, podnikání a obchod",
-      hospitality: "Gastronomie, hotelnictví a cestovní ruch",
-      people: "Pedagogika, sociální práce a vzdělávání",
-      practical: "Řemesla, výroba a praktické služby",
-      general: "Všeobecné vzdělání",
-    };
-
-    const profileLabels: Record<StudentProfile, string> = {
-      balanced: "zatím nevybranou oblast",
-      digital: "Digitální technologie a informatika",
-      engineering: "Technika, stroje, doprava a stavby",
-      science: "Matematika, chemie a přírodní vědy",
-      nature: "Zvířata, zemědělství a životní prostředí",
-      health: "Zdravotnictví a péče o zdraví",
-      safety: "Bezpečnost, veřejná správa a IZS",
-      design: "Umění, média, grafika a design",
-      business: "Ekonomie, podnikání a obchod",
-      hospitality: "Gastronomie, hotelnictví a cestovní ruch",
-      people: "Pedagogika, sociální práce a vzdělávání",
-      practical: "Řemesla, výroba a praktické služby",
-      general: "všeobecné studium",
-    };
-
-    const profileCategories: Record<StudentProfile, Category | null> = {
-      balanced: null,
-      digital: "digital",
-      engineering: "engineering",
-      science: "science",
-      nature: "nature",
-      health: "health",
-      safety: "safety",
-      design: "design",
-      business: "business",
-      hospitality: "hospitality",
-      people: "people",
-      practical: "practical",
-      general: "general",
-    };
-
-    const homeLocations: Record<string, HomeLocation> = {
-      "praha-karlin": { label: "Praha – Karlín", latitude: 50.0904, longitude: 14.4337 },
-      "praha-liben": { label: "Praha – Libeň", latitude: 50.1064, longitude: 14.4598 },
-      "praha-cakovice": { label: "Praha – Čakovice", latitude: 50.1176, longitude: 14.4977 },
-      "praha-vinohrady": { label: "Praha – Vinohrady", latitude: 50.0766, longitude: 14.4407 },
-      kladno: { label: "Kladno", latitude: 50.1474, longitude: 14.1034 },
-      slany: { label: "Slaný", latitude: 50.2312, longitude: 14.0877 },
-      benesov: { label: "Benešov", latitude: 49.7811, longitude: 14.6907 },
-      melnik: { label: "Mělník", latitude: 50.3502, longitude: 14.4757 },
-      kolin: { label: "Kolín", latitude: 50.0281, longitude: 15.1985 },
-    };
-    let activeHomeLocation: HomeLocation | null = null;
-    let homeMap: LeafletMap | null = null;
-    let homeMarker: LeafletMarker | null = null;
-    let schoolMarkers: LeafletMarker[] = [];
-    let latestRankedSchools: RankedSchool[] = [];
-    let addressSearchTimer: number | null = null;
-    let addressRequest: AbortController | null = null;
-    let addressSuggestions: Array<{ label: string; location: HomeLocation }> = [];
-    let activeAddressSuggestionIndex = -1;
-
-    const closeAddressSuggestions = () => {
-      addressSuggestions = [];
-      activeAddressSuggestionIndex = -1;
-      homeAddressInput?.setAttribute("aria-expanded", "false");
-      homeAddressInput?.removeAttribute("aria-activedescendant");
-      homeAddressOptions?.replaceChildren();
-      homeAddressOptions?.classList.add("hidden");
-    };
-
-    const cancelAddressSearch = () => {
-      if (addressSearchTimer !== null) {
-        window.clearTimeout(addressSearchTimer);
-        addressSearchTimer = null;
-      }
-      addressRequest?.abort();
-      addressRequest = null;
-      closeAddressSuggestions();
-    };
-
-    const formatPhotonAddress = (feature: PhotonFeature) => {
-      const { city, county, district, housenumber, name, postcode, street } = feature.properties;
-      const streetAddress = [street, housenumber].filter(Boolean).join(" ");
-      const localityParts = [postcode, district, city || county]
-        .filter((part): part is string => Boolean(part))
-        .filter((part, index, parts) => parts.findIndex((candidate) =>
-          candidate.toLocaleLowerCase("cs") === part.toLocaleLowerCase("cs")) === index);
-      return [streetAddress || name, localityParts.join(" ")].filter(Boolean).join(", ");
-    };
-
-    const isInSupportedRegion = (feature: PhotonFeature) => {
-      const { city, countrycode, state } = feature.properties;
-      const normalizedCountry = countrycode?.toLocaleLowerCase("cs");
-      const normalizedState = state?.toLocaleLowerCase("cs") ?? "";
-      const normalizedCity = city?.toLocaleLowerCase("cs") ?? "";
-      return normalizedCountry === "cz" &&
-        (normalizedState.includes("středočesk") ||
-          normalizedState.includes("central bohem") ||
-          normalizedState.includes("praha") ||
-          normalizedState.includes("prague") ||
-          normalizedCity === "praha" ||
-          normalizedCity === "prague");
-    };
-
-    const selectAddressSuggestion = (index: number) => {
-      const suggestion = addressSuggestions[index];
-      if (!suggestion) return;
-      if (homeAddressInput) homeAddressInput.value = suggestion.label;
-      if (homeLocationPreset) homeLocationPreset.value = "";
-      cancelAddressSearch();
-      applyHomeLocation(suggestion.location);
-    };
-
-    const renderAddressSuggestions = (suggestions: typeof addressSuggestions) => {
-      if (!homeAddressOptions || !homeAddressInput) return;
-      addressSuggestions = suggestions;
-      activeAddressSuggestionIndex = -1;
-      homeAddressOptions.replaceChildren();
-
-      for (const [index, suggestion] of suggestions.entries()) {
-        const item = document.createElement("li");
-        item.setAttribute("role", "presentation");
-        const option = document.createElement("button");
-        option.id = `home-address-option-${index}`;
-        option.type = "button";
-        option.setAttribute("role", "option");
-        option.setAttribute("aria-selected", "false");
-        option.className = "w-full px-3 py-2 text-left text-sm text-foreground hover:bg-muted focus:bg-muted";
-        option.textContent = suggestion.label;
-        option.addEventListener("click", () => selectAddressSuggestion(index));
-        item.appendChild(option);
-        homeAddressOptions.appendChild(item);
-      }
-
-      homeAddressInput.setAttribute("aria-expanded", String(suggestions.length > 0));
-      homeAddressOptions.classList.toggle("hidden", suggestions.length === 0);
-    };
-
-    const searchAddresses = async (query: string, signal: AbortSignal) => {
-      const parameters = new URLSearchParams({
-        q: query,
-        limit: "10",
-        countrycode: "cz",
-        bbox: "12.0,49.2,15.7,50.9",
+        answers.set(questionId, value);
+        step.querySelectorAll(".quiz-option").forEach((button) => {
+          button.setAttribute("aria-pressed", String(button === option));
+        });
+        cancelAdvance();
+        const nextStep = currentStep + 1;
+        advanceTimer = window.setTimeout(() => showStep(nextStep), ADVANCE_DELAY_MS);
       });
-      const response = await fetch(`https://photon.komoot.io/api/?${parameters.toString()}`, { signal });
-      if (!response.ok) {
-        throw new Error(`Vyhledávání adres skončilo chybou HTTP ${response.status}.`);
-      }
 
-      const data = await response.json() as PhotonResponse;
-      return (data.features ?? [])
-        .filter((feature) =>
-          feature.properties.type === "house" &&
-          Boolean(feature.properties.housenumber) &&
-          Boolean(feature.properties.street) &&
-          isInSupportedRegion(feature))
-        .map((feature) => {
-          const [longitude, latitude] = feature.geometry.coordinates;
-          return {
-            label: formatPhotonAddress(feature),
-            location: {
-              label: formatPhotonAddress(feature),
-              latitude,
-              longitude,
-            },
-          };
-        })
-        .filter((suggestion) =>
-          suggestion.label.length > 0 &&
-          Number.isFinite(suggestion.location.latitude) &&
-          Number.isFinite(suggestion.location.longitude));
-    };
+      backButton?.addEventListener("click", () => showStep(currentStep - 1));
+      nextButton?.addEventListener("click", () => showStep(currentStep + 1));
 
-    const applyHomeLocation = (location: HomeLocation) => {
-      activeHomeLocation = location;
-      if (homeLocationStatus) {
-        homeLocationStatus.textContent = `Zvolené bydliště: ${location.label}. Vzdálenost se počítá vzdušnou čarou.`;
-      }
-      if (homeMap && homeMarker) {
-        homeMarker.setLatLng([location.latitude, location.longitude]);
-        homeMap.setView([location.latitude, location.longitude], 10);
-      } else if (homeMap) {
-        const leaflet = (window as WindowWithLeaflet).L;
-        if (leaflet) homeMarker = leaflet.marker([location.latitude, location.longitude]).bindPopup("Zvolené bydliště").addTo(homeMap);
-      }
-    };
+      homeSelect?.addEventListener("change", () => {
+        locationRequest += 1;
+        const option = homeSelect.selectedOptions[0];
+        const latitude = Number(option?.dataset.latitude);
+        const longitude = Number(option?.dataset.longitude);
+        if (!option?.value || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+          setHome(null, "");
+          return;
+        }
+        setHome({ label: option.textContent ?? "", latitude, longitude }, "");
+      });
 
-    const leaflet = (window as WindowWithLeaflet).L;
-    const renderRecommendationMarkers = (rankedSchools: RankedSchool[]) => {
-      if (!homeMap || !leaflet || !activeHomeLocation) return;
-
-      schoolMarkers.forEach((marker) => marker.remove());
-      schoolMarkers = [];
-      const bounds: Array<[number, number]> = [[activeHomeLocation.latitude, activeHomeLocation.longitude]];
-
-      for (const school of rankedSchools) {
-        if (school.latitude === null || school.longitude === null) continue;
-
-        const coordinates: [number, number] = [school.latitude, school.longitude];
-        bounds.push(coordinates);
-        schoolMarkers.push(
-          leaflet.marker(coordinates)
-            .bindPopup(escapeHtml(school.name))
-            .addTo(homeMap),
+      geolocationButton?.addEventListener("click", () => {
+        if (!navigator.geolocation) {
+          setHome(null, "Tento prohlížeč polohu nepodporuje. Vyber místo ze seznamu.");
+          return;
+        }
+        if (homeStatus) homeStatus.textContent = "Zjišťuji polohu…";
+        locationRequest += 1;
+        const request = locationRequest;
+        navigator.geolocation.getCurrentPosition(
+          ({ coords }) => {
+            if (request !== locationRequest) return;
+            if (homeSelect) homeSelect.value = "";
+            setHome({ label: "tvoje poloha", latitude: coords.latitude, longitude: coords.longitude }, "✓ Použijeme tvoji aktuální polohu.");
+          },
+          () => {
+            if (request !== locationRequest) return;
+            setHome(null, "Polohu se nepodařilo zjistit. Vyber místo ze seznamu.");
+          },
+          { timeout: 10000, maximumAge: 300000 },
         );
-      }
-
-      const schoolsWithoutCoordinates = rankedSchools.filter((school) =>
-        school.latitude === null || school.longitude === null);
-      if (recommendationMapStatus) {
-        recommendationMapStatus.textContent = schoolsWithoutCoordinates.length
-          ? `Na mapě je ${schoolMarkers.length} z ${rankedSchools.length} doporučených škol. Souřadnice nemají: ${schoolsWithoutCoordinates.map((school) => school.name).join("; ")}.`
-          : `Na mapě jsou všechny doporučené školy (${schoolMarkers.length}) a tvoje bydliště.`;
-      }
-
-      homeMap.fitBounds(bounds, { padding: [24, 24], maxZoom: 12 });
-    };
-
-    const initializeHomeMap = () => {
-      if (homeMap || !homeMapElement || !leaflet) return;
-
-      homeMap = leaflet.map("home-map", { zoomControl: true, scrollWheelZoom: true });
-      homeMap.setView([50.07, 14.4], 8);
-      leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-      }).addTo(homeMap);
-      homeMap.on("click", ({ latlng }) => {
-        if (homeLocationPreset) homeLocationPreset.value = "";
-        if (homeAddressInput) homeAddressInput.value = "";
-        cancelAddressSearch();
-        applyHomeLocation({
-          label: "Vybrané místo na mapě",
-          latitude: latlng.lat,
-          longitude: latlng.lng,
-        });
       });
 
-      if (activeHomeLocation) {
-        homeMarker = leaflet.marker([activeHomeLocation.latitude, activeHomeLocation.longitude])
-          .bindPopup("Zvolené bydliště")
-          .addTo(homeMap);
-      }
-      if (latestRankedSchools.length) renderRecommendationMarkers(latestRankedSchools);
-      window.setTimeout(() => homeMap?.invalidateSize(), 0);
-    };
+      const pluralPrograms = (count: number) => count === 1 ? "další obor" : count < 5 ? "další obory" : "dalších oborů";
+      const pluralSchools = (count: number) => count === 1 ? "škola" : count > 1 && count < 5 ? "školy" : "škol";
 
-    homeMapDisclosure?.addEventListener("toggle", () => {
-      if (!homeMapDisclosure.open) return;
-      initializeHomeMap();
-      window.setTimeout(() => {
-        homeMap?.invalidateSize();
-        renderRecommendationMarkers(latestRankedSchools);
-      }, 0);
-    });
-
-    recommendationMapButton?.addEventListener("click", () => {
-      if (homeMapDisclosure) homeMapDisclosure.open = true;
-      initializeHomeMap();
-      renderRecommendationMarkers(latestRankedSchools);
-      homeMapDisclosure?.scrollIntoView({ behavior: "smooth", block: "center" });
-      window.setTimeout(() => homeMap?.invalidateSize(), 0);
-    });
-
-    const programCategories = (program: SchoolProgram): Category[] => {
-      const codeGroup = program.code.slice(0, 2);
-      const name = program.name.toLocaleLowerCase("cs");
-      if (codeGroup === "79") return ["general"];
-
-      const categoryByCodeGroup: Partial<Record<string, Category[]>> = {
-        "16": ["science", "nature"],
-        "18": ["digital"],
-        "21": ["engineering", "science"],
-        "23": ["engineering"],
-        "26": ["engineering", "science"],
-        "29": ["practical"],
-        "31": ["design", "practical"],
-        "32": ["design", "practical"],
-        "33": ["design", "practical"],
-        "34": ["design", "practical"],
-        "36": ["engineering"],
-        "37": ["engineering", "business"],
-        "41": ["nature", "practical"],
-        "43": ["nature"],
-        "53": ["health"],
-        "63": ["business"],
-        "64": ["business"],
-        "65": ["hospitality"],
-        "68": ["safety"],
-        "69": ["practical"],
-        "72": ["people"],
-        "75": ["people"],
-        "82": ["design"],
-      };
-      const categoriesForProgram = new Set(categoryByCodeGroup[codeGroup] ?? []);
-
-      if (codeGroup === "28") {
-        categoriesForProgram.add(/keram/.test(name) ? "design" : "science");
-        if (/keram/.test(name)) categoriesForProgram.add("practical");
-      }
-      if (codeGroup === "29") {
-        if (/analýza|technologie potravin/.test(name)) categoriesForProgram.add("science");
-        if (/kuchař|číšník|cukrář|pekař|řezník|gastronom/.test(name)) categoriesForProgram.add("hospitality");
-      }
-      if (codeGroup === "39") {
-        if (/požární ochrana|bezpečnost/.test(name)) {
-          categoriesForProgram.add("safety");
-        } else if (/malíř|lakýr/.test(name)) {
-          categoriesForProgram.add("practical");
-        } else {
-          categoriesForProgram.add("engineering");
-        }
-      }
-      if (codeGroup === "41") {
-        if (/opravář|mechanizátor|strojů/.test(name)) categoriesForProgram.add("engineering");
-      }
-      if (codeGroup === "65" && /hotelnictví|cestovní ruch/.test(name)) categoriesForProgram.add("business");
-      if (codeGroup === "66") {
-        categoriesForProgram.add(/aranžér|propagace/.test(name) ? "design" : "business");
-      }
-      if (codeGroup === "68" && /veřejnospráv|sociální/.test(name)) categoriesForProgram.add("people");
-      if (codeGroup === "69") {
-        if (/kadeřník|kosmetik|vlasov/.test(name)) categoriesForProgram.add("design");
-        if (/masér/.test(name)) categoriesForProgram.add("health");
-      }
-
-      if (codeGroup === "78") {
-        if (program.code.startsWith("78-62-C")) {
-          categoriesForProgram.add("practical");
-          categoriesForProgram.add("people");
-        } else if (program.code === "78-42-M/01") {
-          categoriesForProgram.add("engineering");
-          categoriesForProgram.add("science");
-        } else if (program.code === "78-42-M/02") {
-          categoriesForProgram.add("business");
-        } else if (program.code === "78-42-M/03") {
-          categoriesForProgram.add("people");
-        } else if (program.code === "78-42-M/04") {
-          categoriesForProgram.add("health");
-        } else if (program.code === "78-42-M/05") {
-          categoriesForProgram.add("science");
-          categoriesForProgram.add("nature");
-        } else if (program.code === "78-42-M/06") {
-          categoriesForProgram.add("general");
-          categoriesForProgram.add("people");
-        } else {
-          categoriesForProgram.add("general");
-        }
-      }
-
-      if (/-[EH]\//.test(program.code) && codeGroup !== "78") categoriesForProgram.add("practical");
-      return [...categoriesForProgram];
-    };
-
-    const updateProgress = () => {
-      const answered = document.querySelectorAll('input[type="radio"]:checked').length;
-      const total = Number(form?.dataset.questionCount ?? 0);
-      const percent = (answered / total) * 100;
-
-      if (progressText) {
-        progressText.textContent = `${answered}/${total}`;
-      }
-
-      if (progressBar) {
-        progressBar.style.width = `${percent}%`;
-      }
-    };
-
-    document.querySelectorAll<HTMLButtonElement>(".reset-quiz").forEach((resetButton) => {
-      resetButton.addEventListener("click", () => {
-        form?.reset();
-        if (studentProfileSelect) studentProfileSelect.value = "balanced";
-        if (priorityProfileSelect) priorityProfileSelect.value = "fit";
-        if (maxDistanceSelect) maxDistanceSelect.value = "";
-        activeHomeLocation = null;
-        cancelAddressSearch();
-        if (homeAddressInput) homeAddressInput.value = "";
-        if (homeLocationPreset) homeLocationPreset.value = "";
-        if (homeLocationStatus) homeLocationStatus.textContent = "Pro pokračování zvol místo bydliště.";
-        homeMarker?.remove();
-        homeMarker = null;
-        schoolMarkers.forEach((marker) => marker.remove());
-        schoolMarkers = [];
-        latestRankedSchools = [];
-        homeMap?.setView([50.07, 14.4], 8);
-        if (homeMapDisclosure) homeMapDisclosure.open = false;
-        if (recommendationMapStatus) recommendationMapStatus.textContent = "";
-        recommendationMapButton?.classList.add("hidden");
-        if (results) results.classList.add("hidden");
-        if (summary) summary.textContent = "";
-        if (recommendations) recommendations.replaceChildren();
-        if (topPill) topPill.textContent = "";
-        updateProgress();
-        document.getElementById("mobile-menu")?.classList.add("hidden");
-        document.getElementById("mobile-menu-button")?.setAttribute("aria-expanded", "false");
-        document.getElementById("menu-icon-closed")?.classList.remove("hidden");
-        document.getElementById("menu-icon-open")?.classList.add("hidden");
-      });
-    });
-
-    document.querySelectorAll('input[type="radio"]').forEach((input) => {
-      input.addEventListener('change', updateProgress);
-    });
-
-    homeLocationPreset?.addEventListener("change", () => {
-      const location = homeLocations[homeLocationPreset.value];
-      if (homeAddressInput) homeAddressInput.value = "";
-      cancelAddressSearch();
-      if (location) {
-        applyHomeLocation(location);
-      } else {
-        activeHomeLocation = null;
-        if (homeMarker) {
-          homeMarker.remove();
-          homeMarker = null;
-        }
-        if (homeLocationStatus) homeLocationStatus.textContent = "Pro pokračování zvol místo bydliště.";
-      }
-    });
-
-    homeAddressInput?.addEventListener("input", () => {
-      activeHomeLocation = null;
-      if (homeMarker) {
-        homeMarker.remove();
-        homeMarker = null;
-      }
-      if (homeLocationPreset) homeLocationPreset.value = "";
-      cancelAddressSearch();
-
-      const query = homeAddressInput.value.trim();
-      if (query.length < 4) {
-        if (homeLocationStatus) homeLocationStatus.textContent = "Zadej alespoň 4 znaky adresy.";
-        return;
-      }
-      if (homeLocationStatus) homeLocationStatus.textContent = "Hledám přesné adresy…";
-
-      addressSearchTimer = window.setTimeout(() => {
-        addressSearchTimer = null;
-        const request = new AbortController();
-        addressRequest = request;
-        void searchAddresses(query, request.signal).then((suggestions) => {
-          if (addressRequest !== request || homeAddressInput.value.trim() !== query) return;
-          renderAddressSuggestions(suggestions);
-          if (homeLocationStatus) {
-            homeLocationStatus.textContent = suggestions.length
-              ? `Vyber adresu z nabídky (${suggestions.length} ${suggestions.length === 1 ? "možnost" : suggestions.length < 5 ? "možnosti" : "možností"}).`
-              : "Přesnou adresu se nepodařilo najít. Zkus ulici, číslo domu a obec, nebo vyber místo na mapě.";
-          }
-        }).catch((error: unknown) => {
-          if (error instanceof DOMException && error.name === "AbortError") return;
-          if (addressRequest !== request) return;
-          if (homeLocationStatus) {
-            homeLocationStatus.textContent = "Vyhledávání adres teď není dostupné. Zkus to znovu, vyber město nebo klikni do mapy.";
-          }
-        });
-      }, 500);
-    });
-
-    homeAddressInput?.addEventListener("keydown", (event) => {
-      if (!addressSuggestions.length) return;
-
-      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-        event.preventDefault();
-        const direction = event.key === "ArrowDown" ? 1 : -1;
-        activeAddressSuggestionIndex = activeAddressSuggestionIndex === -1
-          ? direction > 0 ? 0 : addressSuggestions.length - 1
-          : (activeAddressSuggestionIndex + direction + addressSuggestions.length) % addressSuggestions.length;
-        const activeOption = homeAddressOptions?.querySelectorAll('[role="option"]')[activeAddressSuggestionIndex];
-        homeAddressInput.setAttribute("aria-activedescendant", activeOption?.id ?? "");
-        homeAddressOptions?.querySelectorAll('[role="option"]').forEach((option, index) => {
-          option.setAttribute("aria-selected", String(index === activeAddressSuggestionIndex));
-        });
-      } else if (event.key === "Enter") {
-        event.preventDefault();
-        selectAddressSuggestion(Math.max(activeAddressSuggestionIndex, 0));
-      } else if (event.key === "Escape") {
-        closeAddressSuggestions();
-      }
-    });
-
-    geolocationButton?.addEventListener("click", () => {
-      if (!navigator.geolocation) {
-        if (homeLocationStatus) homeLocationStatus.textContent = "Tento prohlížeč geolokaci nepodporuje. Vyber město nebo klikni do mapy.";
-        return;
-      }
-      if (homeLocationStatus) homeLocationStatus.textContent = "Získávám tvoji polohu…";
-      if (homeAddressInput) homeAddressInput.value = "";
-      if (homeLocationPreset) homeLocationPreset.value = "";
-      cancelAddressSearch();
-      navigator.geolocation.getCurrentPosition(
-        ({ coords }) => {
-          applyHomeLocation({ label: "Moje poloha", latitude: coords.latitude, longitude: coords.longitude });
-        },
-        () => {
-          if (homeLocationStatus) homeLocationStatus.textContent = "Polohu se nepodařilo získat. Zkontroluj oprávnění prohlížeče, nebo vyber město či bod na mapě.";
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
-      );
-    });
-
-    if (!leaflet && homeLocationStatus) {
-      homeLocationStatus.textContent = "Mapu se nepodařilo načíst. Vyber město nebo povol přístup k poloze.";
-    }
-
-    form?.addEventListener("submit", (event) => {
-      event.preventDefault();
-
-      if (!activeHomeLocation) {
-        if (homeLocationStatus) homeLocationStatus.textContent = "Nejdřív vyber bydliště, svou polohu nebo bod na mapě.";
-        homeLocationPreset?.focus();
-        return;
-      }
-      const homeLocation = activeHomeLocation;
-      const formData = new FormData(form);
-      const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');
-      if (submitButton) submitButton.disabled = true;
-
-      void getSchoolData().then((schoolData) => {
-      if (submitButton) submitButton.disabled = false;
-      if (!schoolData) {
-        if (summary) summary.textContent = "Data škol se nepodařilo načíst. Zkontroluj připojení a zkus to znovu.";
-        if (recommendations) recommendations.replaceChildren();
-        results?.classList.remove("hidden");
-        return;
-      }
-
-      const totals: Record<Category, number> = {
-        digital: 0,
-        engineering: 0,
-        science: 0,
-        nature: 0,
-        health: 0,
-        safety: 0,
-        design: 0,
-        business: 0,
-        hospitality: 0,
-        people: 0,
-        practical: 0,
-        general: 0,
+      const renderCard = (school: Recommendation) => {
+        const programs = school.programs.slice(0, 2);
+        const more = school.programs.length - programs.length;
+        const href = withBase(`/skoly/${encodeURIComponent(school.id)}/`);
+        const meta = [school.region, school.distanceKm === null ? "" : `${formatDistance(school.distanceKm)} od tebe`]
+          .filter(Boolean)
+          .map(escapeHtml)
+          .join(" · ");
+        return `
+          <article class="rounded-2xl border border-border bg-card p-5">
+            <a class="text-lg font-semibold text-foreground hover:text-primary" href="${href}">${escapeHtml(school.name)}</a>
+            <p class="mt-1 text-sm text-muted-foreground">${meta}</p>
+            <ul class="mt-3 space-y-1 text-sm">
+              ${programs.map((program) => `<li class="flex gap-2"><span class="text-primary" aria-hidden="true">✓</span><span>${escapeHtml(program.name)}</span></li>`).join("")}
+            </ul>
+            ${more > 0 ? `<p class="mt-1 text-xs text-muted-foreground">+ ${more} ${pluralPrograms(more)}</p>` : ""}
+            <a class="mt-3 inline-block text-sm font-medium text-primary hover:underline" href="${href}">Detail školy →</a>
+          </article>`;
       };
 
-      for (const value of formData.values()) {
-        const selected = String(value);
-        if (selected in totals) {
-          totals[selected as Category] += 1;
+      const renderMore = () => {
+        if (!recommendationsList) return;
+        const next = ranked.slice(shown, shown + PAGE_SIZE);
+        recommendationsList.insertAdjacentHTML("beforeend", next.map(renderCard).join(""));
+        shown += next.length;
+        if (moreButton) {
+          const remaining = ranked.length - shown;
+          moreButton.hidden = remaining <= 0;
+          moreButton.textContent = `Zobrazit další školy (${remaining})`;
         }
-      }
+      };
 
-      const profileValue = (studentProfileSelect?.value ?? "balanced") as StudentProfile;
-      const priorityValue = (priorityProfileSelect?.value ?? "fit") as PriorityProfile;
-      const profileCategory = profileCategories[profileValue];
+      const showResults = async () => {
+        if (showResultsButton) {
+          showResultsButton.disabled = true;
+          showResultsButton.textContent = "Hledám školy…";
+        }
 
-      if (profileCategory) totals[profileCategory] += 2;
+        const totals = emptyTotals();
+        steps.forEach((step) => {
+          const questionId = step.dataset.question;
+          const value = questionId ? answers.get(questionId) : undefined;
+          if (value && isCategory(value)) totals[value] += Number(step.dataset.weight) || 0;
+        });
+        const trackAnswer = answers.get("track") ?? "any";
+        const track = isStudyTrack(trackAnswer) ? trackAnswer : "any";
+        if (track === "general") totals.general += 3;
+        const maxDistance = home && maxDistanceSelect?.value ? Number(maxDistanceSelect.value) : null;
 
-      const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]) as Array<[Category, number]>;
-      const selectedCategories = sorted.filter(([, count]) => count > 0).map(([category]) => category);
+        try {
+          const [schools, programsById] = await loadData();
+          ranked = rankSchools(schools, programsById, totals, track, home, maxDistance);
+        } catch {
+          if (homeStatus) homeStatus.textContent = "Data škol se nepodařilo načíst. Zkontroluj připojení a zkus to znovu.";
+          resetResultsButton();
+          return;
+        }
 
-      const allRecommendedSchools: RankedSchool[] = schoolData
-        .map((school: SchoolRecord): RankedSchool => {
-          const matchingPrograms = school.programs
-            .map((program): RankedProgram => {
-              const matchingCategories = programCategories(program)
-                .filter((category) => totals[category] > 0);
-              const score = matchingCategories.reduce((total, category) => total + totals[category], 0);
-              return { ...program, categories: matchingCategories, score };
-            })
-            .filter((program) => program.score > 0)
-            .sort((left, right) => right.score - left.score || left.name.localeCompare(right.name, "cs") || left.code.localeCompare(right.code, "cs"));
-          const preferredProgram = matchingPrograms.find((program) =>
-            getFitReasons(school, program, priorityValue).length > 0);
+        const top = Object.entries(totals)
+          .filter(([, count]) => count > 0)
+          .sort((left, right) => right[1] - left[1])
+          .slice(0, 3)
+          .map(([category]) => (isCategory(category) ? categoryLabels[category] : category));
+        if (topInterests) {
+          topInterests.innerHTML = (top.length ? top : ["Zatím bez jasného směru"])
+            .map((label, index) => `<span class="rounded-full border px-4 py-2 text-sm font-semibold ${index === 0 ? "border-primary bg-primary/15 text-primary" : "border-border text-foreground"}">${escapeHtml(label)}</span>`)
+            .join("");
+        }
+        if (resultsNote) {
+          const order = home
+            ? `Seřazeno podle shody, pak podle vzdálenosti od: ${home.label}${maxDistance ? ` (do ${maxDistance} km)` : ""}.`
+            : "Seřazeno podle toho, jak obory odpovídají tvým odpovědím.";
+          resultsNote.textContent = `${ranked.length} ${pluralSchools(ranked.length)} s vhodným oborem. ${order}`;
+        }
+        if (recommendationsList) {
+          recommendationsList.innerHTML = ranked.length
+            ? ""
+            : `<p class="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">${maxDistance ? "V této vzdálenosti jsme nenašli školu s vhodným oborem. Zkus delší dojezd." : "Nenašli jsme školu s vhodným oborem. Zkus upravit odpovědi."}</p>`;
+        }
+        shown = 0;
+        renderMore();
 
-          return {
-            ...school,
-            score: matchingPrograms[0]?.score ?? 0,
-            distanceKm: school.latitude !== null && school.longitude !== null
-              ? getDistanceKm(homeLocation.latitude, homeLocation.longitude, school.latitude, school.longitude)
-              : null,
-            reasons: preferredProgram ? getFitReasons(school, preferredProgram, priorityValue) : [],
-            matchedPrograms: matchingPrograms.slice(0, 4),
-          };
-        })
-        .filter((school) => school.matchedPrograms.length > 0 &&
-          (priorityValue !== "conservatory" || school.officialTypeCode === "D00") &&
-          (!maxDistanceSelect?.value ||
-            (school.distanceKm !== null && school.distanceKm <= Number(maxDistanceSelect.value))))
-        .sort((a: RankedSchool, b: RankedSchool) =>
-          b.score - a.score ||
-          Number(b.reasons.length > 0) - Number(a.reasons.length > 0) ||
-          (a.distanceKm ?? Number.POSITIVE_INFINITY) - (b.distanceKm ?? Number.POSITIVE_INFINITY) ||
-          a.name.localeCompare(b.name, "cs"));
-
-      const rankedSchools = allRecommendedSchools.slice(0, 6);
-
-      latestRankedSchools = allRecommendedSchools;
-      if (recommendationMapButton) {
-        recommendationMapButton.classList.toggle("hidden", allRecommendedSchools.length === 0);
-        recommendationMapButton.textContent = `Mapa všech doporučených škol (${allRecommendedSchools.length})`;
-      }
-      renderRecommendationMarkers(allRecommendedSchools);
-
-      if (summary) {
-        const categorySummary = selectedCategories
-          .sort((left, right) => totals[right] - totals[left])
-          .map((category) => categoryLabels[category])
-          .join(", ");
-        const profileSummary = profileValue === "balanced"
-          ? "to, že zatím nemáš jednu oblast vybranou"
-          : profileValue === "general"
-            ? "volbu všeobecného studia"
-            : `zvolené zaměření <strong>${profileLabels[profileValue]}</strong>`;
-        summary.innerHTML = `Zohlednili jsme všechny tvoje odpovědi (${categorySummary}) i ${profileSummary}. Nejprve řadíme podle shody konkrétních oborů, při stejné shodě rozhoduje vzdálenost. U každé školy jsou vypsané pouze obory, které odpovídají alespoň jednomu z těchto zaměření. Všeobecné gymnázium se objeví jen při volbě všeobecného studia. Vzdálenost je vzdušnou čarou; nabídku otevřených oborů ověř přímo u školy.`;
-      }
-
-      if (topPill) {
-        const schoolCountLabel = rankedSchools.length === 1
-          ? "1 doporučená škola"
-          : rankedSchools.length < 5
-            ? `${rankedSchools.length} doporučené školy`
-            : `${rankedSchools.length} doporučených škol`;
-        topPill.textContent = rankedSchools.length
-          ? schoolCountLabel
-          : maxDistanceSelect?.value ? "V dosahu žádná shoda" : "Bez shody v katalogu";
-      }
-
-      if (recommendations) {
-        recommendations.innerHTML = rankedSchools.length ? rankedSchools
-          .map((school: RankedSchool) => `
-            <article class="rounded-2xl border border-border bg-background/40 p-5">
-              <div class="mb-2 flex items-center justify-between gap-3">
-                <p class="text-sm font-semibold uppercase tracking-[0.15em] text-primary">${escapeHtml(school.region)}</p>
-                <span class="rounded-full border border-border bg-card px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Orientačně: ${escapeHtml(school.type)}</span>
-              </div>
-              <div class="mb-3">
-                <h4 class="text-xl font-semibold">${escapeHtml(school.name)}</h4>
-              </div>
-              <p class="mt-2 text-sm text-muted-foreground">${escapeHtml(school.address)}</p>
-              <p class="mt-2 text-sm font-medium text-primary">${school.distanceKm === null ? "Vzdálenost není k dispozici" : `${formatDistance(school.distanceKm)} vzdušnou čarou`}</p>
-              <div class="mt-4 flex flex-wrap gap-2">
-                ${school.reasons.map((reason) => `<span class="rounded-full border border-primary/20 bg-primary/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">${escapeHtml(reason)}</span>`).join("")}
-              </div>
-              <div class="mt-4">
-                <p class="text-sm font-semibold text-foreground">Obory odpovídající tvým odpovědím</p>
-                <ul class="mt-2 space-y-1 text-sm text-muted-foreground">
-                  ${school.matchedPrograms.map((program) => `<li>${escapeHtml(program.name)} <span class="text-xs">(${escapeHtml(program.code)})</span><span class="block text-xs text-muted-foreground">Zaměření: ${program.categories.map((category) => escapeHtml(categoryLabels[category])).join(", ")}</span></li>`).join("")}
-                </ul>
-              </div>
-              <ul class="mt-4 space-y-2 text-sm text-muted-foreground">
-                <li><span class="font-semibold text-foreground">Zřizovatel:</span> ${escapeHtml(school.founder)}</li>
-                <li><span class="font-semibold text-foreground">IZO:</span> ${escapeHtml(school.izo)}</li>
-                <li><span class="font-semibold text-foreground">Telefon:</span> ${escapeHtml(school.phone || "V rejstříku neuveden")}</li>
-              </ul>
-              <a href="${withBase(`/skoly/${encodeURIComponent(school.id)}/`)}" class="mt-4 inline-flex items-center text-sm font-medium text-primary hover:underline">Detail školy →</a>
-            </article>
-          `)
-          .join("") : `<p class="rounded-xl border border-border p-5 text-sm text-muted-foreground">${maxDistanceSelect?.value ? "V tomto dosahu se nepodařilo najít školu s odpovídajícím oborem. Zkus větší vzdálenost nebo ji nastav bez limitu." : "V aktuálním výběru se nepodařilo najít odpovídající evidovaný obor. Zkus jiné odpovědi nebo prohledej celý katalog oborů."}</p>`;
-      }
-
-      if (results) {
-        results.classList.remove("hidden");
+        quiz.hidden = true;
+        results.hidden = false;
         results.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+        resetResultsButton();
+      };
+
+      const backToQuiz = () => {
+        results.hidden = true;
+        quiz.hidden = false;
+        showStep(0);
+        quiz.scrollIntoView({ behavior: "smooth", block: "start" });
+      };
+
+      showResultsButton?.addEventListener("click", () => void showResults());
+      moreButton?.addEventListener("click", renderMore);
+      document.getElementById("edit-answers")?.addEventListener("click", backToQuiz);
+      document.getElementById("restart")?.addEventListener("click", () => {
+        answers.clear();
+        locationRequest += 1;
+        quiz.querySelectorAll(".quiz-option").forEach((button) => button.setAttribute("aria-pressed", "false"));
+        if (homeSelect) homeSelect.value = "";
+        if (maxDistanceSelect) maxDistanceSelect.value = "30";
+        setHome(null, "");
+        backToQuiz();
       });
-    });
+
+      showStep(0, false);
     });
   </script>
 </BaseLayout>

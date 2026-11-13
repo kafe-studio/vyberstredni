@@ -27,3 +27,6 @@ worker-configuration.d.ts
 
 .claude/settings.json
 .vscode/settings.json
+
+# browser automation artifacts
+.playwright-mcp/
