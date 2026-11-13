@@ -225,18 +225,23 @@ const privateSchoolCount = schools.filter((school) => school.founderCode === "5"
     </div>
   </section>
   <script>
-    const filterButtons = document.querySelectorAll<HTMLButtonElement>("[data-filter]");
-    const schoolCards = document.querySelectorAll<HTMLElement>("[data-interest]");
+    document.addEventListener("astro:page-load", () => {
+      const schoolGrid = document.querySelector<HTMLElement>("[data-school-grid]");
+      if (!schoolGrid) return;
 
-    filterButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const selected = button.getAttribute("data-filter");
+      const filterButtons = document.querySelectorAll<HTMLButtonElement>("#schools [data-filter]");
+      const schoolCards = schoolGrid.querySelectorAll<HTMLElement>("[data-interest]");
 
-        filterButtons.forEach((item) => item.classList.toggle("is-active", item === button));
+      filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const selected = button.getAttribute("data-filter");
 
-        schoolCards.forEach((card) => {
-          const shouldShow = selected === "all" || card.getAttribute("data-interest") === selected;
-          card.style.display = shouldShow ? "block" : "none";
+          filterButtons.forEach((item) => item.classList.toggle("is-active", item === button));
+
+          schoolCards.forEach((card) => {
+            const shouldShow = selected === "all" || card.getAttribute("data-interest") === selected;
+            card.style.display = shouldShow ? "block" : "none";
+          });
         });
       });
     });

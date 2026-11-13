@@ -2,16 +2,10 @@
 export const prerender = true;
 
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { siteConfig } from "../config/site";
 import { withBase } from "../lib/urls";
-import { schools } from "../data/schools";
-
-const favoriteSchools = schools.map(({ id, name, region, type, focus, address, founder, izo, capacity }) => ({
-  id, name, region, type, focus, address, founder, izo, capacity,
-}));
 
 const metadata = {
-  title: "Oblíbené školy | " + siteConfig.name,
+  title: "Oblíbené školy",
   description: "Spravujte si svůj shortlist škol a porovnávejte jen ty nejvhodnější možnosti.",
 };
 ---
@@ -59,26 +53,16 @@ const metadata = {
     </div>
   </section>
 
-  <div id="school-data" data-schools={JSON.stringify(favoriteSchools)} hidden></div>
   <script>
     import { withBase } from "../lib/urls";
+    import { escapeHtml, getFavorites, loadSchools, setFavorites, type SchoolSummary } from "../lib/school-data";
+
+    type FavoriteSchool = SchoolSummary;
 
     document.addEventListener("astro:page-load", () => {
-    type FavoriteSchool = {
-      id: string;
-      name: string;
-      region: string;
-      type: string;
-      focus: string;
-      address: string;
-      founder: string;
-      izo: string;
-      capacity: string;
-    };
+    if (!document.getElementById("favorite-grid") || !document.getElementById("favorite-summary")) return;
 
-    const FAVORITES_KEY = "vyberstredni-favorites";
-    const schoolPayload = document.getElementById("school-data");
-    const schoolData: FavoriteSchool[] = schoolPayload?.dataset.schools ? JSON.parse(schoolPayload.dataset.schools) : [];
+    let schoolData: FavoriteSchool[] = [];
     const favoriteGrid = document.getElementById("favorite-grid");
     const emptyState = document.getElementById("favorite-empty");
     const favoriteTotal = document.getElementById("favorite-total");
@@ -86,24 +70,6 @@ const metadata = {
     const shortlistCount = document.getElementById("shortlist-count");
     const bestFocusEl = document.getElementById("best-focus");
     const regionMixEl = document.getElementById("region-mix");
-
-    const escapeHtml = (value: string) =>
-      value.replace(/[&<>"']/g, (character) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-      })[character] ?? character);
-
-    const getFavorites = (): string[] => {
-      try {
-        const raw = localStorage.getItem(FAVORITES_KEY);
-        return raw ? JSON.parse(raw) : [];
-      } catch {
-        return [];
-      }
-    };
 
     const setFavoriteTotal = (count: number) => {
       if (favoriteTotal) {
@@ -192,12 +158,21 @@ const metadata = {
       const schoolId = removeButton.getAttribute("data-remove-school");
       if (!schoolId) return;
 
-      const favorites = getFavorites().filter((id: string) => id !== schoolId);
-      localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+      setFavorites(getFavorites().filter((id: string) => id !== schoolId));
       renderFavorites();
     });
 
-    renderFavorites();
+    loadSchools()
+      .then((schools) => {
+        schoolData = schools;
+        renderFavorites();
+      })
+      .catch(() => {
+        if (emptyState) {
+          emptyState.textContent = "Seznam škol se nepodařilo načíst. Zkus stránku obnovit.";
+          emptyState.classList.remove("hidden");
+        }
+      });
     });
   </script>
 </BaseLayout>

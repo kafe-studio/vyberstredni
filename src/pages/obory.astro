@@ -1,7 +1,7 @@
 ---
+export const prerender = true;
+
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { siteConfig } from "../config/site";
-import { withBase } from "../lib/urls";
 import { schools, uniqueSchoolPrograms } from "../data/schools";
 
 const programGroups = new Map<string, {
@@ -38,17 +38,11 @@ const programCatalog = [...programGroups.values()]
   }))
   .sort((left, right) => left.name.localeCompare(right.name, "cs") || left.code.localeCompare(right.code, "cs"));
 
-const catalogSchools = schools.map(({ id, name, region, address, latitude, longitude }) => ({
-  id,
-  name,
-  region,
-  address,
-  latitude,
-  longitude,
-}));
+// Same array (and index) as the rendered buttons, so data-program-index always points at the right program.
+const clientPrograms = programCatalog.map(({ code, name, schoolIds, activeSchoolIds }) => ({ code, name, schoolIds, activeSchoolIds }));
 
 const metadata = {
-  title: "Přehled oborů | " + siteConfig.name,
+  title: "Přehled oborů",
   description: "Vyhledej evidované studijní obory v Praze a Středočeském kraji a zobraz školy, které je nabízejí, na mapě.",
 };
 ---
@@ -134,26 +128,22 @@ const metadata = {
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <div id="program-data" data-programs={JSON.stringify(programCatalog)} data-schools={JSON.stringify(catalogSchools)} hidden></div>
+  <div id="program-data" data-programs={JSON.stringify(clientPrograms)} hidden></div>
   <script>
     import { withBase } from "../lib/urls";
+    import { escapeHtml, loadSchools, type SchoolSummary } from "../lib/school-data";
 
     document.addEventListener("astro:page-load", () => {
+      const payload = document.getElementById("program-data");
+      if (!payload || !document.getElementById("program-list")) return;
+
       type Program = {
-        key: string;
         code: string;
         name: string;
         schoolIds: string[];
         activeSchoolIds: string[];
       };
-      type School = {
-        id: string;
-        name: string;
-        region: string;
-        address: string;
-        latitude: number | null;
-        longitude: number | null;
-      };
+      type School = SchoolSummary;
       /* eslint-disable no-unused-vars */
       type LeafletMap = {
         fitBounds: (...args: [Array<[number, number]>, { padding: [number, number]; maxZoom: number }]) => LeafletMap;
@@ -172,10 +162,10 @@ const metadata = {
       type WindowWithLeaflet = Window & { L?: Leaflet };
       /* eslint-enable no-unused-vars */
 
-      const payload = document.getElementById("program-data");
-      const programs: Program[] = JSON.parse(payload?.dataset.programs ?? "[]");
-      const schools: School[] = JSON.parse(payload?.dataset.schools ?? "[]");
-      const schoolsById = new Map(schools.map((school) => [school.id, school]));
+      const programs: Program[] = JSON.parse(payload.dataset.programs ?? "[]");
+      let pendingProgramIndex: number | null = null;
+      let schoolsById = new Map<string, School>();
+      let schoolsLoaded = false;
       const searchInput = document.getElementById("program-search") as HTMLInputElement | null;
       const regionSelect = document.getElementById("program-region") as HTMLSelectElement | null;
       const currentOnly = document.getElementById("current-programs-only") as HTMLInputElement | null;
@@ -194,15 +184,6 @@ const metadata = {
       let map: LeafletMap | null = null;
       let markers: Marker[] = [];
 
-      const escapeHtml = (value: string) =>
-        value.replace(/[&<>"']/g, (character) => ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#39;",
-        })[character] ?? character);
-
       const getMatchingSchools = (program: Program) => {
         const availableIds = new Set(currentOnly?.checked ? program.activeSchoolIds : program.schoolIds);
         return [...availableIds]
@@ -213,7 +194,7 @@ const metadata = {
       };
 
       const renderProgramList = () => {
-        if (!programList) return;
+        if (!programList || !schoolsLoaded) return;
         const query = searchInput?.value.trim().toLocaleLowerCase("cs") ?? "";
         let visibleCount = 0;
 
@@ -281,6 +262,12 @@ const metadata = {
       };
 
       const selectProgram = (index: number) => {
+        if (!schoolsLoaded) {
+          // Remember the click and apply it once the school data arrives.
+          pendingProgramIndex = index;
+          if (programCount) programCount.textContent = "Načítám školy…";
+          return;
+        }
         const program = programs[index];
         if (!program || !results || !placeholder || !selectedName || !selectedCount || !schoolList) return;
         selectedProgramIndex = index;
@@ -336,7 +323,17 @@ const metadata = {
         if (selectedProgramIndex !== null) selectProgram(selectedProgramIndex);
       });
 
-      renderProgramList();
+      if (programCount) programCount.textContent = "Načítám školy…";
+      loadSchools()
+        .then((schools) => {
+          schoolsById = new Map(schools.map((school) => [school.id, school]));
+          schoolsLoaded = true;
+          renderProgramList();
+          if (pendingProgramIndex !== null) selectProgram(pendingProgramIndex);
+        })
+        .catch(() => {
+          if (programCount) programCount.textContent = "Seznam škol se nepodařilo načíst. Zkus stránku obnovit.";
+        });
       if (!leaflet && mapStatus) mapStatus.textContent = "Mapu se nepodařilo načíst. Seznam škol zůstává dostupný.";
     });
   </script>

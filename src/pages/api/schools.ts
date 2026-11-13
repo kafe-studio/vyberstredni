@@ -1,13 +1,29 @@
+import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { isAuthorizedAdminRequest } from "../../lib/admin";
-import { schools as defaultSchools } from "../../data/schools";
+import { FOCUS_AREAS, SCHOOL_REGIONS, SCHOOL_TYPES, schools as defaultSchools } from "../../data/schools";
 
 const db = env.DB;
 const legacySeedIds = Array.from({ length: 21 }, (_, index) => `spg-${index + 1}`);
 
-const isAuthorized = async (request: Request) => {
-  return isAuthorizedAdminRequest(request);
-};
+const DEFAULT_VERIFIED_NOTE = "Ověřeno podle veřejného profilu a typového zaměření školy.";
+const MAX_TEXT_LENGTH = 2000;
+
+const unauthorized = () => Response.json({ error: "Unauthorized" }, { status: 401 });
+const badRequest = (error: string) => Response.json({ error }, { status: 400 });
+
+const text = (value: unknown, fallback = "") =>
+  (typeof value === "string" ? value.trim() : fallback).slice(0, MAX_TEXT_LENGTH);
+
+const stringList = (value: unknown) =>
+  JSON.stringify(
+    Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === "string").map((item) => text(item))
+      : [],
+  );
+
+const oneOf = (value: unknown, allowed: readonly string[]) =>
+  typeof value === "string" && allowed.includes(value) ? value : null;
 
 const parseJsonList = (value: string | null) => {
   if (!value) return [];
@@ -36,10 +52,10 @@ const normalizeSchool = (row: Record<string, unknown>) => ({
   idealStudent: String(row.idealStudent ?? row.ideal_student ?? ""),
   strengths: parseJsonList(typeof row.strengths === "string" ? row.strengths : null),
   challenges: parseJsonList(typeof row.challenges === "string" ? row.challenges : null),
-  verifiedNote: String(row.verifiedNote ?? "Ověřeno podle veřejného profilu a typového zaměření školy."),
+  verifiedNote: String(row.verifiedNote ?? DEFAULT_VERIFIED_NOTE),
 });
 
-const ensureSeedData = async () => {
+const prepareSchema = async () => {
   if (!db) {
     return;
   }
@@ -67,6 +83,12 @@ const ensureSeedData = async () => {
       )
     `)
     .run();
+
+  // Tables created by an older version of this endpoint lack the verifiedNote column.
+  const columns = await db.prepare("PRAGMA table_info(schools)").all<{ name: string }>();
+  if (!columns.results.some((column) => column.name === "verifiedNote")) {
+    await db.prepare("ALTER TABLE schools ADD COLUMN verifiedNote TEXT").run();
+  }
 
   const existing = await db.prepare("SELECT COUNT(*) AS count FROM schools").first<{ count: number }>();
   const existingCount = existing?.count ?? 0;
@@ -126,7 +148,18 @@ const ensureSeedData = async () => {
   await db.batch(migrationStatements);
 };
 
-export async function GET() {
+// Schema check and seeding run once per Worker isolate; a failed attempt is retried on the next request.
+let schemaReady: Promise<void> | null = null;
+
+const ensureSeedData = () => {
+  schemaReady ??= prepareSchema().catch((error: unknown) => {
+    schemaReady = null;
+    return Promise.reject(error);
+  });
+  return schemaReady;
+};
+
+export const GET: APIRoute = async () => {
   if (!db) {
     return Response.json(defaultSchools);
   }
@@ -137,110 +170,100 @@ export async function GET() {
   return Response.json(
     result.results.map((row) => normalizeSchool(row as Record<string, unknown>))
   );
-}
+};
 
-export async function POST(request: Request) {
-  if (!(await isAuthorized(request))) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+export const POST: APIRoute = async ({ request }) => {
+  if (!(await isAuthorizedAdminRequest(request))) {
+    return unauthorized();
   }
 
   if (!db) {
     return Response.json({ error: "D1 database is not configured." }, { status: 500 });
   }
 
-  await ensureSeedData();
-  const payload = (await request.json()) as Record<string, unknown>;
-  const id = String(payload.id ?? crypto.randomUUID());
+  const payload: unknown = await request.json().catch(() => null);
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+    return badRequest("Invalid JSON body.");
+  }
+  const data = payload as Record<string, unknown>;
+
+  const name = text(data.name);
+  const region = oneOf(data.region, SCHOOL_REGIONS);
+  const type = oneOf(data.type, SCHOOL_TYPES);
+  const focus = oneOf(data.focus, FOCUS_AREAS);
+  if (!name) return badRequest("School name is required.");
+  if (!region || !type || !focus) return badRequest("Invalid region, type or focus.");
+
+  const id = text(data.id) || crypto.randomUUID();
   const item = {
     id,
-    name: String(payload.name ?? ""),
-    region: String(payload.region ?? "Praha"),
-    type: String(payload.type ?? "gymnázium"),
-    focus: String(payload.focus ?? "technologie"),
-    description: String(payload.description ?? ""),
-    acceptance: String(payload.acceptance ?? ""),
-    capacity: String(payload.capacity ?? ""),
-    commute: String(payload.commute ?? ""),
-    fee: String(payload.fee ?? ""),
-    tags: JSON.stringify(Array.isArray(payload.tags) ? payload.tags : []),
-    audience: JSON.stringify(Array.isArray(payload.audience) ? payload.audience : []),
-    idealStudent: String(payload.idealStudent ?? ""),
-    strengths: JSON.stringify(Array.isArray(payload.strengths) ? payload.strengths : []),
-    challenges: JSON.stringify(Array.isArray(payload.challenges) ? payload.challenges : []),
-    verifiedNote: String(payload.verifiedNote ?? "Ověřeno podle veřejného profilu a typového zaměření školy."),
+    name,
+    region,
+    type,
+    focus,
+    description: text(data.description),
+    acceptance: text(data.acceptance),
+    capacity: text(data.capacity),
+    commute: text(data.commute),
+    fee: text(data.fee),
+    tags: stringList(data.tags),
+    audience: stringList(data.audience),
+    idealStudent: text(data.idealStudent),
+    strengths: stringList(data.strengths),
+    challenges: stringList(data.challenges),
+    verifiedNote: text(data.verifiedNote) || DEFAULT_VERIFIED_NOTE,
   };
 
-  const existing = await db.prepare("SELECT 1 FROM schools WHERE id = ?").bind(id).first();
-
-  if (existing) {
-    await db
-      .prepare(
-        `UPDATE schools
-         SET name = ?, region = ?, type = ?, focus = ?, description = ?, acceptance = ?, capacity = ?, commute = ?, fee = ?, tags = ?, audience = ?, idealStudent = ?, strengths = ?, challenges = ?, verifiedNote = ?, updatedAt = CURRENT_TIMESTAMP
-         WHERE id = ?`
-      )
-      .bind(
-        item.name,
-        item.region,
-        item.type,
-        item.focus,
-        item.description,
-        item.acceptance,
-        item.capacity,
-        item.commute,
-        item.fee,
-        item.tags,
-        item.audience,
-        item.idealStudent,
-        item.strengths,
-        item.challenges,
-        item.verifiedNote,
-        id
-      )
-      .run();
-  } else {
-    await db
-      .prepare(
-        `INSERT INTO schools (id, name, region, type, focus, description, acceptance, capacity, commute, fee, tags, audience, idealStudent, strengths, challenges, verifiedNote, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
-      )
-      .bind(
-        item.id,
-        item.name,
-        item.region,
-        item.type,
-        item.focus,
-        item.description,
-        item.acceptance,
-        item.capacity,
-        item.commute,
-        item.fee,
-        item.tags,
-        item.audience,
-        item.idealStudent,
-        item.strengths,
-        item.challenges,
-        item.verifiedNote
-      )
-      .run();
-  }
+  await ensureSeedData();
+  await db
+    .prepare(
+      `INSERT INTO schools (id, name, region, type, focus, description, acceptance, capacity, commute, fee, tags, audience, idealStudent, strengths, challenges, verifiedNote, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT(id) DO UPDATE SET
+         name = excluded.name, region = excluded.region, type = excluded.type, focus = excluded.focus,
+         description = excluded.description, acceptance = excluded.acceptance, capacity = excluded.capacity,
+         commute = excluded.commute, fee = excluded.fee, tags = excluded.tags, audience = excluded.audience,
+         idealStudent = excluded.idealStudent, strengths = excluded.strengths, challenges = excluded.challenges,
+         verifiedNote = excluded.verifiedNote, updatedAt = CURRENT_TIMESTAMP`
+    )
+    .bind(
+      item.id,
+      item.name,
+      item.region,
+      item.type,
+      item.focus,
+      item.description,
+      item.acceptance,
+      item.capacity,
+      item.commute,
+      item.fee,
+      item.tags,
+      item.audience,
+      item.idealStudent,
+      item.strengths,
+      item.challenges,
+      item.verifiedNote
+    )
+    .run();
 
   return Response.json({ success: true, id });
-}
+};
 
-export async function DELETE(request: Request) {
-  if (!(await isAuthorized(request))) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+export const DELETE: APIRoute = async ({ request, url }) => {
+  if (!(await isAuthorizedAdminRequest(request))) {
+    return unauthorized();
   }
 
-  const id = new URL(request.url).searchParams.get("id");
-
-  if (!db || !id) {
-    return Response.json({ error: "Missing D1 database or school id." }, { status: 400 });
+  const id = url.searchParams.get("id");
+  if (!db) {
+    return Response.json({ error: "D1 database is not configured." }, { status: 500 });
+  }
+  if (!id) {
+    return badRequest("Missing school id.");
   }
 
   await ensureSeedData();
   await db.prepare("DELETE FROM schools WHERE id = ?").bind(id).run();
 
   return Response.json({ success: true, id });
-}
+};

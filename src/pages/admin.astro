@@ -2,11 +2,10 @@
 export const prerender = true;
 
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { siteConfig } from "../config/site";
 import { withBase } from "../lib/urls";
 
 const metadata = {
-  title: "Admin | " + siteConfig.name,
+  title: "Admin",
   description: "Administrace dat pro školy, obory a doporučení ve výběru střední školy.",
 };
 ---
@@ -48,7 +47,8 @@ const metadata = {
           </p>
         </div>
 
-        <div class="mb-6 flex justify-end">
+        <div class="mb-6 flex items-center justify-end gap-4">
+          <p id="admin-status" class="hidden text-sm" role="status" aria-live="polite"></p>
           <button type="button" id="admin-logout" class="btn-outline">Odhlásit</button>
         </div>
 
@@ -75,7 +75,7 @@ const metadata = {
           <aside class="track-card reveal p-6">
             <h2 class="text-2xl font-bold">Přidat nebo upravit školu</h2>
             <form id="school-form" class="mt-6 space-y-4">
-              <input type="hidden" id="school-id" />
+              <input type="hidden" id="school-id" name="school-id" />
 
               <div>
                 <label for="school-name" class="mb-2 block text-sm font-medium">Název školy</label>
@@ -179,6 +179,10 @@ const metadata = {
   <script is:inline type="application/json" id="initial-schools">[]</script>
   <script>
     import { withBase } from "../lib/urls";
+    import { escapeHtml } from "../lib/school-data";
+
+    document.addEventListener("astro:page-load", () => {
+    if (!document.getElementById("admin-auth")) return;
 
     type SchoolRecord = {
       id: string;
@@ -196,6 +200,7 @@ const metadata = {
       idealStudent?: string;
       strengths?: string[];
       challenges?: string[];
+      verifiedNote?: string;
     };
 
     const adminAuth = document.getElementById("admin-auth");
@@ -205,9 +210,26 @@ const metadata = {
     const adminPasswordInput = document.getElementById("admin-password") as HTMLInputElement | null;
     const adminLogoutButton = document.getElementById("admin-logout") as HTMLButtonElement | null;
 
+    const adminStatus = document.getElementById("admin-status");
+    let loadedSchools: SchoolRecord[] = [];
+
+    const showLoginError = (message: string) => {
+      if (!adminLoginError) return;
+      adminLoginError.textContent = message;
+      adminLoginError.classList.remove("hidden");
+    };
+
+    const showStatus = (message: string, isError: boolean) => {
+      if (!adminStatus) return;
+      adminStatus.textContent = message;
+      adminStatus.classList.remove("hidden");
+      adminStatus.classList.toggle("text-red-400", isError);
+      adminStatus.classList.toggle("text-emerald-400", !isError);
+    };
+
     const isAuthenticated = async () => {
       try {
-        const response = await fetch(withBase("/api/schools/"), { credentials: "same-origin" });
+        const response = await fetch(withBase("/api/admin/session/"), { credentials: "same-origin" });
         return response.ok;
       } catch {
         return false;
@@ -219,6 +241,8 @@ const metadata = {
       if (adminAuth) adminAuth.classList.toggle("hidden", loggedIn);
       if (adminContent) adminContent.classList.toggle("hidden", !loggedIn);
       if (!loggedIn && adminPasswordInput) adminPasswordInput.focus();
+      if (loggedIn) renderTable(await fetchSchools());
+      return loggedIn;
     };
 
     adminLoginForm?.addEventListener("submit", async (event) => {
@@ -227,7 +251,7 @@ const metadata = {
       let errorMessage = "Nesprávné heslo.";
 
       try {
-        const response = await fetch(withBase("/api/admin/login"), {
+        const response = await fetch(withBase("/api/admin/login/"), {
           method: "POST",
           credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
@@ -236,25 +260,25 @@ const metadata = {
 
         if (response.ok) {
           if (adminLoginError) adminLoginError.classList.add("hidden");
+          adminStatus?.classList.add("hidden");
           await toggleAdminView();
           return;
         }
 
         if (response.status === 503) {
           errorMessage = "Administrace není nakonfigurovaná. Nejdřív nastavte její secrets v Cloudflare.";
+        } else if (response.status === 429) {
+          errorMessage = "Příliš mnoho pokusů o přihlášení. Zkuste to za minutu znovu.";
         }
       } catch {
         errorMessage = "Přihlášení se nepodařilo. Zkontrolujte připojení a zkuste to znovu.";
       }
 
-      if (adminLoginError) {
-        adminLoginError.textContent = errorMessage;
-        adminLoginError.classList.remove("hidden");
-      }
+      showLoginError(errorMessage);
     });
 
     adminLogoutButton?.addEventListener("click", async () => {
-      await fetch(withBase("/api/admin/logout"), {
+      await fetch(withBase("/api/admin/logout/"), {
         method: "POST",
         credentials: "same-origin",
       });
@@ -306,6 +330,27 @@ const metadata = {
       }
     };
 
+    const handleMutationResponse = async (response: Response, successMessage: string) => {
+      if (response.status === 401) {
+        // The status line lives inside the admin view, which is about to be hidden.
+        adminStatus?.classList.add("hidden");
+        showLoginError("Relace vypršela. Přihlaste se znovu.");
+        await toggleAdminView();
+        return false;
+      }
+      if (!response.ok) {
+        const body: unknown = await response.json().catch(() => null);
+        const detail = body !== null && typeof body === "object" && "error" in body && typeof body.error === "string"
+          ? ` (${body.error})`
+          : "";
+        showStatus(`Operace se nezdařila${detail}.`, true);
+        return false;
+      }
+      showStatus(successMessage, false);
+      renderTable(await fetchSchools());
+      return true;
+    };
+
     const saveSchool = async (item: SchoolRecord) => {
       try {
         const response = await fetch(withBase("/api/schools/"), {
@@ -314,16 +359,9 @@ const metadata = {
           body: JSON.stringify(item),
           credentials: "same-origin",
         });
-
-        if (!response.ok) {
-          throw new Error("Save failed");
-        }
-
-        const next = await fetchSchools();
-        renderTable(next);
-        resetForm();
+        if (await handleMutationResponse(response, "Škola byla uložena.")) resetForm();
       } catch {
-        renderTable(seed);
+        showStatus("Uložení se nezdařilo. Zkontrolujte připojení.", true);
       }
     };
 
@@ -331,18 +369,11 @@ const metadata = {
       try {
         const response = await fetch(withBase(`/api/schools/?id=${encodeURIComponent(id)}`), {
           method: "DELETE",
-          headers: getAuthHeaders(),
           credentials: "same-origin",
         });
-
-        if (!response.ok) {
-          throw new Error("Delete failed");
-        }
-
-        const next = await fetchSchools();
-        renderTable(next);
+        await handleMutationResponse(response, "Škola byla smazána.");
       } catch {
-        renderTable(seed);
+        showStatus("Smazání se nezdařilo. Zkontrolujte připojení.", true);
       }
     };
 
@@ -354,20 +385,21 @@ const metadata = {
     };
 
     const renderTable = (items: SchoolRecord[] = seed) => {
+      loadedSchools = items;
       renderStats(items);
       if (!tableBody) return;
 
       tableBody.innerHTML = items
         .map((school) => `
           <tr>
-            <td class="px-4 py-3 font-medium text-foreground">${school.name}</td>
-            <td class="px-4 py-3 text-muted-foreground">${school.region}</td>
-            <td class="px-4 py-3 text-muted-foreground">${focusLabels[school.focus] || school.focus}</td>
-            <td class="px-4 py-3 text-muted-foreground">${school.type}</td>
+            <td class="px-4 py-3 font-medium text-foreground">${escapeHtml(school.name)}</td>
+            <td class="px-4 py-3 text-muted-foreground">${escapeHtml(school.region)}</td>
+            <td class="px-4 py-3 text-muted-foreground">${escapeHtml(focusLabels[school.focus] || school.focus)}</td>
+            <td class="px-4 py-3 text-muted-foreground">${escapeHtml(school.type)}</td>
             <td class="px-4 py-3">
               <div class="flex gap-2">
-                <button type="button" data-edit="${school.id}" class="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-foreground">Upravit</button>
-                <button type="button" data-delete="${school.id}" class="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-red-400">Smazat</button>
+                <button type="button" data-edit="${escapeHtml(school.id)}" class="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-foreground">Upravit</button>
+                <button type="button" data-delete="${escapeHtml(school.id)}" class="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-red-400">Smazat</button>
               </div>
             </td>
           </tr>
@@ -408,6 +440,8 @@ const metadata = {
         button.addEventListener("click", async () => {
           const id = button.getAttribute("data-delete");
           if (!id) return;
+          const name = items.find((school) => school.id === id)?.name ?? id;
+          if (!window.confirm(`Opravdu smazat školu „${name}“?`)) return;
           await deleteSchool(id);
         });
       });
@@ -417,23 +451,27 @@ const metadata = {
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const formData = new FormData(form);
-        const id = String(formData.get("school-id") || crypto.randomUUID());
+        const existingId = String(formData.get("school-id") || "");
+        const existing = loadedSchools.find((school) => school.id === existingId);
+        const focus = String(formData.get("focus") || "technologie");
+        // The form edits only some columns; keep the rest of an existing record so the upsert does not wipe them.
         const item: SchoolRecord = {
-          id,
+          tags: [focus],
+          audience: [],
+          idealStudent: "",
+          strengths: [],
+          challenges: [],
+          ...existing,
+          id: existingId || crypto.randomUUID(),
           name: String(formData.get("name") || ""),
           region: String(formData.get("region") || "Praha"),
           type: String(formData.get("type") || "gymnázium"),
-          focus: String(formData.get("focus") || "technologie"),
+          focus,
           description: String(formData.get("description") || ""),
           acceptance: String(formData.get("acceptance") || ""),
           capacity: String(formData.get("capacity") || ""),
           commute: String(formData.get("commute") || ""),
           fee: String(formData.get("fee") || ""),
-          tags: [String(formData.get("focus") || "technologie")],
-          audience: [],
-          idealStudent: "",
-          strengths: [],
-          challenges: [],
         };
 
         await saveSchool(item);
@@ -444,12 +482,8 @@ const metadata = {
       resetButton.addEventListener("click", resetForm);
     }
 
-    toggleAdminView();
     renderTable(seed);
-    void isAuthenticated().then((loggedIn) => {
-      if (loggedIn) {
-        fetchSchools().then((items) => renderTable(items)).catch(() => renderTable(seed));
-      }
+    void toggleAdminView();
     });
   </script>
 </BaseLayout>

@@ -2,7 +2,6 @@
 export const prerender = true;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { siteConfig } from "../../config/site";
 import { schoolProgramSources, schoolProgramsSnapshotDate, schoolSnapshotDate, schoolSource, schools, uniqueSchoolPrograms } from "../../data/schools";
 import { withBase } from "../../lib/urls";
 
@@ -27,11 +26,8 @@ const phasingOutPrograms = uniqueSchoolPrograms(school.programs.filter((program)
   .sort((left, right) => left.name.localeCompare(right.name, "cs") || left.code.localeCompare(right.code, "cs"));
 const programSource = schoolProgramSources[school.region === "Praha" ? 0 : 1];
 const hasCoordinates = school.latitude !== null && school.longitude !== null;
-const comparisonSchools = schools.map(({ id, name, region, founder, address, izo, redIzo, ico, officialTypeCode, capacity, phone, email, latitude, longitude }) => ({
-  id, name, region, founder, address, izo, redIzo, ico, officialTypeCode, capacity, phone, email, latitude, longitude,
-}));
 const metadata = {
-  title: `${school.name} | ${siteConfig.name}`,
+  title: school.name,
   description: `${school.name}, ${school.address}. Oficiálně evidované studijní obory podle MŠMT.`,
 };
 ---
@@ -182,14 +178,14 @@ const metadata = {
           <div class="mt-4 grid gap-4 md:grid-cols-2">
             <label class="block">
               <span class="mb-2 block text-sm font-medium">První škola</span>
-              <select id="compare-school-a" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
-                {schools.map((item) => <option value={item.id} selected={item.id === school.id}>{item.name}</option>)}
+              <select id="compare-school-a" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground" disabled>
+                <option value={school.id}>{school.name}</option>
               </select>
             </label>
             <label class="block">
               <span class="mb-2 block text-sm font-medium">Druhá škola</span>
-              <select id="compare-school-b" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
-                {schools.map((item, index) => <option value={item.id} selected={item.id !== school.id && index === 1}>{item.name}</option>)}
+              <select id="compare-school-b" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground" disabled>
+                <option value="">Načítám školy…</option>
               </select>
             </label>
           </div>
@@ -211,7 +207,6 @@ const metadata = {
       <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     </>
   )}
-  <div id="school-data" data-schools={JSON.stringify(comparisonSchools)} hidden></div>
   <div
     id="school-position-data"
     data-school-name={school.name}
@@ -223,28 +218,17 @@ const metadata = {
   ></div>
   <script>
     import { withBase } from "../../lib/urls";
+    import {
+      distanceKm,
+      escapeHtml,
+      formatDistance,
+      getFavorites,
+      loadSchools,
+      toggleFavorite,
+      type SchoolSummary,
+    } from "../../lib/school-data";
 
-    document.addEventListener("astro:page-load", () => {
-    type SchoolRecord = {
-      id: string;
-      name: string;
-      region: string;
-      type: string;
-      founder: string;
-      founderCode: string;
-      address: string;
-      izo: string;
-      redIzo: string;
-      ico: string;
-      officialTypeCode: string;
-      capacity: string;
-      phone: string;
-      email: string;
-      website: string;
-      latitude: number | null;
-      longitude: number | null;
-    };
-    type GeolocatedSchool = SchoolRecord & { latitude: number; longitude: number };
+    type GeolocatedSchool = SchoolSummary & { latitude: number; longitude: number };
     /* eslint-disable no-unused-vars */
     type LatLng = { lat: number; lng: number };
     type LeafletMap = {
@@ -268,85 +252,6 @@ const metadata = {
     /* eslint-enable no-unused-vars */
     type WindowWithLeaflet = Window & { L?: LeafletApi };
 
-    const FAVORITES_KEY = "vyberstredni-favorites";
-    const dataElement = document.getElementById("school-data") as HTMLElement | null;
-    const schoolList: SchoolRecord[] = dataElement?.dataset.schools ? JSON.parse(dataElement.dataset.schools) : [];
-    const positionElement = document.getElementById("school-position-data") as HTMLElement | null;
-    const schoolName = positionElement?.dataset.schoolName ?? "Škola";
-    const schoolId = positionElement?.dataset.schoolId ?? "";
-    const hasCoordinates = positionElement?.dataset.hasCoordinates === "true";
-    const schoolLatitude = Number(positionElement?.dataset.latitude);
-    const schoolLongitude = Number(positionElement?.dataset.longitude);
-    const selectA = document.getElementById("compare-school-a") as HTMLSelectElement | null;
-    const selectB = document.getElementById("compare-school-b") as HTMLSelectElement | null;
-    const compareOutput = document.getElementById("compare-details");
-    const favoriteButton = document.getElementById("favorite-school-btn") as HTMLButtonElement | null;
-    const distanceOutput = document.getElementById("distance-output");
-    const nearbyOutput = document.getElementById("nearby-schools-output");
-    const locationStatus = document.getElementById("location-status");
-    const presetSelect = document.getElementById("home-location-preset") as HTMLSelectElement | null;
-    const geolocationButton = document.getElementById("use-geolocation-btn") as HTMLButtonElement | null;
-    const mapLocationButton = document.getElementById("open-map-location-btn") as HTMLButtonElement | null;
-    const mapElement = document.getElementById("home-map");
-
-    const escapeHtml = (value: string) =>
-      value.replace(/[&<>"']/g, (character) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-      })[character] ?? character);
-
-    const getFavorites = (): string[] => {
-      try {
-        const value = localStorage.getItem(FAVORITES_KEY);
-        return value ? JSON.parse(value) : [];
-      } catch {
-        return [];
-      }
-    };
-
-    const updateFavoriteButton = () => {
-      if (!favoriteButton) return;
-      const active = getFavorites().includes(schoolId);
-      favoriteButton.classList.toggle("is-favorite", active);
-      favoriteButton.setAttribute("aria-pressed", String(active));
-      favoriteButton.classList.toggle("border-primary/50", active);
-      favoriteButton.classList.toggle("bg-primary/10", active);
-      favoriteButton.classList.toggle("text-primary", active);
-      const icon = favoriteButton.querySelector(".favorite-icon");
-      if (icon) icon.textContent = active ? "♥" : "♡";
-    };
-
-    const renderComparison = () => {
-      if (!selectA || !selectB || !compareOutput || schoolList.length < 2) return;
-      if (selectA.value === selectB.value) {
-        selectB.value = schoolList.find((item) => item.id !== selectA.value)?.id ?? "";
-      }
-      const selectedSchools = [selectA.value, selectB.value]
-        .map((id) => schoolList.find((item) => item.id === id))
-        .filter((item): item is SchoolRecord => Boolean(item));
-      compareOutput.innerHTML = selectedSchools.map((item) => {
-        const rows: Array<[string, string]> = [
-          ["Region", item.region],
-          ["Typ v rejstříku", item.officialTypeCode === "D00" ? "Konzervatoř" : "Střední škola"],
-          ["Zřizovatel", item.founder],
-          ["Adresa", item.address],
-          ["Kapacita celé školy", item.capacity || "V rejstříku neuvedena"],
-          ["IZO", item.izo],
-          ["RED-IZO", item.redIzo],
-          ["IČO", item.ico],
-          ["Telefon", item.phone || "Neuveden"],
-          ["E-mail", item.email || "Neuveden"],
-        ];
-        return `<article class="rounded-2xl border border-border bg-background/40 p-4">
-          <h3 class="text-lg font-semibold">${escapeHtml(item.name)}</h3>
-          <dl class="mt-4 space-y-3 text-sm">${rows.map(([label, value]) => `<div><dt class="font-medium text-foreground">${escapeHtml(label)}</dt><dd class="text-muted-foreground">${escapeHtml(value)}</dd></div>`).join("")}</dl>
-        </article>`;
-      }).join("");
-    };
-
     const presets: Record<string, { label: string; latitude: number; longitude: number }> = {
       "praha-karlin": { label: "Praha - Karlín", latitude: 50.0904, longitude: 14.4337 },
       "praha-liben": { label: "Praha - Libeň", latitude: 50.1064, longitude: 14.4598 },
@@ -358,119 +263,178 @@ const metadata = {
       melnik: { label: "Mělník", latitude: 50.3502, longitude: 14.4757 },
       kolin: { label: "Kolín", latitude: 50.0281, longitude: 15.1985 },
     };
-    let activeHome = { ...presets["praha-karlin"] };
-    let map: LeafletMap | null = null;
-    let homeMarker: LeafletMarker | null = null;
-    const leaflet = (window as WindowWithLeaflet).L;
 
-    const toRadians = (degrees: number) => degrees * Math.PI / 180;
-    const distanceKm = (latitude: number, longitude: number) => {
-      const deltaLatitude = toRadians(schoolLatitude - latitude);
-      const deltaLongitude = toRadians(schoolLongitude - longitude);
-      const startLatitude = toRadians(latitude);
-      const endLatitude = toRadians(schoolLatitude);
-      const a = Math.sin(deltaLatitude / 2) ** 2 +
-        Math.sin(deltaLongitude / 2) ** 2 * Math.cos(startLatitude) * Math.cos(endLatitude);
-      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    };
-    const formatDistance = (km: number) => km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+    document.addEventListener("astro:page-load", () => {
+      const positionElement = document.getElementById("school-position-data") as HTMLElement | null;
+      if (!positionElement) return;
 
-    const renderDistance = () => {
-      if (!hasCoordinates || !distanceOutput || !nearbyOutput) return;
-      distanceOutput.textContent = formatDistance(distanceKm(activeHome.latitude, activeHome.longitude));
-      const nearby = schoolList
-        .filter((item): item is GeolocatedSchool =>
-          item.id !== schoolId && item.latitude !== null && item.longitude !== null)
-        .map((item) => ({
-          id: item.id,
-          name: item.name,
-          distance: distanceKmBetween(activeHome.latitude, activeHome.longitude, item.latitude, item.longitude),
-        }))
-        .sort((left, right) => left.distance - right.distance)
-        .slice(0, 3);
-      nearbyOutput.innerHTML = nearby.map((item) => `
-        <a class="rounded-lg border border-border bg-background/40 px-3 py-2 text-sm hover:border-primary/50" href="${withBase(`/skoly/${encodeURIComponent(item.id)}/`)}">
-          <span class="font-medium">${escapeHtml(item.name)}</span>
-          <span class="ml-1 text-muted-foreground">${formatDistance(item.distance)}</span>
-        </a>`).join("") || '<span class="text-muted-foreground">V okolí nejsou další geolokované školy.</span>';
-    };
+      const schoolName = positionElement.dataset.schoolName ?? "Škola";
+      const schoolId = positionElement.dataset.schoolId ?? "";
+      const hasCoordinates = positionElement.dataset.hasCoordinates === "true";
+      const schoolLatitude = Number(positionElement.dataset.latitude);
+      const schoolLongitude = Number(positionElement.dataset.longitude);
+      const selectA = document.getElementById("compare-school-a") as HTMLSelectElement | null;
+      const selectB = document.getElementById("compare-school-b") as HTMLSelectElement | null;
+      const compareOutput = document.getElementById("compare-details");
+      const favoriteButton = document.getElementById("favorite-school-btn") as HTMLButtonElement | null;
+      const distanceOutput = document.getElementById("distance-output");
+      const nearbyOutput = document.getElementById("nearby-schools-output");
+      const locationStatus = document.getElementById("location-status");
+      const presetSelect = document.getElementById("home-location-preset") as HTMLSelectElement | null;
+      const geolocationButton = document.getElementById("use-geolocation-btn") as HTMLButtonElement | null;
+      const mapLocationButton = document.getElementById("open-map-location-btn") as HTMLButtonElement | null;
+      const mapElement = document.getElementById("home-map");
 
-    const distanceKmBetween = (fromLatitude: number, fromLongitude: number, toLatitude: number, toLongitude: number) => {
-      const deltaLatitude = toRadians(toLatitude - fromLatitude);
-      const deltaLongitude = toRadians(toLongitude - fromLongitude);
-      const startLatitude = toRadians(fromLatitude);
-      const endLatitude = toRadians(toLatitude);
-      const a = Math.sin(deltaLatitude / 2) ** 2 +
-        Math.sin(deltaLongitude / 2) ** 2 * Math.cos(startLatitude) * Math.cos(endLatitude);
-      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    };
+      let schoolList: SchoolSummary[] = [];
+      let activeHome = { ...presets["praha-karlin"] };
+      let map: LeafletMap | null = null;
+      let homeMarker: LeafletMarker | null = null;
+      const leaflet = (window as WindowWithLeaflet).L;
 
-    const applyHomeLocation = (label: string, latitude: number, longitude: number) => {
-      activeHome = { label, latitude, longitude };
-      if (locationStatus) locationStatus.textContent = `Zvolené místo: ${label}. Vzdálenost je vzdušnou čarou.`;
-      if (homeMarker && map) {
-        homeMarker.setLatLng([latitude, longitude]);
-        map.fitBounds([[latitude, longitude], [schoolLatitude, schoolLongitude]]);
-      }
-      renderDistance();
-    };
+      const updateFavoriteButton = () => {
+        if (!favoriteButton) return;
+        const active = getFavorites().includes(schoolId);
+        favoriteButton.classList.toggle("is-favorite", active);
+        favoriteButton.setAttribute("aria-pressed", String(active));
+        favoriteButton.classList.toggle("border-primary/50", active);
+        favoriteButton.classList.toggle("bg-primary/10", active);
+        favoriteButton.classList.toggle("text-primary", active);
+        const icon = favoriteButton.querySelector(".favorite-icon");
+        if (icon) icon.textContent = active ? "♥" : "♡";
+      };
 
-    favoriteButton?.addEventListener("click", () => {
-      const favorites = getFavorites();
-      const next = favorites.includes(schoolId)
-        ? favorites.filter((id) => id !== schoolId)
-        : [...favorites, schoolId];
-      localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
-      updateFavoriteButton();
-    });
-    selectA?.addEventListener("change", renderComparison);
-    selectB?.addEventListener("change", renderComparison);
-    presetSelect?.addEventListener("change", () => {
-      const preset = presets[presetSelect.value];
-      if (preset) applyHomeLocation(preset.label, preset.latitude, preset.longitude);
-    });
-    geolocationButton?.addEventListener("click", () => {
-      if (!navigator.geolocation) {
-        if (locationStatus) locationStatus.textContent = "Tento prohlížeč geolokaci nepodporuje.";
-        return;
-      }
-      if (locationStatus) locationStatus.textContent = "Získávám vaši polohu…";
-      navigator.geolocation.getCurrentPosition(
-        ({ coords }) => applyHomeLocation("Moje poloha", coords.latitude, coords.longitude),
-        () => {
-          if (locationStatus) locationStatus.textContent = "Polohu se nepodařilo získat. Zvol místo z nabídky nebo kliknutím do mapy.";
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
-      );
-    });
-    mapLocationButton?.addEventListener("click", () => {
-      mapElement?.scrollIntoView({ behavior: "smooth", block: "center" });
-      if (locationStatus) locationStatus.textContent = "Kliknutím do mapy nastav místo bydliště.";
-    });
+      const renderComparison = () => {
+        if (!selectA || !selectB || !compareOutput || schoolList.length < 2) return;
+        if (selectA.value === selectB.value) {
+          selectB.value = schoolList.find((item) => item.id !== selectA.value)?.id ?? "";
+        }
+        const selectedSchools = [selectA.value, selectB.value]
+          .map((id) => schoolList.find((item) => item.id === id))
+          .filter((item): item is SchoolSummary => Boolean(item));
+        compareOutput.innerHTML = selectedSchools.map((item) => {
+          const rows: Array<[string, string]> = [
+            ["Region", item.region],
+            ["Typ v rejstříku", item.officialTypeCode === "D00" ? "Konzervatoř" : "Střední škola"],
+            ["Zřizovatel", item.founder],
+            ["Adresa", item.address],
+            ["Kapacita celé školy", item.capacity || "V rejstříku neuvedena"],
+            ["IZO", item.izo],
+            ["RED-IZO", item.redIzo],
+            ["IČO", item.ico],
+            ["Telefon", item.phone || "Neuveden"],
+            ["E-mail", item.email || "Neuveden"],
+          ];
+          return `<article class="rounded-2xl border border-border bg-background/40 p-4">
+            <h3 class="text-lg font-semibold">${escapeHtml(item.name)}</h3>
+            <dl class="mt-4 space-y-3 text-sm">${rows.map(([label, value]) => `<div><dt class="font-medium text-foreground">${escapeHtml(label)}</dt><dd class="text-muted-foreground">${escapeHtml(value)}</dd></div>`).join("")}</dl>
+          </article>`;
+        }).join("");
+      };
 
-    if (hasCoordinates && mapElement && leaflet) {
-      map = leaflet.map("home-map", { zoomControl: true, scrollWheelZoom: true });
-      map.setView([activeHome.latitude, activeHome.longitude], 9);
-      leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-      }).addTo(map);
-      leaflet.marker([schoolLatitude, schoolLongitude]).addTo(map).bindPopup(escapeHtml(schoolName));
-      homeMarker = leaflet.marker([activeHome.latitude, activeHome.longitude], { draggable: true }).addTo(map);
-      homeMarker.on("dragend", () => {
-        const position = homeMarker?.getLatLng();
-        if (position) applyHomeLocation("Vybrané místo na mapě", position.lat, position.lng);
+      const renderNearby = () => {
+        if (!hasCoordinates || !nearbyOutput || !schoolList.length) return;
+        const nearby = schoolList
+          .filter((item): item is GeolocatedSchool =>
+            item.id !== schoolId && item.latitude !== null && item.longitude !== null)
+          .map((item) => ({
+            id: item.id,
+            name: item.name,
+            distance: distanceKm(activeHome.latitude, activeHome.longitude, item.latitude, item.longitude),
+          }))
+          .sort((left, right) => left.distance - right.distance)
+          .slice(0, 3);
+        nearbyOutput.innerHTML = nearby.map((item) => `
+          <a class="rounded-lg border border-border bg-background/40 px-3 py-2 text-sm hover:border-primary/50" href="${withBase(`/skoly/${encodeURIComponent(item.id)}/`)}">
+            <span class="font-medium">${escapeHtml(item.name)}</span>
+            <span class="ml-1 text-muted-foreground">${formatDistance(item.distance)}</span>
+          </a>`).join("") || '<span class="text-muted-foreground">V okolí nejsou další geolokované školy.</span>';
+      };
+
+      const renderDistance = () => {
+        if (!hasCoordinates || !distanceOutput) return;
+        distanceOutput.textContent = formatDistance(distanceKm(activeHome.latitude, activeHome.longitude, schoolLatitude, schoolLongitude));
+        renderNearby();
+      };
+
+      const applyHomeLocation = (label: string, latitude: number, longitude: number) => {
+        activeHome = { label, latitude, longitude };
+        if (locationStatus) locationStatus.textContent = `Zvolené místo: ${label}. Vzdálenost je vzdušnou čarou.`;
+        if (homeMarker && map) {
+          homeMarker.setLatLng([latitude, longitude]);
+          map.fitBounds([[latitude, longitude], [schoolLatitude, schoolLongitude]]);
+        }
+        renderDistance();
+      };
+
+      favoriteButton?.addEventListener("click", () => {
+        toggleFavorite(schoolId);
+        updateFavoriteButton();
       });
-      map.on("click", ({ latlng }) => applyHomeLocation("Vybrané místo na mapě", latlng.lat, latlng.lng));
-      map.fitBounds([[activeHome.latitude, activeHome.longitude], [schoolLatitude, schoolLongitude]]);
-      window.setTimeout(() => map?.invalidateSize(), 0);
-    } else if (hasCoordinates && locationStatus) {
-      locationStatus.textContent = "Mapu se nepodařilo načíst. Zkontroluj připojení a zkus stránku obnovit.";
-    }
+      selectA?.addEventListener("change", renderComparison);
+      selectB?.addEventListener("change", renderComparison);
+      presetSelect?.addEventListener("change", () => {
+        const preset = presets[presetSelect.value];
+        if (preset) applyHomeLocation(preset.label, preset.latitude, preset.longitude);
+      });
+      geolocationButton?.addEventListener("click", () => {
+        if (!navigator.geolocation) {
+          if (locationStatus) locationStatus.textContent = "Tento prohlížeč geolokaci nepodporuje.";
+          return;
+        }
+        if (locationStatus) locationStatus.textContent = "Získávám vaši polohu…";
+        navigator.geolocation.getCurrentPosition(
+          ({ coords }) => applyHomeLocation("Moje poloha", coords.latitude, coords.longitude),
+          () => {
+            if (locationStatus) locationStatus.textContent = "Polohu se nepodařilo získat. Zvol místo z nabídky nebo kliknutím do mapy.";
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+        );
+      });
+      mapLocationButton?.addEventListener("click", () => {
+        mapElement?.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (locationStatus) locationStatus.textContent = "Kliknutím do mapy nastav místo bydliště.";
+      });
 
-    updateFavoriteButton();
-    renderComparison();
-    renderDistance();
+      if (hasCoordinates && mapElement && leaflet) {
+        map = leaflet.map("home-map", { zoomControl: true, scrollWheelZoom: true });
+        map.setView([activeHome.latitude, activeHome.longitude], 9);
+        leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19,
+        }).addTo(map);
+        leaflet.marker([schoolLatitude, schoolLongitude]).addTo(map).bindPopup(escapeHtml(schoolName));
+        homeMarker = leaflet.marker([activeHome.latitude, activeHome.longitude], { draggable: true }).addTo(map);
+        homeMarker.on("dragend", () => {
+          const position = homeMarker?.getLatLng();
+          if (position) applyHomeLocation("Vybrané místo na mapě", position.lat, position.lng);
+        });
+        map.on("click", ({ latlng }) => applyHomeLocation("Vybrané místo na mapě", latlng.lat, latlng.lng));
+        map.fitBounds([[activeHome.latitude, activeHome.longitude], [schoolLatitude, schoolLongitude]]);
+        window.setTimeout(() => map?.invalidateSize(), 0);
+      } else if (hasCoordinates && locationStatus) {
+        locationStatus.textContent = "Mapu se nepodařilo načíst. Zkontroluj připojení a zkus stránku obnovit.";
+      }
+
+      updateFavoriteButton();
+      renderDistance();
+
+      loadSchools()
+        .then((schools) => {
+          schoolList = schools; // already sorted by name
+          [selectA, selectB].forEach((select) => {
+            if (!select) return;
+            select.replaceChildren(...schoolList.map((item) => new Option(item.name, item.id)));
+            select.disabled = false;
+          });
+          if (selectA) selectA.value = schoolId;
+          if (selectB) selectB.value = schoolList.find((item) => item.id !== schoolId)?.id ?? "";
+          renderComparison();
+          renderNearby();
+        })
+        .catch(() => {
+          if (compareOutput) compareOutput.innerHTML = '<p class="text-sm text-muted-foreground">Seznam škol pro porovnání se nepodařilo načíst. Zkus stránku obnovit.</p>';
+          if (nearbyOutput) nearbyOutput.innerHTML = '<span class="text-muted-foreground">Okolní školy se nepodařilo načíst.</span>';
+        });
     });
   </script>
 </BaseLayout>

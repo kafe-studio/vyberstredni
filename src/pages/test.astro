@@ -2,22 +2,14 @@
 export const prerender = true;
 
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { siteConfig } from "../config/site";
-import { schools, uniqueSchoolPrograms } from "../data/schools";
-import { withBase } from "../lib/urls";
+import { schools } from "../data/schools";
 
 const metadata = {
-  title: "Test zájmů | " + siteConfig.name,
+  title: "Test zájmů",
   description: "Osm otázek pokrývá 12 oblastí zájmu a propojí tvoje odpovědi s konkrétními středoškolskými obory.",
 };
 
 const totalSchoolCount = schools.length;
-const recommendationSchools = schools.map(({ id, name, region, type, focus, address, founder, founderCode, officialTypeCode, izo, phone, tags, latitude, longitude, programs }) => ({
-  id, name, region, type, focus, address, founder, founderCode, officialTypeCode, izo, phone, tags,
-  latitude, longitude,
-  programs: uniqueSchoolPrograms(programs.filter((program) => !program.isPhasingOut))
-    .map(({ code, name, isPhasingOut }) => ({ code, name, isPhasingOut })),
-}));
 const questions = [
   {
     id: "interests",
@@ -315,11 +307,12 @@ const questions = [
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <div id="school-data" data-schools={JSON.stringify(recommendationSchools)} hidden></div>
   <script>
     import { withBase } from "../lib/urls";
+    import { distanceKm as getDistanceKm, escapeHtml, formatDistance, loadSchoolPrograms, loadSchools } from "../lib/school-data";
 
     document.addEventListener("astro:page-load", () => {
+    if (!document.getElementById("quiz-form")) return;
     /* eslint-disable no-unused-vars */
     type Category = "digital" | "engineering" | "science" | "nature" | "health" | "safety" | "design" | "business" | "hospitality" | "people" | "practical" | "general";
     type StudentProfile = "balanced" | Category;
@@ -374,7 +367,6 @@ const questions = [
       officialTypeCode: string;
       izo: string;
       phone: string;
-      tags: string[];
       latitude: number | null;
       longitude: number | null;
       programs: SchoolProgram[];
@@ -382,8 +374,15 @@ const questions = [
     type RankedProgram = SchoolProgram & { categories: Category[]; score: number };
     type RankedSchool = SchoolRecord & { score: number; distanceKm: number | null; reasons: string[]; matchedPrograms: RankedProgram[] };
 
-    const schoolPayload = document.getElementById("school-data");
-    const schoolData: SchoolRecord[] = schoolPayload ? JSON.parse(schoolPayload.dataset.schools ?? "[]") : [];
+    // Only currently registered programs are relevant for recommendations.
+    // Loads are cached in school-data; a failed load is retried on the next call.
+    const getSchoolData = (): Promise<SchoolRecord[] | null> => Promise.all([loadSchools(), loadSchoolPrograms()])
+      .then(([schools, programsById]) => schools.map((school) => ({
+        ...school,
+        programs: (programsById[school.id] ?? []).filter((program) => !program.isPhasingOut),
+      })))
+      .catch(() => null);
+    void getSchoolData();
 
     const getFitReasons = (school: SchoolRecord, program: SchoolProgram, priorityValue: PriorityProfile) => {
       const reasons: string[] = [];
@@ -610,30 +609,6 @@ const questions = [
         if (leaflet) homeMarker = leaflet.marker([location.latitude, location.longitude]).bindPopup("Zvolené bydliště").addTo(homeMap);
       }
     };
-
-    const toRadians = (degrees: number) => degrees * Math.PI / 180;
-    const getDistanceKm = (fromLatitude: number, fromLongitude: number, toLatitude: number, toLongitude: number) => {
-      const deltaLatitude = toRadians(toLatitude - fromLatitude);
-      const deltaLongitude = toRadians(toLongitude - fromLongitude);
-      const fromLatitudeRadians = toRadians(fromLatitude);
-      const toLatitudeRadians = toRadians(toLatitude);
-      const value = Math.sin(deltaLatitude / 2) ** 2 +
-        Math.sin(deltaLongitude / 2) ** 2 * Math.cos(fromLatitudeRadians) * Math.cos(toLatitudeRadians);
-      const boundedValue = Math.min(1, Math.max(0, value));
-      return 6371 * 2 * Math.atan2(Math.sqrt(boundedValue), Math.sqrt(1 - boundedValue));
-    };
-    const formatDistance = (distance: number) => distance < 1
-      ? `${Math.round(distance * 1000)} m`
-      : `${distance.toFixed(1)} km`;
-
-    const escapeHtml = (value: string) =>
-      value.replace(/[&<>"']/g, (character) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-      })[character] ?? character);
 
     const leaflet = (window as WindowWithLeaflet).L;
     const renderRecommendationMarkers = (rankedSchools: RankedSchool[]) => {
@@ -961,8 +936,19 @@ const questions = [
         return;
       }
       const homeLocation = activeHomeLocation;
-
       const formData = new FormData(form);
+      const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (submitButton) submitButton.disabled = true;
+
+      void getSchoolData().then((schoolData) => {
+      if (submitButton) submitButton.disabled = false;
+      if (!schoolData) {
+        if (summary) summary.textContent = "Data škol se nepodařilo načíst. Zkontroluj připojení a zkus to znovu.";
+        if (recommendations) recommendations.replaceChildren();
+        results?.classList.remove("hidden");
+        return;
+      }
+
       const totals: Record<Category, number> = {
         digital: 0,
         engineering: 0,
@@ -1098,6 +1084,7 @@ const questions = [
         results.classList.remove("hidden");
         results.scrollIntoView({ behavior: "smooth", block: "start" });
       }
+      });
     });
     });
   </script>

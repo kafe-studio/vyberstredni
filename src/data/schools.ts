@@ -1,8 +1,13 @@
 import officialSchools from "./official-schools.json";
+import type { CatalogProgram, SchoolSummary } from "../lib/school-data";
 
-export type SchoolRegion = "Praha" | "Středočeský kraj";
-export type SchoolType = "gymnázium" | "střední škola" | "odborné lyceum" | "učiliště" | "konzervatoř";
-export type FocusArea = "technologie" | "design" | "ekonomie" | "zdravotnictví" | "společnost";
+export const SCHOOL_REGIONS = ["Praha", "Středočeský kraj"] as const;
+export const SCHOOL_TYPES = ["gymnázium", "střední škola", "odborné lyceum", "učiliště", "konzervatoř"] as const;
+export const FOCUS_AREAS = ["technologie", "design", "ekonomie", "zdravotnictví", "společnost"] as const;
+
+export type SchoolRegion = (typeof SCHOOL_REGIONS)[number];
+export type SchoolType = (typeof SCHOOL_TYPES)[number];
+export type FocusArea = (typeof FOCUS_AREAS)[number];
 
 export type SchoolProgram = {
   code: string;
@@ -129,3 +134,42 @@ export const schoolSnapshotDate = officialSchools.exportedAt;
 export const schoolSource = officialSchools.source;
 export const schoolProgramSources = officialSchools.programSource;
 export const schoolProgramsSnapshotDate = officialSchools.programsExportedAt;
+
+/**
+ * Unique programs of a school; a phasing-out record is dropped when the same code and name
+ * is also currently registered.
+ */
+export const catalogPrograms = (programs: readonly SchoolProgram[]): CatalogProgram[] => {
+  const uniquePrograms = uniqueSchoolPrograms(programs);
+  const currentKeys = new Set(
+    uniquePrograms
+      .filter((program) => !program.isPhasingOut)
+      .map((program) => JSON.stringify([program.code, program.name])),
+  );
+  return uniquePrograms
+    .filter((program) => !program.isPhasingOut || !currentKeys.has(JSON.stringify([program.code, program.name])))
+    .map(({ code, name, isPhasingOut }) => ({ code, name, isPhasingOut }));
+};
+
+export const toSchoolSummary = (school: School): SchoolSummary => ({
+  id: school.id,
+  name: school.name,
+  region: school.region,
+  type: school.type,
+  focus: school.focus,
+  founder: school.founder,
+  founderCode: school.founderCode,
+  address: school.address,
+  izo: school.izo,
+  redIzo: school.redIzo,
+  ico: school.ico,
+  officialTypeCode: school.officialTypeCode,
+  capacity: school.capacity,
+  phone: school.phone,
+  email: school.email,
+  website: school.website,
+  latitude: school.latitude,
+  longitude: school.longitude,
+});
+
+export const schoolsByName = [...schools].sort((left, right) => left.name.localeCompare(right.name, "cs"));
