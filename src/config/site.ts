@@ -15,15 +15,11 @@ export const siteConfig = {
     instagram: "",
     facebook: "",
   },
+  /** Main navigation; the quiz is rendered separately as the call-to-action button. */
   navLinks: [
-    { text: "Domů", href: "/" },
-    { text: "Test zájmů", href: "/test/" },
     { text: "Školy", href: "/skoly/" },
     { text: "Obory", href: "/obory/" },
     { text: "Oblíbené", href: "/oblibene/" },
-    { text: "Admin", href: "/admin/" },
-    { text: "Vhodné školy", href: "/#schools" },
-    { text: "Jak to funguje", href: "/#how-it-works" },
-    { text: "Kontakt", href: "/#contact" },
   ],
+  quizLink: { text: "Test zájmů", href: "/test/" },
 };

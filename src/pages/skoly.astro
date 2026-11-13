@@ -2,6 +2,7 @@
 export const prerender = true;
 
 import BaseLayout from "../layouts/BaseLayout.astro";
+import Character from "../components/Character.astro";
 import { withBase } from "../lib/urls";
 import { schoolSnapshotDate, schoolSource, schools, schoolsByName, uniqueSchoolPrograms } from "../data/schools";
 
@@ -32,27 +33,34 @@ const metadata = {
 <BaseLayout {metadata}>
   <section class="px-6 pb-16 pt-28 md:pt-32">
     <div class="mx-auto max-w-6xl">
-      <header class="mb-8">
-        <h1 class="text-4xl font-black md:text-5xl">Katalog škol</h1>
-        <p class="mt-3 text-lg text-muted-foreground">
-          {schools.length} středních škol a konzervatoří v Praze a Středočeském kraji.
-        </p>
+      <header class="relative mb-8 flex items-end justify-between gap-6">
+        <div>
+          <span class="sticker-note -rotate-2 bg-sky text-ink">{schools.length} škol</span>
+          <h1 class="mt-4 text-4xl font-extrabold md:text-6xl">Katalog škol</h1>
+          <p class="mt-3 text-lg text-muted-foreground">
+            Střední školy a konzervatoře v Praze a Středočeském kraji.
+          </p>
+        </div>
+        <div class="relative isolate hidden w-36 shrink-0 sm:block md:w-44">
+          <div class="blob inset-x-0 bottom-0 top-8 bg-lime/50"></div>
+          <Character name="cap" class="character-float relative w-full" />
+        </div>
       </header>
 
-      <div class="mb-6 rounded-[1.5rem] border border-border bg-card p-4 md:p-5">
+      <div class="mb-6 track-card p-4 md:p-5">
         <label class="block">
           <span class="sr-only">Hledat</span>
           <input
             id="school-search"
             type="search"
             placeholder="🔍 Hledej školu, obor nebo město…"
-            class="w-full rounded-xl border border-border bg-background/40 px-4 py-3 text-lg text-foreground placeholder:text-muted-foreground"
+            class="w-full rounded-xl border-2 border-ink bg-white px-4 py-3 text-lg text-foreground placeholder:text-muted-foreground"
           />
         </label>
         <div class="mt-3 grid gap-3 sm:grid-cols-3">
           <label class="block">
             <span class="mb-1 block text-xs font-medium text-muted-foreground">Kraj</span>
-            <select id="filter-region" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+            <select id="filter-region" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
               <option value="">Praha i Středočeský kraj</option>
               <option value="Praha">Praha</option>
               <option value="Středočeský kraj">Středočeský kraj</option>
@@ -60,7 +68,7 @@ const metadata = {
           </label>
           <label class="block">
             <span class="mb-1 block text-xs font-medium text-muted-foreground">Typ studia</span>
-            <select id="filter-track" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+            <select id="filter-track" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
               <option value="">Všechny</option>
               <option value="general">Gymnázium</option>
               <option value="maturita">Odborná škola s maturitou</option>
@@ -69,7 +77,7 @@ const metadata = {
           </label>
           <label class="block">
             <span class="mb-1 block text-xs font-medium text-muted-foreground">Zřizovatel</span>
-            <select id="filter-founder" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+            <select id="filter-founder" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
               <option value="">Všechny</option>
               <option value="public">Veřejné</option>
               <option value="private">Soukromé</option>
@@ -216,8 +224,17 @@ const metadata = {
         updateFavoriteButtons();
       };
 
+      const syncQueryParam = () => {
+        const url = new URL(window.location.href);
+        const query = searchInput.value.trim();
+        if (query) url.searchParams.set("q", query);
+        else url.searchParams.delete("q");
+        if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url);
+      };
+
       const resetAndRender = () => {
         visibleLimit = pageSize;
+        syncQueryParam();
         render();
       };
 
@@ -240,6 +257,10 @@ const metadata = {
         visibleLimit += pageSize;
         render();
       });
+
+      // Pre-fill the search from links like /skoly/?q=kuchař (interest shortcuts on the home page).
+      const initialQuery = new URLSearchParams(window.location.search).get("q");
+      if (initialQuery) searchInput.value = initialQuery;
 
       updateFavoriteButtons();
 

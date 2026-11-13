@@ -1,6 +1,8 @@
 ---
 interface Props {
   title?: string; description?: string; ogImage?: string; canonical?: string;
+  /** Show the "take the quiz" banner above the footer (default true). */
+  showQuizBanner?: boolean;
   metadata?: { title?: string; description?: string; ogImage?: string; canonical?: string; ignoreTitleTemplate?: boolean; };
 }
 import Seo from "../components/seo/Seo.astro";
@@ -12,7 +14,7 @@ import { Font } from "astro:assets";
 import "../styles/global.css";
 import { siteConfig } from "../config/site";
 
-const { title, description, ogImage, canonical, metadata } = Astro.props;
+const { title, description, ogImage, canonical, metadata, showQuizBanner = true } = Astro.props;
 const finalTitle = metadata?.title || title;
 const finalDescription = metadata?.description || description;
 const finalOgImage = metadata?.ogImage || ogImage;
@@ -26,15 +28,17 @@ const finalIgnoreTitleTemplate = metadata?.ignoreTitleTemplate || false;
     <Seo title={finalTitle} description={finalDescription} ogImage={finalOgImage} canonical={finalCanonical} ignoreTitleTemplate={finalIgnoreTitleTemplate} />
     <Schema type="WebSite" data={{}} />
     <Font cssVariable="--font-inter" preload />
+    <Font cssVariable="--font-bricolage" preload />
+    <meta name="theme-color" content="#fff8ef" />
     <ClientRouter />
     <slot name="head" />
   </head>
   <body class="bg-background text-foreground antialiased tracking-tight">
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 rounded-md bg-primary px-4 py-2 text-white">Preskocit</a>
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-[60] rounded-md bg-primary px-4 py-2 text-white">Přeskočit na obsah</a>
     <div class="relative flex min-h-screen flex-col overflow-x-hidden">
       <Navbar />
       <main id="main-content" class="relative grow"><slot /></main>
-      <Footer />
+      <Footer showQuizBanner={showQuizBanner} />
     </div>
     <script>
       function setupReveal() {

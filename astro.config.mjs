@@ -47,6 +47,15 @@ export default defineConfig({
       subsets: ["latin", "latin-ext"],
       fallbacks: ["ui-sans-serif", "system-ui", "sans-serif"],
     },
+    {
+      provider: fontProviders.fontsource(),
+      name: "Bricolage Grotesque",
+      cssVariable: "--font-bricolage",
+      weights: ["600 800"],
+      styles: ["normal"],
+      subsets: ["latin", "latin-ext"],
+      fallbacks: ["ui-sans-serif", "system-ui", "sans-serif"],
+    },
   ],
   vite: {
     plugins: [tailwindcss()],

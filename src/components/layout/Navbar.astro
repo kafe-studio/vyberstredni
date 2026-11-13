@@ -1,28 +1,41 @@
 ---
 import { siteConfig } from "../../config/site";
 import { withBase } from "../../lib/urls";
+
+const currentPath = Astro.url.pathname;
+const isActive = (href: string) => currentPath.startsWith(withBase(href));
 ---
 
-<nav class="fixed top-0 z-50 w-full bg-background/70 backdrop-blur-xl border-b border-border" aria-label="Hlavni navigace">
-  <div class="mx-auto max-w-7xl flex items-center justify-between px-6 py-4 lg:px-8">
-    <a href={withBase("/")} class="text-lg font-bold text-foreground transition-opacity hover:opacity-80">
+<nav class="fixed top-0 z-50 w-full border-b-2 border-ink bg-background/90 backdrop-blur-md" aria-label="Hlavní navigace">
+  <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3 lg:px-8">
+    <a href={withBase("/")} class="flex items-center gap-2 font-display text-xl font-extrabold text-ink">
+      <span class="grid h-9 w-9 place-items-center rounded-xl border-2 border-ink bg-sun text-lg shadow-[2px_2px_0_var(--ink)]" aria-hidden="true">🎒</span>
       {siteConfig.name}
     </a>
-    <div class="hidden md:flex items-center gap-8">
+    <div class="hidden items-center gap-2 md:flex">
       {siteConfig.navLinks.map((link) => (
-        <a href={withBase(link.href)} class="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">{link.text}</a>
+        <a
+          href={withBase(link.href)}
+          class:list={[
+            "rounded-full px-4 py-2 text-sm font-semibold transition-colors hover:bg-lilac",
+            isActive(link.href) ? "bg-lilac text-primary" : "text-ink",
+          ]}
+          aria-current={isActive(link.href) ? "page" : undefined}
+        >{link.text}</a>
       ))}
+      <a href={withBase(siteConfig.quizLink.href)} class="btn-primary ml-2 px-5 py-2 text-sm">✨ {siteConfig.quizLink.text}</a>
     </div>
-    <button id="mobile-menu-button" type="button" class="p-2 rounded-lg text-foreground md:hidden" aria-controls="mobile-menu" aria-expanded="false" aria-label="Menu">
-      <svg id="menu-icon-closed" class="block h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16" /></svg>
-      <svg id="menu-icon-open" class="hidden h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" /></svg>
+    <button id="mobile-menu-button" type="button" class="rounded-xl border-2 border-ink bg-white p-2 text-ink md:hidden" aria-controls="mobile-menu" aria-expanded="false" aria-label="Menu">
+      <svg id="menu-icon-closed" class="block h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+      <svg id="menu-icon-open" class="hidden h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
     </button>
   </div>
   <div class="hidden md:hidden" id="mobile-menu">
-    <div class="glass mx-4 mb-4 p-2 rounded-xl space-y-1">
+    <div class="glass mx-4 mb-4 space-y-1 rounded-2xl p-2">
       {siteConfig.navLinks.map((link) => (
-        <a href={withBase(link.href)} class="block rounded-lg px-4 py-3 text-base font-medium text-foreground hover:text-primary transition-colors">{link.text}</a>
+        <a href={withBase(link.href)} class="block rounded-xl px-4 py-3 text-base font-semibold text-ink hover:bg-lilac">{link.text}</a>
       ))}
+      <a href={withBase(siteConfig.quizLink.href)} class="btn-primary mt-2 w-full">✨ {siteConfig.quizLink.text}</a>
     </div>
   </div>
 </nav>

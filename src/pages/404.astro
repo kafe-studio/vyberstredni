@@ -1,16 +1,27 @@
 ---
 export const prerender = true;
 import BaseLayout from "../layouts/BaseLayout.astro";
+import Character from "../components/Character.astro";
 import { withBase } from "../lib/urls";
-const metadata = { title: "404", description: "Stranka nenalezena.", ignoreTitleTemplate: true };
+const metadata = { title: "Stránka nenalezena", description: "Tahle stránka neexistuje." };
 ---
 
 <BaseLayout {metadata}>
-  <section class="min-h-[60vh] flex items-center justify-center text-center px-6">
-    <div>
-      <p class="text-8xl font-extrabold text-primary mb-4">404</p>
-      <p class="text-xl text-muted-foreground mb-8">Stranka nenalezena</p>
-      <a href={withBase("/")} class="btn-primary py-3 px-8">Zpet na hlavni stranku</a>
+  <section class="flex min-h-[70vh] items-center px-6 pt-24">
+    <div class="mx-auto grid max-w-4xl items-center gap-10 md:grid-cols-[1fr_16rem]">
+      <div>
+        <span class="sticker-note -rotate-3 bg-sun">Chyba 404</span>
+        <h1 class="mt-4 text-5xl font-extrabold md:text-6xl">Tady nic není</h1>
+        <p class="mt-4 text-lg text-muted-foreground">Stránka se ztratila. Zkus to znovu od začátku nebo rovnou hledej školu.</p>
+        <div class="mt-8 flex flex-col gap-4 sm:flex-row">
+          <a href={withBase("/")} class="btn-primary">Zpět na úvod</a>
+          <a href={withBase("/skoly/")} class="btn-outline">Katalog škol</a>
+        </div>
+      </div>
+      <div class="relative isolate mx-auto w-48 md:w-full">
+        <div class="blob blob-alt inset-x-0 bottom-0 top-12 bg-sky/30"></div>
+        <Character name="vest" class="character-float relative w-full" eager />
+      </div>
     </div>
   </section>
 </BaseLayout>

@@ -2,54 +2,42 @@
 export const prerender = true;
 
 import BaseLayout from "../layouts/BaseLayout.astro";
+import Character from "../components/Character.astro";
 import { withBase } from "../lib/urls";
 
 const metadata = {
   title: "Oblíbené školy",
-  description: "Spravujte si svůj shortlist škol a porovnávejte jen ty nejvhodnější možnosti.",
+  description: "Školy, které sis uložil/a srdíčkem. Na jednom místě a připravené k porovnání.",
 };
 ---
 
 <BaseLayout {metadata}>
-  <section class="px-6 py-24">
+  <section class="px-6 pb-16 pt-28 md:pt-32">
     <div class="mx-auto max-w-6xl">
-      <div class="mb-10 text-center reveal">
-        <p class="text-sm font-semibold uppercase tracking-[0.22em] text-muted-foreground">Oblíbené</p>
-        <h1 class="mt-4 text-4xl font-black md:text-5xl">Můj shortlist škol</h1>
-        <p class="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-          Ulož si školy, které se ti líbí, a porovnávej je snadno před rozhodnutím.
-        </p>
-      </div>
-
-      <div class="mb-6 flex items-center justify-between gap-4 reveal">
-        <a href={withBase("/skoly/")} class="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">← Zpět na seznam škol</a>
-        <p class="text-sm text-muted-foreground">Počet oblíbených: <span id="favorite-total">0</span></p>
-      </div>
-
-      <div id="favorite-summary" class="mb-8 hidden rounded-[2rem] border border-border bg-card p-6 reveal">
-        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Souhrn shortlistu</p>
-        <div class="mt-4 grid gap-4 md:grid-cols-3">
-          <div class="rounded-2xl border border-border bg-background/40 p-4">
-            <p class="text-sm text-muted-foreground">Školy v shortlistu</p>
-            <p id="shortlist-count" class="mt-2 text-xl font-bold text-foreground">0</p>
-          </div>
-          <div class="rounded-2xl border border-border bg-background/40 p-4">
-            <p class="text-sm text-muted-foreground">Nejčastější orientační oblast</p>
-            <p id="best-focus" class="mt-2 text-xl font-bold text-foreground">—</p>
-          </div>
-          <div class="rounded-2xl border border-border bg-background/40 p-4">
-            <p class="text-sm text-muted-foreground">Rozložení regionů</p>
-            <p id="region-mix" class="mt-2 text-xl font-bold text-foreground">—</p>
-          </div>
+      <header class="mb-8 flex items-end justify-between gap-6">
+        <div>
+          <span class="sticker-note -rotate-2 bg-pink text-ink">♥ <span id="favorite-total">0</span> uložených</span>
+          <h1 class="mt-4 text-4xl font-extrabold md:text-6xl">Moje oblíbené</h1>
+          <p class="mt-3 text-lg text-muted-foreground">Školy, které sis uložil/a srdíčkem.</p>
         </div>
+        <div class="relative isolate hidden w-36 shrink-0 sm:block md:w-44">
+          <div class="blob inset-x-0 bottom-0 top-10 bg-pink/25"></div>
+          <Character name="hoodie" class="character-float relative w-full" />
+        </div>
+      </header>
+
+      <p id="favorite-status" class="mb-4 text-sm text-muted-foreground" aria-live="polite">Načítám…</p>
+
+      <div id="favorite-empty" class="track-card grid items-center gap-6 bg-peach p-8 md:grid-cols-[1fr_auto]" hidden>
+        <div>
+          <h2 class="text-2xl font-extrabold">Zatím tu nic není</h2>
+          <p class="mt-2 text-muted-foreground">U každé školy v katalogu klikni na srdíčko ♡ a objeví se tady.</p>
+          <a href={withBase("/skoly/")} class="btn-primary mt-5">Projít katalog škol</a>
+        </div>
+        <Character name="bun" class="mx-auto h-44 w-auto md:h-52" />
       </div>
 
-      <div id="favorite-empty" class="hidden rounded-[2rem] border border-dashed border-border bg-card p-8 text-center reveal">
-        <p class="text-lg font-semibold text-foreground">Zatím nemáš žádné oblíbené školy.</p>
-        <p class="mt-2 text-sm text-muted-foreground">Klikni na „Oblíbené“ u škol v katalogu nebo na detailu školy a vytvoř si shortlist.</p>
-      </div>
-
-      <div id="favorite-grid" class="grid gap-6 md:grid-cols-2 xl:grid-cols-3"></div>
+      <div id="favorite-grid" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
     </div>
   </section>
 
@@ -57,122 +45,61 @@ const metadata = {
     import { withBase } from "../lib/urls";
     import { escapeHtml, getFavorites, loadSchools, setFavorites, type SchoolSummary } from "../lib/school-data";
 
-    type FavoriteSchool = SchoolSummary;
-
     document.addEventListener("astro:page-load", () => {
-    if (!document.getElementById("favorite-grid") || !document.getElementById("favorite-summary")) return;
-
-    let schoolData: FavoriteSchool[] = [];
-    const favoriteGrid = document.getElementById("favorite-grid");
-    const emptyState = document.getElementById("favorite-empty");
-    const favoriteTotal = document.getElementById("favorite-total");
-    const favoriteSummary = document.getElementById("favorite-summary");
-    const shortlistCount = document.getElementById("shortlist-count");
-    const bestFocusEl = document.getElementById("best-focus");
-    const regionMixEl = document.getElementById("region-mix");
-
-    const setFavoriteTotal = (count: number) => {
-      if (favoriteTotal) {
-        favoriteTotal.textContent = String(count);
-      }
-    };
-
-    const renderFavorites = () => {
-      const favorites = getFavorites();
-      const items: FavoriteSchool[] = schoolData.filter((school: FavoriteSchool) => favorites.includes(school.id));
-
-      setFavoriteTotal(items.length);
-
-      if (favoriteSummary && bestFocusEl && regionMixEl) {
-        if (items.length === 0) {
-          favoriteSummary.classList.add("hidden");
-        } else {
-          favoriteSummary.classList.remove("hidden");
-
-          const focusMap = new Map<string, number>();
-          items.forEach((school: FavoriteSchool) => {
-            focusMap.set(school.focus, (focusMap.get(school.focus) ?? 0) + 1);
-          });
-          const bestFocus = [...focusMap.entries()].sort((a, b) => b[1] - a[1])[0];
-          const regionMap = new Map<string, number>();
-          items.forEach((school: FavoriteSchool) => {
-            regionMap.set(school.region, (regionMap.get(school.region) ?? 0) + 1);
-          });
-          if (shortlistCount) shortlistCount.textContent = String(items.length);
-          bestFocusEl.textContent = bestFocus ? bestFocus[0] : "—";
-          regionMixEl.textContent = [...regionMap.entries()].map(([region, count]) => `${region} (${count})`).join(", ") || "—";
-        }
-      }
-
+      const favoriteGrid = document.getElementById("favorite-grid");
+      const emptyState = document.getElementById("favorite-empty");
       if (!favoriteGrid || !emptyState) return;
 
-      if (items.length === 0) {
-        favoriteGrid.innerHTML = "";
-        emptyState.classList.remove("hidden");
-        return;
-      }
+      const favoriteTotal = document.getElementById("favorite-total");
+      const status = document.getElementById("favorite-status");
+      let schools: SchoolSummary[] = [];
+      // Show the stored count immediately, even if the school data fails to load.
+      if (favoriteTotal) favoriteTotal.textContent = String(getFavorites().length);
 
-      emptyState.classList.add("hidden");
-      if (shortlistCount) shortlistCount.textContent = String(items.length);
-      favoriteGrid.innerHTML = items
-        .map(
-          (school: FavoriteSchool) => `
-            <article class="school-card reveal flex h-full flex-col p-6">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">${escapeHtml(school.type)}</p>
-                  <h2 class="mt-2 text-xl font-semibold">${escapeHtml(school.name)}</h2>
-                </div>
-                <span class="rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">${escapeHtml(school.region)}</span>
-              </div>
+      const renderCard = (school: SchoolSummary) => {
+        const badge = school.founderCode === "5" ? "soukromá" : school.founderCode === "6" ? "církevní" : "";
+        const href = withBase(`/skoly/${encodeURIComponent(school.id)}/`);
+        return `
+          <article class="school-card flex flex-col p-5">
+            <div class="flex flex-wrap gap-2 text-xs">
+              <span class="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">${escapeHtml(school.region)}</span>
+              ${badge ? `<span class="rounded-full bg-primary/10 px-2.5 py-1 text-primary">${badge}</span>` : ""}
+            </div>
+            <a href="${href}" class="mt-3 text-lg font-semibold leading-snug text-ink hover:text-primary">${escapeHtml(school.name)}</a>
+            <p class="mt-1 flex-1 text-sm text-muted-foreground">${escapeHtml(school.address)}</p>
+            <div class="mt-4 flex items-center justify-between gap-3">
+              <a href="${href}" class="text-sm font-semibold text-primary hover:underline">Detail školy →</a>
+              <button type="button" data-remove-school="${escapeHtml(school.id)}" class="rounded-full border-2 border-ink bg-white px-3 py-1 text-xs font-semibold hover:bg-pink">Odebrat</button>
+            </div>
+          </article>`;
+      };
 
-              <p class="mt-4 flex-1 text-sm leading-6 text-muted-foreground">${escapeHtml(school.address)}</p>
+      const render = () => {
+        const favorites = new Set(getFavorites());
+        const items = schools.filter((school) => favorites.has(school.id));
+        if (favoriteTotal) favoriteTotal.textContent = String(items.length);
+        if (status) status.textContent = "";
+        emptyState.hidden = items.length > 0;
+        favoriteGrid.innerHTML = items.map(renderCard).join("");
+      };
 
-              <div class="mt-5 flex flex-wrap gap-2">
-                <span class="rounded-full border border-border bg-background/40 px-2.5 py-1 text-[11px] text-muted-foreground">${escapeHtml(school.founder)}</span>
-                <span class="rounded-full border border-border bg-background/40 px-2.5 py-1 text-[11px] text-muted-foreground">IZO ${escapeHtml(school.izo)}</span>
-              </div>
-
-              <div class="mt-6 space-y-3 border-t border-border pt-4 text-sm">
-                <div><span class="font-semibold text-foreground">Orientační oblast:</span> <span class="ml-2 text-muted-foreground">${escapeHtml(school.focus)}</span></div>
-                <div><span class="font-semibold text-foreground">Kapacita školy:</span> <span class="ml-2 text-muted-foreground">${escapeHtml(school.capacity)}</span></div>
-              </div>
-
-              <div class="mt-6 flex items-center justify-between gap-3 border-t border-border pt-4">
-                <button type="button" data-remove-school="${escapeHtml(school.id)}" class="inline-flex items-center gap-2 rounded-full border border-border bg-background/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-primary/50 hover:text-primary">
-                  <span>Odebrat</span>
-                </button>
-                <a href="${withBase(`/skoly/${encodeURIComponent(school.id)}/`)}" class="btn-outline">Detail</a>
-              </div>
-            </article>
-          `
-        )
-        .join("");
-    };
-
-    favoriteGrid?.addEventListener("click", (event) => {
-      const target = event.target;
-      const removeButton = target instanceof HTMLElement ? target.closest("[data-remove-school]") : null;
-      if (!removeButton) return;
-
-      const schoolId = removeButton.getAttribute("data-remove-school");
-      if (!schoolId) return;
-
-      setFavorites(getFavorites().filter((id: string) => id !== schoolId));
-      renderFavorites();
-    });
-
-    loadSchools()
-      .then((schools) => {
-        schoolData = schools;
-        renderFavorites();
-      })
-      .catch(() => {
-        if (emptyState) {
-          emptyState.textContent = "Seznam škol se nepodařilo načíst. Zkus stránku obnovit.";
-          emptyState.classList.remove("hidden");
-        }
+      favoriteGrid.addEventListener("click", (event) => {
+        const target = event.target;
+        const button = target instanceof Element ? target.closest<HTMLElement>("[data-remove-school]") : null;
+        const id = button?.dataset.removeSchool;
+        if (!id) return;
+        setFavorites(getFavorites().filter((favorite) => favorite !== id));
+        render();
       });
+
+      loadSchools()
+        .then((list) => {
+          schools = list;
+          render();
+        })
+        .catch(() => {
+          if (status) status.textContent = "Seznam škol se nepodařilo načíst. Zkus stránku obnovit.";
+        });
     });
   </script>
 </BaseLayout>

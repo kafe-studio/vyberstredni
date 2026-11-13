@@ -173,3 +173,17 @@ export const toSchoolSummary = (school: School): SchoolSummary => ({
 });
 
 export const schoolsByName = [...schools].sort((left, right) => left.name.localeCompare(right.name, "cs"));
+
+/** Programs currently offered by at least one school, keyed by code + name. */
+export const currentProgramGroups = () => {
+  const groups = new Map<string, { code: string; name: string; schoolIds: Set<string> }>();
+  for (const school of schools) {
+    for (const program of uniqueSchoolPrograms(school.programs.filter((item) => !item.isPhasingOut))) {
+      const key = JSON.stringify([program.code, program.name]);
+      const group = groups.get(key) ?? { code: program.code, name: program.name, schoolIds: new Set<string>() };
+      group.schoolIds.add(school.id);
+      groups.set(key, group);
+    }
+  }
+  return groups;
+};

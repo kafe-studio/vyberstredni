@@ -1,0 +1,40 @@
+---
+import { withBase } from "../lib/urls";
+
+/** Cut-out students from the site illustration (public/images/characters). */
+const characters = {
+  hoodie: { file: "student-hoodie", width: 562, height: 720, alt: "Kluk ve fialové mikině skáče radostí" },
+  bun: { file: "student-bun", width: 380, height: 720, alt: "Holka s drdolem v oranžovém triku se raduje" },
+  vest: { file: "student-vest", width: 414, height: 720, alt: "Holka v modré vestě vyskakuje s rukama nahoře" },
+  cap: { file: "student-cap", width: 454, height: 720, alt: "Kluk s kšiltovkou dělá znak V" },
+  "duo-hoodie-bun": { file: "duo-hoodie-bun", width: 900, height: 911, alt: "Dva studenti spolu skáčou radostí" },
+  "duo-vest-cap": { file: "duo-vest-cap", width: 900, height: 920, alt: "Dva studenti si plácají a skáčou" },
+  group: { file: "group", width: 1400, height: 780, alt: "Čtyři studenti spolu radostně skáčou" },
+} as const;
+
+export type CharacterName = keyof typeof characters;
+
+interface Props {
+  name: CharacterName;
+  class?: string;
+  /** Decorative by default; pass a text when the image carries meaning. */
+  alt?: string;
+  decorative?: boolean;
+  eager?: boolean;
+}
+
+const { name, class: className = "", alt, decorative = true, eager = false } = Astro.props;
+const character = characters[name];
+---
+
+<img
+  src={withBase(`/images/characters/${character.file}.webp`)}
+  width={character.width}
+  height={character.height}
+  alt={decorative ? "" : (alt ?? character.alt)}
+  aria-hidden={decorative ? "true" : undefined}
+  loading={eager ? "eager" : "lazy"}
+  fetchpriority={eager ? "high" : undefined}
+  decoding="async"
+  class:list={["character", className]}
+/>

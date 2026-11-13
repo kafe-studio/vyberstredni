@@ -10,12 +10,12 @@ const metadata = {
 };
 ---
 
-<BaseLayout {metadata}>
+<BaseLayout {metadata} showQuizBanner={false}>
   <section class="px-6 py-24">
     <div class="mx-auto max-w-7xl">
-      <div id="admin-auth" class="mx-auto max-w-md rounded-[2rem] border border-border bg-card p-8 shadow-sm">
+      <div id="admin-auth" class="mx-auto max-w-md track-card p-8 shadow-sm">
         <p class="text-sm font-semibold uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
-        <h1 class="mt-4 text-3xl font-black">Přihlášení do administrace</h1>
+        <h1 class="mt-4 text-3xl font-extrabold">Přihlášení do administrace</h1>
         <p class="mt-3 text-sm text-muted-foreground">
           Přístup je chráněn session tokenem zabezpečeným na serveru. Po přihlášení se vytvoří krátkodobá admin relace, která je validována při každém požadavku na data.
         </p>
@@ -26,14 +26,14 @@ const metadata = {
             <input
               id="admin-password"
               type="password"
-              class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground"
+              class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground placeholder:text-muted-foreground"
               placeholder="Zadejte heslo"
             />
           </div>
           <button type="submit" class="btn-primary w-full">Přihlásit</button>
         </form>
 
-        <p id="admin-login-error" class="mt-4 hidden rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+        <p id="admin-login-error" class="mt-4 hidden rounded-xl border border-red-600 bg-red-50 px-3 py-2 text-sm text-red-700">
           Nesprávné heslo.
         </p>
       </div>
@@ -41,7 +41,7 @@ const metadata = {
       <div id="admin-content" class="hidden">
         <div class="mb-12 text-center reveal">
           <p class="text-sm font-semibold uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
-          <h1 class="mt-4 text-4xl font-black md:text-5xl">Správa škol a dat</h1>
+          <h1 class="mt-4 text-4xl font-extrabold md:text-5xl">Správa škol a dat</h1>
           <p class="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
             Seznam škol v této správě se ukládá do Cloudflare D1. Veřejný katalog se načítá z oficiálního snapshotu MŠMT a změny v administraci jej automaticky neupravují.
           </p>
@@ -79,13 +79,13 @@ const metadata = {
 
               <div>
                 <label for="school-name" class="mb-2 block text-sm font-medium">Název školy</label>
-                <input id="school-name" name="name" required class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. Gymnázium Jana Keplera" />
+                <input id="school-name" name="name" required class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. Gymnázium Jana Keplera" />
               </div>
 
               <div class="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label for="school-region" class="mb-2 block text-sm font-medium">Region</label>
-                  <select id="school-region" name="region" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+                  <select id="school-region" name="region" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
                     <option value="Praha">Praha</option>
                     <option value="Středočeský kraj">Středočeský kraj</option>
                   </select>
@@ -93,7 +93,7 @@ const metadata = {
 
                 <div>
                   <label for="school-type" class="mb-2 block text-sm font-medium">Typ</label>
-                  <select id="school-type" name="type" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+                  <select id="school-type" name="type" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
                     <option value="gymnázium">Gymnázium</option>
                     <option value="střední škola">Střední škola</option>
                     <option value="odborné lyceum">Odborné lyceum</option>
@@ -105,7 +105,7 @@ const metadata = {
 
               <div>
                 <label for="school-focus" class="mb-2 block text-sm font-medium">Obor / zaměření</label>
-                <select id="school-focus" name="focus" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground">
+                <select id="school-focus" name="focus" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
                   <option value="technologie">Technologie</option>
                   <option value="design">Design</option>
                   <option value="ekonomie">Ekonomie</option>
@@ -116,28 +116,28 @@ const metadata = {
 
               <div>
                 <label for="school-description" class="mb-2 block text-sm font-medium">Popis</label>
-                <textarea id="school-description" name="description" rows="3" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Krátký popis školy a zaměření."></textarea>
+                <textarea id="school-description" name="description" rows="3" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Krátký popis školy a zaměření."></textarea>
               </div>
 
               <div class="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label for="school-acceptance" class="mb-2 block text-sm font-medium">Přijímání</label>
-                  <input id="school-acceptance" name="acceptance" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. matematika a fyzika" />
+                  <input id="school-acceptance" name="acceptance" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. matematika a fyzika" />
                 </div>
                 <div>
                   <label for="school-capacity" class="mb-2 block text-sm font-medium">Kapacita</label>
-                  <input id="school-capacity" name="capacity" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. 120 míst" />
+                  <input id="school-capacity" name="capacity" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. 120 míst" />
                 </div>
               </div>
 
               <div class="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label for="school-commute" class="mb-2 block text-sm font-medium">Dojezd</label>
-                  <input id="school-commute" name="commute" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. Rychlý přístup po MHD" />
+                  <input id="school-commute" name="commute" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. Rychlý přístup po MHD" />
                 </div>
                 <div>
                   <label for="school-fee" class="mb-2 block text-sm font-medium">Školné</label>
-                  <input id="school-fee" name="fee" class="w-full rounded-xl border border-border bg-background/40 px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. Bez školného" />
+                  <input id="school-fee" name="fee" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground placeholder:text-muted-foreground" placeholder="Např. Bez školného" />
                 </div>
               </div>
 
@@ -223,8 +223,8 @@ const metadata = {
       if (!adminStatus) return;
       adminStatus.textContent = message;
       adminStatus.classList.remove("hidden");
-      adminStatus.classList.toggle("text-red-400", isError);
-      adminStatus.classList.toggle("text-emerald-400", !isError);
+      adminStatus.classList.toggle("text-red-700", isError);
+      adminStatus.classList.toggle("text-emerald-700", !isError);
     };
 
     const isAuthenticated = async () => {
@@ -399,7 +399,7 @@ const metadata = {
             <td class="px-4 py-3">
               <div class="flex gap-2">
                 <button type="button" data-edit="${escapeHtml(school.id)}" class="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-foreground">Upravit</button>
-                <button type="button" data-delete="${escapeHtml(school.id)}" class="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-red-400">Smazat</button>
+                <button type="button" data-delete="${escapeHtml(school.id)}" class="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-red-700">Smazat</button>
               </div>
             </td>
           </tr>

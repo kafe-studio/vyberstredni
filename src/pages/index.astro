@@ -1,9 +1,10 @@
 ---
 export const prerender = true;
 import BaseLayout from "../layouts/BaseLayout.astro";
+import Character from "../components/Character.astro";
 import { siteConfig } from "../config/site";
 import { withBase } from "../lib/urls";
-import { schoolSnapshotDate, schools } from "../data/schools";
+import { currentProgramGroups, schools } from "../data/schools";
 
 const metadata = {
   title: siteConfig.name,
@@ -11,239 +12,130 @@ const metadata = {
   ignoreTitleTemplate: true,
 };
 
-const focusTracks = [
-  { name: "Technologie", value: "technologie", detail: "IT, robotika, programování" },
-  { name: "Design", value: "design", detail: "grafika, UX, multimédia" },
-  { name: "Ekonomie", value: "ekonomie", detail: "finance, podnikání, marketing" },
-  { name: "Zdravotnictví", value: "zdravotnictví", detail: "veterinární, zdravotnické obory" },
-  { name: "Člověk a společnost", value: "společnost", detail: "psychologie, pedagogy, právo" },
+const programCount = currentProgramGroups().size;
+
+const steps = [
+  {
+    character: "bun" as const,
+    background: "bg-peach",
+    title: "Udělej test zájmů",
+    text: "Pět otázek o tom, co tě baví. Hned uvidíš obory, které ti sedí.",
+    href: "/test/",
+    link: "Spustit test",
+  },
+  {
+    character: "vest" as const,
+    background: "bg-mint",
+    title: "Projdi školy a obory",
+    text: "Hledej podle oboru nebo města a podívej se, kde se co učí.",
+    href: "/skoly/",
+    link: "Otevřít katalog",
+  },
+  {
+    character: "cap" as const,
+    background: "bg-lilac",
+    title: "Ulož si favority",
+    text: "Srdíčkem si ulož školy, které tě zaujaly, a porovnej je.",
+    href: "/oblibene/",
+    link: "Moje oblíbené",
+  },
 ];
 
-const schoolMatches = focusTracks
-  .map((track) => {
-    const school = schools.find((item) => item.focus === track.value);
-    return school
-      ? {
-          interest: school.focus,
-          name: school.name,
-          type: school.type,
-          address: school.address,
-          badge: school.region,
-          detail: `Zřizovatel: ${school.founder}`,
-        }
-      : null;
-  })
-  .filter((school) => school !== null);
-const privateSchoolCount = schools.filter((school) => school.founderCode === "5").length;
+/** Shortcuts into the catalog search; the query matches program names. */
+const interests = [
+  { icon: "💻", label: "IT a programování", query: "informační technologie", color: "bg-sky/20 hover:bg-sky/35" },
+  { icon: "🎨", label: "Design a média", query: "design", color: "bg-pink/15 hover:bg-pink/30" },
+  { icon: "⚙️", label: "Technika a stroje", query: "strojírenství", color: "bg-orange/15 hover:bg-orange/30" },
+  { icon: "🩺", label: "Zdravotnictví", query: "zdravotnick", color: "bg-mint hover:bg-lime/40" },
+  { icon: "🍳", label: "Gastro a hotely", query: "kuchař", color: "bg-sun/30 hover:bg-sun/50" },
+  { icon: "💼", label: "Ekonomika", query: "ekonomika", color: "bg-lilac hover:bg-primary/20" },
+  { icon: "🐾", label: "Zvířata a příroda", query: "veterin", color: "bg-lime/25 hover:bg-lime/45" },
+  { icon: "🤝", label: "Pedagogika", query: "pedagog", color: "bg-peach hover:bg-orange/25" },
+];
 ---
 
 <BaseLayout {metadata}>
-  <section class="home-page px-6 pb-20 pt-28 md:pt-32">
-    <div class="mx-auto max-w-6xl">
-      <div class="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
-        <div>
-          <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm text-muted-foreground reveal">
-            <span class="inline-block h-2 w-2 rounded-full bg-emerald-400"></span>
-            Oficiální záznamy MŠMT pro Prahu i Středočeský kraj
-          </div>
-          <h1 class="max-w-xl text-4xl font-black tracking-tight md:text-6xl reveal">
-            Najdi školu, která ti pomůže růst.
-          </h1>
-          <p class="mt-6 max-w-xl text-lg text-muted-foreground reveal">
-            {siteConfig.description}
-          </p>
-          <div class="mt-8 flex flex-col gap-4 sm:flex-row reveal">
-            <a href={withBase("/test/")} class="btn-primary">Vyzkoušet test</a>
-            <a href={withBase("/skoly/")} class="btn-outline">Seznam škol</a>
-            <a href={withBase("/admin/")} class="btn-outline">Admin</a>
-          </div>
-          <div class="mt-8 flex flex-wrap gap-3 reveal">
-            {focusTracks.map((track) => (
-              <span class="rounded-full border border-border bg-white/3 px-3 py-1.5 text-sm text-muted-foreground">
-                {track.name}
-              </span>
-            ))}
-          </div>
+  <section class="relative overflow-hidden px-6 pb-16 pt-28 md:pt-32">
+    <div class="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_1.1fr]">
+      <div>
+        <span class="sticker-note -rotate-2 bg-lime">Pro deváťáky z Prahy a Středočeského kraje</span>
+        <h1 class="mt-6 text-5xl font-extrabold leading-[1.02] md:text-7xl">
+          Najdi střední, <span class="relative inline-block text-primary">která ti sedí<svg class="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none" aria-hidden="true"><path d="M2 9c60-6 160-8 296-3" stroke="var(--orange)" stroke-width="5" stroke-linecap="round" /></svg></span>.
+        </h1>
+        <p class="mt-6 max-w-lg text-lg text-muted-foreground">
+          Zjisti, co tě baví, a podívej se, které školy to učí. Bez registrace a zadarmo.
+        </p>
+        <div class="mt-8 flex flex-col gap-4 sm:flex-row">
+          <a href={withBase("/test/")} class="btn-primary">✨ Udělat test zájmů</a>
+          <a href={withBase("/skoly/")} class="btn-outline">Prohlédnout školy</a>
         </div>
+        <ul class="mt-8 flex flex-wrap gap-3 text-sm font-semibold">
+          <li class="rounded-full border-2 border-ink bg-white px-4 py-2">🏫 {schools.length} škol</li>
+          <li class="rounded-full border-2 border-ink bg-white px-4 py-2">📚 {programCount} oborů</li>
+          <li class="rounded-full border-2 border-ink bg-white px-4 py-2">✅ oficiální data MŠMT</li>
+        </ul>
+      </div>
 
-        <div class="hero-side">
-          <div class="hero-collage reveal" aria-label="Studenti objevují své zájmy">
-            <div class="student-sticker student-sticker-main">
-              <img
-                src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=85"
-                alt="Skupina studentů, kteří společně studují"
-                width="900"
-                height="1200"
-                fetchpriority="high"
-                decoding="async"
-              />
-            </div>
-            <div class="student-sticker student-sticker-left">
-              <img
-                src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=700&q=85"
-                alt="Studenti spolupracují na školním projektu"
-                width="700"
-                height="900"
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
-            <div class="student-sticker student-sticker-right">
-              <img
-                src="https://images.unsplash.com/photo-1529390079861-591de354faf5?auto=format&fit=crop&w=700&q=85"
-                alt="Studenti slaví úspěch při studiu"
-                width="700"
-                height="900"
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
-            <span class="hero-sticker-note hero-sticker-note-top" aria-hidden="true">Tvoje cesta ✦</span>
-            <span class="hero-sticker-note hero-sticker-note-bottom" aria-hidden="true">Najdi svůj směr ↗</span>
-          </div>
-
-          <div class="track-card reveal p-6 md:p-8">
-            <div class="mb-6 flex items-center justify-between">
-              <p class="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Rozhodující kritéria</p>
-              <span class="rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-300">MŠMT</span>
-            </div>
-            <div class="space-y-5">
-              <div class="rounded-2xl border border-border bg-background/40 p-4">
-                <div class="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Škol v katalogu</span>
-                  <span class="font-semibold text-foreground">{schools.length}</span>
-                </div>
-                <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-muted">
-                  <div class="h-full w-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400"></div>
-                </div>
-              </div>
-              <div class="rounded-2xl border border-border bg-background/40 p-4">
-                <div class="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Soukromých škol</span>
-                  <span class="font-semibold text-foreground">{privateSchoolCount}</span>
-                </div>
-                <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-muted">
-                  <div class="h-full w-[35%] rounded-full bg-gradient-to-r from-violet-500 to-indigo-400"></div>
-                </div>
-              </div>
-              <div class="rounded-2xl border border-border bg-background/40 p-4">
-                <div class="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Oficiální export</span>
-                  <span class="font-semibold text-foreground">{schoolSnapshotDate}</span>
-                </div>
-                <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-muted">
-                  <div class="h-full w-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400"></div>
-                </div>
-              </div>
-            </div>
-            <div class="mt-8 rounded-2xl border border-dashed border-border bg-card p-4 text-sm text-muted-foreground">
-              Katalog uvádí údaje z rejstříku. Obory, přijímací podmínky, školné i dojezd si ověř přímo u školy.
-            </div>
-          </div>
-        </div>
+      <div class="relative isolate">
+        <div class="blob left-[6%] top-[8%] h-[78%] w-[88%] bg-mint"></div>
+        <div class="blob blob-alt -right-4 top-0 h-40 w-40 bg-sun/70"></div>
+        <div class="blob bottom-2 left-0 h-28 w-28 bg-pink/30"></div>
+        <Character name="group" class="character-float relative w-full" eager />
+        <span class="sticker-note absolute right-2 top-2 rotate-6 bg-sun" aria-hidden="true">Tvoje cesta ✦</span>
+        <span class="sticker-note absolute bottom-4 left-4 -rotate-3 bg-sky text-ink" aria-hidden="true">Najdi svůj směr ↗</span>
       </div>
     </div>
   </section>
 
-  <section id="how-it-works" class="px-6 py-20">
+  <section class="px-6 py-16" aria-labelledby="how-heading">
     <div class="mx-auto max-w-6xl">
-      <div class="mb-12 text-center reveal">
-        <p class="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">Jak to funguje</p>
-        <h2 class="mt-4 text-3xl font-bold md:text-4xl">Přesně to, co potřebuješ před výběrem školy.</h2>
-      </div>
-
-      <div class="grid gap-6 md:grid-cols-3">
-        <div class="track-card reveal p-6">
-          <div class="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-lg font-bold text-primary">1</div>
-          <h3 class="text-xl font-semibold">Vyhodnotíš zájmy</h3>
-          <p class="mt-3 text-muted-foreground">Zvol si, co tě baví a jaké obory se pro tebe hodí.</p>
-        </div>
-        <div class="track-card reveal p-6">
-          <div class="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-lg font-bold text-primary">2</div>
-          <h3 class="text-xl font-semibold">Porovnáš školy</h3>
-          <p class="mt-3 text-muted-foreground">Srovnej základní údaje z rejstříku a ověř si aktuální podmínky u školy.</p>
-        </div>
-        <div class="track-card reveal p-6">
-          <div class="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-lg font-bold text-primary">3</div>
-          <h3 class="text-xl font-semibold">Vybereš správně</h3>
-          <p class="mt-3 text-muted-foreground">Dostaneš přehled škol, které odpovídají tvým možnostem a cílům.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="schools" class="px-6 py-20">
-    <div class="mx-auto max-w-6xl">
-      <div class="mb-9 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p class="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">Vhodné školy</p>
-          <h2 class="mt-4 text-3xl font-bold md:text-4xl">Příklady škol podle zájmů</h2>
-        </div>
-        <div class="flex flex-wrap gap-3" data-filter-group>
-          <button type="button" class="filter-pill is-active" data-filter="all">Vše</button>
-          {focusTracks.map((track) => (
-            <button type="button" class="filter-pill" data-filter={track.value}>{track.name}</button>
-          ))}
-        </div>
-      </div>
-
-      <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3" data-school-grid>
-        {schoolMatches.map((school) => (
-          <article class="school-card reveal p-6" data-interest={school.interest}>
-            <div class="flex items-start justify-between gap-4">
-              <div>
-                <p class="text-sm text-muted-foreground">{school.type}</p>
-                <h3 class="mt-2 text-xl font-semibold">{school.name}</h3>
-              </div>
-              <span class="rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground">{school.badge}</span>
+      <h2 id="how-heading" class="text-center text-3xl font-extrabold md:text-4xl">Jak to funguje</h2>
+      <div class="mt-10 grid gap-8 md:grid-cols-3">
+        {steps.map((step, index) => (
+          <a href={withBase(step.href)} class="school-card group flex flex-col overflow-hidden">
+            <div class:list={["relative flex h-56 items-end justify-center overflow-hidden border-b-2 border-ink pt-4", step.background]}>
+              <span class="absolute left-4 top-4 grid h-10 w-10 place-items-center rounded-full border-2 border-ink bg-white font-display text-lg font-extrabold">{index + 1}</span>
+              <Character name={step.character} class="h-52 w-auto transition-transform duration-300 group-hover:-translate-y-2" />
             </div>
-            <p class="mt-4 text-sm leading-6 text-muted-foreground">{school.address}</p>
-            <div class="mt-6 border-t border-border pt-4">
-              <p class="text-sm font-medium text-foreground">{school.detail}</p>
+            <div class="flex flex-1 flex-col p-6">
+              <h3 class="text-xl font-extrabold">{step.title}</h3>
+              <p class="mt-2 flex-1 text-muted-foreground">{step.text}</p>
+              <span class="mt-4 font-semibold text-primary">{step.link} →</span>
             </div>
-            <div class="mt-5 flex justify-end">
-              <a href={withBase(`/skoly/${schools.find((item) => item.name === school.name)?.id ?? ""}/`)} class="text-sm font-medium text-primary hover:underline">Detail školy →</a>
-            </div>
-          </article>
+          </a>
         ))}
       </div>
     </div>
   </section>
 
-  <section id="contact" class="px-6 pb-20 pt-8">
-    <div class="mx-auto max-w-5xl rounded-[2rem] border border-border bg-card p-8 md:p-12 reveal">
-      <div class="grid gap-8 md:grid-cols-[1.2fr_0.8fr] md:items-center">
-        <div>
-          <p class="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">Připravit se na přihlášku</p>
-          <h2 class="mt-4 text-3xl font-bold md:text-4xl">Začni už teď s plánem a seznamem škol.</h2>
-        </div>
-        <div class="flex flex-col gap-3 sm:flex-row md:justify-end">
-          <a href="mailto:info@vyberstredni.cz" class="btn-primary">Napsat mail</a>
-          <a href="#schools" class="btn-outline">Zobrazit školy</a>
-        </div>
+  <section class="px-6 py-16" aria-labelledby="interests-heading">
+    <div class="mx-auto max-w-6xl">
+      <h2 id="interests-heading" class="text-3xl font-extrabold md:text-4xl">Co tě baví?</h2>
+      <p class="mt-2 text-muted-foreground">Klikni a uvidíš školy, které to učí.</p>
+      <div class="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+        {interests.map((interest) => (
+          <a
+            href={`${withBase("/skoly/")}?q=${encodeURIComponent(interest.query)}`}
+            class:list={["flex items-center gap-2 rounded-2xl border-2 border-ink p-3 text-sm font-semibold leading-tight shadow-[3px_3px_0_var(--ink)] transition hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_var(--ink)] sm:gap-3 sm:p-4 sm:text-base", interest.color]}
+          >
+            <span class="shrink-0 text-xl sm:text-2xl" aria-hidden="true">{interest.icon}</span>
+            <span class="min-w-0 hyphens-auto break-words">{interest.label}</span>
+          </a>
+        ))}
       </div>
     </div>
   </section>
-  <script>
-    document.addEventListener("astro:page-load", () => {
-      const schoolGrid = document.querySelector<HTMLElement>("[data-school-grid]");
-      if (!schoolGrid) return;
 
-      const filterButtons = document.querySelectorAll<HTMLButtonElement>("#schools [data-filter]");
-      const schoolCards = schoolGrid.querySelectorAll<HTMLElement>("[data-interest]");
-
-      filterButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const selected = button.getAttribute("data-filter");
-
-          filterButtons.forEach((item) => item.classList.toggle("is-active", item === button));
-
-          schoolCards.forEach((card) => {
-            const shouldShow = selected === "all" || card.getAttribute("data-interest") === selected;
-            card.style.display = shouldShow ? "block" : "none";
-          });
-        });
-      });
-    });
-  </script>
+  <section class="px-6 py-16">
+    <div class="track-card relative mx-auto grid max-w-5xl items-center gap-6 overflow-hidden bg-sun/40 p-8 md:grid-cols-[1fr_14rem] md:p-12">
+      <div>
+        <h2 class="text-3xl font-extrabold md:text-4xl">Školy si můžeš uložit</h2>
+        <p class="mt-3 max-w-md text-muted-foreground">
+          U každé školy klikni na srdíčko ♡. Všechny uložené najdeš pohromadě v Oblíbených, i když přijdeš zítra.
+        </p>
+        <a href={withBase("/skoly/")} class="btn-outline mt-6">Vybrat školy</a>
+      </div>
+      <Character name="hoodie" class="character-float-delay mx-auto w-48 md:w-full" />
+    </div>
+  </section>
 </BaseLayout>

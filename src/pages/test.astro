@@ -2,6 +2,7 @@
 export const prerender = true;
 
 import BaseLayout from "../layouts/BaseLayout.astro";
+import Character, { type CharacterName } from "../components/Character.astro";
 
 const metadata = {
   title: "Test zájmů",
@@ -122,27 +123,42 @@ const towns = [
 ];
 
 const totalSteps = questions.length + 1;
+/** One companion per step, cycling through the four students (shown next to the quiz on wide screens). */
+const companionCycle: CharacterName[] = ["hoodie", "bun", "vest", "cap"];
+const backgroundCycle = ["bg-lilac", "bg-peach", "bg-mint", "bg-sky/25", "bg-sun/40", "bg-lime/40"];
+const stepCharacters = Array.from({ length: totalSteps }, (_, index) => companionCycle[index % companionCycle.length]);
+const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgroundCycle[index % backgroundCycle.length]);
 ---
 
-<BaseLayout {metadata}>
+<BaseLayout {metadata} showQuizBanner={false}>
   <section class="px-6 pb-20 pt-28 md:pt-32">
     <div class="mx-auto max-w-2xl">
       <header class="mb-8 text-center">
-        <p class="text-sm font-semibold uppercase tracking-[0.24em] text-muted-foreground">Test zájmů</p>
-        <h1 class="mt-3 text-3xl font-black md:text-4xl">Co ti sedí?</h1>
-        <p class="mt-3 text-muted-foreground">{questions.length} krátkých otázek, zabere to asi 2 minuty.</p>
+        <span class="sticker-note -rotate-2 bg-lime">Test zájmů · 2 minuty</span>
+        <h1 class="mt-4 text-4xl font-extrabold md:text-5xl">Co ti sedí?</h1>
+        <p class="mt-3 text-muted-foreground">{questions.length} krátkých otázek. Klikni na to, co tě nejvíc láká.</p>
       </header>
 
-      <div id="quiz" class="scroll-mt-24 rounded-[2rem] border border-border bg-card p-6 md:p-8" data-question-count={questions.length}>
+      <div class="relative">
+      <div id="step-companions" class="pointer-events-none absolute -right-60 bottom-0 hidden w-52 xl:block" aria-hidden="true">
+        {stepCharacters.map((name, index) => (
+          <div class="step-character relative isolate" data-step-character={index} hidden={index !== 0}>
+            <div class:list={["blob inset-x-2 bottom-0 top-16", stepBackgrounds[index]]}></div>
+            <Character name={name} class="character-float relative w-full" />
+          </div>
+        ))}
+      </div>
+
+      <div id="quiz" class="track-card scroll-mt-24 p-6 md:p-8" data-question-count={questions.length}>
         <div class="mb-6">
           <div class="mb-2 flex items-center justify-between text-sm text-muted-foreground">
             <span id="step-label" aria-live="polite">Otázka 1 z {questions.length}</span>
             <span class="flex gap-4">
-              <button id="back-button" type="button" class="font-medium text-primary hover:underline disabled:invisible" disabled>← Zpět</button>
-              <button id="next-button" type="button" class="font-medium text-primary hover:underline disabled:invisible" disabled>Další →</button>
+              <button id="back-button" type="button" class="font-semibold text-primary hover:underline disabled:invisible" disabled>← Zpět</button>
+              <button id="next-button" type="button" class="font-semibold text-primary hover:underline disabled:invisible" disabled>Další →</button>
             </span>
           </div>
-          <div class="h-2 overflow-hidden rounded-full bg-muted">
+          <div class="h-3 overflow-hidden rounded-full border-2 border-ink bg-white">
             <div id="progress-bar" class="h-full rounded-full bg-primary transition-all duration-300" style={`width: ${100 / totalSteps}%`}></div>
           </div>
         </div>
@@ -155,12 +171,12 @@ const totalSteps = questions.length + 1;
               {question.options.map((option) => (
                 <button
                   type="button"
-                  class="quiz-option flex items-center gap-3 rounded-2xl border border-border bg-background/40 p-4 text-left transition hover:border-primary/60 aria-pressed:border-primary aria-pressed:bg-primary/10"
+                  class="quiz-option flex items-center gap-3 rounded-2xl border-2 border-ink bg-white p-4 text-left shadow-[3px_3px_0_var(--ink)] transition hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-lilac hover:shadow-[5px_5px_0_var(--ink)] aria-pressed:bg-sun"
                   data-value={option.value}
                   aria-pressed="false"
                 >
                   <span class="text-2xl" aria-hidden="true">{option.icon}</span>
-                  <span class="font-medium text-foreground">{option.label}</span>
+                  <span class="font-semibold text-ink">{option.label}</span>
                 </button>
               ))}
             </div>
@@ -173,7 +189,7 @@ const totalSteps = questions.length + 1;
           <div class="mt-5 space-y-4">
             <label class="block">
               <span class="mb-2 block text-sm font-medium">Nejbližší místo</span>
-              <select id="home-select" class="w-full rounded-xl border border-border bg-background/40 px-3 py-3 text-foreground">
+              <select id="home-select" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-3 text-ink">
                 <option value="">Vyber místo…</option>
                 {towns.map((town) => (
                   <optgroup label={town.group}>
@@ -188,7 +204,7 @@ const totalSteps = questions.length + 1;
             <p id="home-status" class="text-sm text-muted-foreground" aria-live="polite"></p>
             <label id="distance-field" class="block" hidden>
               <span class="mb-2 block text-sm font-medium">Jak daleko můžeš dojíždět?</span>
-              <select id="max-distance" class="w-full rounded-xl border border-border bg-background/40 px-3 py-3 text-foreground">
+              <select id="max-distance" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-3 text-ink">
                 <option value="">Nezáleží</option>
                 <option value="10">Do 10 km</option>
                 <option value="20">Do 20 km</option>
@@ -197,14 +213,18 @@ const totalSteps = questions.length + 1;
               </select>
             </label>
           </div>
-          <button id="show-results" type="button" class="btn-primary mt-6 w-full">Zobrazit výsledky</button>
+          <button id="show-results" type="button" class="btn-primary mt-6 w-full">Zobrazit výsledky 🎉</button>
         </section>
+      </div>
       </div>
 
       <div id="results" class="scroll-mt-24" hidden>
-        <div class="rounded-[2rem] border border-border bg-card p-6 md:p-8">
-          <p class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Tvůj výsledek</p>
-          <h2 class="mt-2 text-2xl font-bold">Nejvíc tě táhne</h2>
+        <div class="track-card relative overflow-hidden bg-lilac p-6 md:p-8 md:pr-56">
+          <div class="pointer-events-none absolute -bottom-6 -right-6 hidden w-56 md:block" aria-hidden="true">
+            <Character name="duo-hoodie-bun" class="w-full" />
+          </div>
+          <span class="sticker-note -rotate-2 bg-sun">Tvůj výsledek 🎉</span>
+          <h2 class="mt-3 text-3xl font-extrabold">Nejvíc tě táhne</h2>
           <div id="top-interests" class="mt-4 flex flex-wrap gap-2"></div>
           <p id="results-note" class="mt-4 text-sm text-muted-foreground"></p>
           <div class="mt-5 flex flex-wrap gap-3">
@@ -213,7 +233,7 @@ const totalSteps = questions.length + 1;
           </div>
         </div>
 
-        <h2 class="mb-4 mt-10 text-xl font-bold">Školy, které by ti mohly sednout</h2>
+        <h2 class="mb-4 mt-10 text-2xl font-extrabold">Školy, které by ti mohly sednout</h2>
         <div id="recommendations" class="space-y-4"></div>
         <button id="more-results" type="button" class="btn-outline mt-6 w-full" hidden>Zobrazit další školy</button>
         <p class="mt-8 text-xs leading-5 text-muted-foreground">
@@ -292,6 +312,9 @@ const totalSteps = questions.length + 1;
             : `Otázka ${currentStep + 1} z ${questionCount}`;
         }
         if (progressBar) progressBar.style.width = `${((currentStep + 1) / totalSteps) * 100}%`;
+        document.querySelectorAll<HTMLElement>("[data-step-character]").forEach((element) => {
+          element.hidden = Number(element.dataset.stepCharacter) !== currentStep;
+        });
         if (backButton) backButton.disabled = currentStep === 0;
         if (nextButton) {
           const questionId = steps[currentStep]?.dataset.question;
@@ -392,7 +415,7 @@ const totalSteps = questions.length + 1;
           .map(escapeHtml)
           .join(" · ");
         return `
-          <article class="rounded-2xl border border-border bg-card p-5">
+          <article class="school-card p-5">
             <a class="text-lg font-semibold text-foreground hover:text-primary" href="${href}">${escapeHtml(school.name)}</a>
             <p class="mt-1 text-sm text-muted-foreground">${meta}</p>
             <ul class="mt-3 space-y-1 text-sm">
@@ -455,7 +478,7 @@ const totalSteps = questions.length + 1;
           .map(([category]) => (isCategory(category) ? categoryLabels[category] : category));
         if (topInterests) {
           topInterests.innerHTML = (top.length ? top : ["Zatím bez jasného směru"])
-            .map((label, index) => `<span class="rounded-full border px-4 py-2 text-sm font-semibold ${index === 0 ? "border-primary bg-primary/15 text-primary" : "border-border text-foreground"}">${escapeHtml(label)}</span>`)
+            .map((label, index) => `<span class="rounded-full border-2 border-ink px-4 py-2 text-sm font-bold shadow-[2px_2px_0_var(--ink)] ${["bg-primary text-white", "bg-sun text-ink", "bg-mint text-ink"][index] ?? "bg-white text-ink"}">${escapeHtml(label)}</span>`)
             .join("");
         }
         if (resultsNote) {
@@ -476,6 +499,8 @@ const totalSteps = questions.length + 1;
         renderMore();
 
         quiz.hidden = true;
+        // The companion sits outside the quiz card; hide it together with the quiz.
+        document.getElementById("step-companions")?.setAttribute("hidden", "");
         results.hidden = false;
         results.scrollIntoView({ behavior: "smooth", block: "start" });
         resetResultsButton();
@@ -484,6 +509,7 @@ const totalSteps = questions.length + 1;
       const backToQuiz = () => {
         results.hidden = true;
         quiz.hidden = false;
+        document.getElementById("step-companions")?.removeAttribute("hidden");
         showStep(0);
         quiz.scrollIntoView({ behavior: "smooth", block: "start" });
       };
