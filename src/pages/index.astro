@@ -18,7 +18,7 @@ const steps = [
   {
     character: "bun" as const,
     background: "bg-peach",
-    title: "Udělej test zájmů",
+    title: "Udělej si test podle zájmů",
     text: "Pár krátkých otázek o tom, co tě baví. Na konci uvidíš obory, které odpovídají tvým zájmům.",
     href: "/test/",
     link: "Spustit test",
@@ -66,7 +66,7 @@ const interests = [
           Zjisti, co tě baví, a podívej se, které školy to učí. Bez registrace a zadarmo.
         </p>
         <div class="mt-8 flex flex-col gap-4 sm:flex-row">
-          <a href={withBase("/test/")} class="btn-primary">Udělat test zájmů</a>
+          <a href={withBase("/test/")} class="btn-primary btn-cta">Udělej si test podle zájmů <span class="cta-arrow" aria-hidden="true">→</span></a>
           <a href={withBase("/skoly/")} class="btn-outline">Prohlédnout školy</a>
         </div>
         <ul class="mt-8 flex flex-wrap gap-3 text-sm font-semibold">

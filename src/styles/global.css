@@ -232,6 +232,44 @@ html.reveal-ready .reveal.active {
   }
 }
 
+/* The main call to action: a gentle wiggle every few seconds, a light sweep and a nudging arrow. */
+.btn-cta {
+  position: relative;
+  overflow: hidden;
+  animation: cta-wiggle 4.5s ease-in-out 1.5s infinite;
+}
+.btn-cta::after {
+  content: "";
+  position: absolute;
+  inset: -20% auto -20% -60%;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-20deg);
+  animation: cta-shine 4.5s ease-in-out 1.5s infinite;
+  pointer-events: none;
+}
+.btn-cta .cta-arrow {
+  display: inline-block;
+  animation: cta-arrow 1.2s ease-in-out infinite;
+}
+.btn-cta:hover { animation: none; }
+
+@keyframes cta-wiggle {
+  0%, 70%, 100% { transform: rotate(0deg) scale(1); }
+  74% { transform: rotate(-2.5deg) scale(1.04); }
+  78% { transform: rotate(2.5deg) scale(1.04); }
+  82% { transform: rotate(-1.5deg) scale(1.03); }
+  86% { transform: rotate(0deg) scale(1); }
+}
+@keyframes cta-shine {
+  0%, 55% { left: -60%; }
+  75%, 100% { left: 130%; }
+}
+@keyframes cta-arrow {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+}
+
 @keyframes character-float {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   50% { transform: translateY(-10px) rotate(-1.5deg); }
@@ -245,6 +283,7 @@ html.reveal-ready .reveal.active {
   .reveal { transition: none; }
   html.reveal-ready .reveal:not(.active) { opacity: 1; transform: none; }
   .character-float, .character-float-delay { animation: none; }
+  .btn-cta, .btn-cta::after, .btn-cta .cta-arrow { animation: none; }
   .school-card:hover { transform: none; }
 }
 
