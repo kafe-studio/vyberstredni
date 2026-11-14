@@ -45,6 +45,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           <div class="mb-2 flex items-center justify-between text-sm text-muted-foreground">
             <span id="step-label" aria-live="polite">Otázka 1 z {questions.length}</span>
             <span class="flex gap-4">
+              <button id="reset-quiz" type="button" class="font-semibold text-muted-foreground hover:text-primary hover:underline" hidden>🔄 Reset</button>
               <button id="back-button" type="button" class="font-semibold text-primary hover:underline disabled:invisible" disabled>← Zpět</button>
               <button id="next-button" type="button" class="font-semibold text-primary hover:underline disabled:invisible" disabled>Další →</button>
             </span>
@@ -122,8 +123,9 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           <p id="results-note" class="mt-4 text-sm text-muted-foreground"></p>
           <div class="mt-5 flex flex-wrap gap-3">
             <button id="edit-answers" type="button" class="btn-outline">Upravit odpovědi</button>
-            <button id="restart" type="button" class="btn-outline">Začít znovu</button>
+            <button id="restart" type="button" class="btn-outline">🔄 Resetovat test a bydliště</button>
           </div>
+          <p class="mt-3 text-xs text-muted-foreground">Odpovědi i bydliště si pamatujeme jen v tomto prohlížeči, dokud je neresetuješ.</p>
         </div>
 
         <h2 class="mb-4 mt-10 text-2xl font-extrabold">Školy, které by ti mohly sednout</h2>
@@ -142,10 +144,11 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
   <script>
     import { withBase } from "../lib/urls";
     import { escapeHtml, formatDistance, loadSchoolPrograms, loadSchools } from "../lib/school-data";
-    import { categoryLabels, rankInterests, rankSchools, type Category, type HomeLocation, type Recommendation } from "../lib/interest-test";
+    import { categoryLabels, rankInterests, rankSchools, type Category, type Recommendation } from "../lib/interest-test";
     import { computeTotals, primaryInterest, studyTrack, supportNeed } from "../lib/quiz-questions";
     import { isInCzechRepublic } from "../lib/regions";
     import { supportLabels } from "../lib/special-needs";
+    import { clearQuiz, loadQuiz, saveQuiz, type SavedHome } from "../lib/quiz-storage";
     import towns from "../data/towns.json";
 
     const PAGE_SIZE = 6;
@@ -177,7 +180,9 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
 
       const answers = new Map<string, string>();
       let currentStep = 0;
-      let home: HomeLocation | null = null;
+      let home: SavedHome | null = null;
+      // Whether the results were shown for the current answers; restored results reopen on the next visit.
+      let completed = false;
       let ranked: Recommendation[] = [];
       let shown = 0;
       let advanceTimer: number | null = null;
@@ -219,10 +224,23 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         if (quiz.getBoundingClientRect().top < navbarHeight) quiz.scrollIntoView({ behavior: "smooth", block: "start" });
       };
 
-      const setHome = (location: HomeLocation | null, message: string) => {
+      const resetQuizButton = document.getElementById("reset-quiz");
+
+      /** Stores the quiz in this browser until the student resets it. */
+      const persist = () => {
+        if (answers.size === 0 && !home) {
+          clearQuiz();
+        } else {
+          saveQuiz({ answers: Object.fromEntries(answers), home, maxDistance: maxDistanceSelect?.value ?? "", completed });
+        }
+        if (resetQuizButton) resetQuizButton.hidden = answers.size === 0 && !home;
+      };
+
+      const setHome = (location: SavedHome | null, message: string) => {
         home = location;
         if (homeStatus) homeStatus.textContent = message;
         if (distanceField) distanceField.hidden = location === null;
+        persist();
       };
 
       const resetResultsButton = () => {
@@ -241,6 +259,8 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
 
         answers.set(questionId, value);
         answersVersion += 1;
+        completed = false;
+        persist();
         step.querySelectorAll(".quiz-option").forEach((button) => {
           button.setAttribute("aria-pressed", String(button === option));
         });
@@ -285,8 +305,10 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           setHome(null, "");
           return;
         }
-        setHome({ label: option.textContent ?? "", latitude, longitude }, "");
+        setHome({ label: option.textContent ?? "", latitude, longitude, region: homeRegionSelect?.value ?? "", town: option.value }, "");
       });
+
+      maxDistanceSelect?.addEventListener("change", persist);
 
       geolocationButton?.addEventListener("click", () => {
         if (!navigator.geolocation) {
@@ -305,7 +327,10 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
             }
             if (homeRegionSelect) homeRegionSelect.value = "";
             fillTowns("");
-            setHome({ label: "tvoje poloha", latitude: coords.latitude, longitude: coords.longitude }, "✓ Použijeme tvoji aktuální polohu.");
+            setHome(
+              { label: "tvoje poloha", latitude: coords.latitude, longitude: coords.longitude, region: "", town: "" },
+              "✓ Použijeme tvoji aktuální polohu.",
+            );
           },
           () => {
             // Keep whatever location was chosen before; only explain what happened.
@@ -361,7 +386,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         }
       };
 
-      const showResults = async () => {
+      const showResults = async (restoring = false) => {
         if (showResultsButton) {
           showResultsButton.disabled = true;
           showResultsButton.textContent = "Hledám školy…";
@@ -448,8 +473,10 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         // The companion sits outside the quiz card; hide it together with the quiz.
         document.getElementById("step-companions")?.setAttribute("hidden", "");
         results.hidden = false;
-        results.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (!restoring) results.scrollIntoView({ behavior: "smooth", block: "start" });
         resetResultsButton();
+        completed = true;
+        persist();
       };
 
       const backToQuiz = () => {
@@ -463,18 +490,59 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
       showResultsButton?.addEventListener("click", () => void showResults());
       moreButton?.addEventListener("click", renderMore);
       document.getElementById("edit-answers")?.addEventListener("click", backToQuiz);
-      document.getElementById("restart")?.addEventListener("click", () => {
+      const resetQuiz = () => {
         answers.clear();
+        answersVersion += 1;
+        completed = false;
         locationRequest += 1;
         quiz.querySelectorAll(".quiz-option").forEach((button) => button.setAttribute("aria-pressed", "false"));
         if (homeRegionSelect) homeRegionSelect.value = "";
         fillTowns("");
         if (maxDistanceSelect) maxDistanceSelect.value = "";
         setHome(null, "");
+        clearQuiz();
         backToQuiz();
-      });
+      };
+      document.getElementById("restart")?.addEventListener("click", resetQuiz);
+      resetQuizButton?.addEventListener("click", resetQuiz);
 
-      showStep(0, false);
+      /** Restores the saved quiz: answers, home, commute limit, and the results if they were shown. */
+      const restore = () => {
+        const saved = loadQuiz();
+        if (!saved) return false;
+        for (const [questionId, value] of Object.entries(saved.answers)) {
+          const step = steps.find((item) => item.dataset.question === questionId);
+          if (!step) continue;
+          answers.set(questionId, value);
+          step.querySelectorAll<HTMLElement>(".quiz-option").forEach((button) => {
+            button.setAttribute("aria-pressed", String(button.dataset.value === value));
+          });
+        }
+        if (maxDistanceSelect) maxDistanceSelect.value = saved.maxDistance;
+        const savedHome = saved.home;
+        if (savedHome?.region && homeRegionSelect && homeSelect) {
+          homeRegionSelect.value = savedHome.region;
+          fillTowns(homeRegionSelect.value);
+          homeSelect.value = savedHome.town;
+          // The town list can change between data updates; drop a home that no longer exists.
+          setHome(homeSelect.value && homeSelect.value === savedHome.town ? savedHome : null, "");
+        } else if (savedHome && !savedHome.region) {
+          setHome(savedHome, "✓ Použijeme tvoji uloženou polohu.");
+        } else {
+          setHome(null, "");
+        }
+        completed = saved.completed;
+        if (completed) {
+          showStep(totalSteps - 1, false);
+          void showResults(true);
+          return true;
+        }
+        const firstOpen = steps.findIndex((step) => step.dataset.question && !answers.has(step.dataset.question));
+        showStep(firstOpen === -1 ? totalSteps - 1 : firstOpen, false);
+        return true;
+      };
+
+      if (!restore()) showStep(0, false);
     });
   </script>
 </BaseLayout>

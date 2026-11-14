@@ -1,0 +1,80 @@
+import { QUESTIONS } from "./quiz-questions";
+
+/**
+ * Remembers the interest quiz (answers, home, commute limit, whether results were shown) in this browser only,
+ * until the student presses "Resetovat test a bydliště". Nothing is sent anywhere.
+ */
+const STORAGE_KEY = "vyberstredni-quiz";
+
+export type SavedHome = {
+  label: string;
+  latitude: number;
+  longitude: number;
+  /** Region and town select values; empty for a device location. */
+  region: string;
+  town: string;
+};
+
+export type SavedQuiz = {
+  answers: Record<string, string>;
+  home: SavedHome | null;
+  maxDistance: string;
+  completed: boolean;
+};
+
+const validValues = new Map(QUESTIONS.map((question) => [question.id, new Set(question.options.map((option) => option.value))]));
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
+
+const readHome = (value: unknown): SavedHome | null => {
+  if (!isRecord(value)) return null;
+  const { label, latitude, longitude, region, town } = value;
+  if (typeof label !== "string" || typeof latitude !== "number" || typeof longitude !== "number") return null;
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  return {
+    label,
+    latitude,
+    longitude,
+    region: typeof region === "string" ? region : "",
+    town: typeof town === "string" ? town : "",
+  };
+};
+
+/** The saved quiz, with unknown questions or answers (e.g. after the quiz changed) dropped. */
+export const loadQuiz = (): SavedQuiz | null => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return null;
+    const answers: Record<string, string> = {};
+    if (isRecord(parsed.answers)) {
+      for (const [questionId, value] of Object.entries(parsed.answers)) {
+        if (typeof value === "string" && validValues.get(questionId)?.has(value)) answers[questionId] = value;
+      }
+    }
+    const home = readHome(parsed.home);
+    const maxDistance = typeof parsed.maxDistance === "string" && /^\d*$/.test(parsed.maxDistance) ? parsed.maxDistance : "";
+    const allAnswered = QUESTIONS.every((question) => question.id in answers);
+    if (Object.keys(answers).length === 0 && !home) return null;
+    return { answers, home, maxDistance, completed: parsed.completed === true && allAnswered };
+  } catch {
+    return null;
+  }
+};
+
+export const saveQuiz = (quiz: SavedQuiz) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(quiz));
+  } catch {
+    // Storage may be unavailable (private mode, blocked site data); the quiz still works for this visit.
+  }
+};
+
+export const clearQuiz = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Nothing to clear when storage is unavailable.
+  }
+};
