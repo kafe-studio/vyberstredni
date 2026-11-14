@@ -84,6 +84,15 @@ const metadata = {
             <a href="#location-heading" class="font-semibold text-primary hover:underline">Zadej, kde bydlíš, a uvidíš, jak daleko to máš →</a>
           </p>
         )}
+        {hasCoordinates && (
+          <a
+            id="google-directions"
+            href={`https://www.google.com/maps/dir/?api=1&destination=${school.latitude},${school.longitude}&travelmode=transit`}
+            target="_blank"
+            rel="noopener"
+            class="btn-outline mt-4 px-4 py-2 text-sm"
+          >🧭 Jak se tam dostat (Google Mapy)</a>
+        )}
         <div class="mt-8 grid gap-4 sm:grid-cols-2">
           <div class="rounded-[3px] border border-border bg-card p-4">
             <p class="text-sm text-muted-foreground">Typ v rejstříku</p>
@@ -418,6 +427,7 @@ const metadata = {
           : null;
       };
       const homeDistance = document.getElementById("home-distance");
+      const googleDirections = document.getElementById("google-directions") as HTMLAnchorElement | null;
       // The home saved by the quiz or on another school page; until there is one, the map starts at the school's own town.
       const savedHome = loadHome();
       let activeHome = savedHome ?? presetFrom(presetSelect?.selectedOptions[0]) ?? { label: schoolName, latitude: schoolLatitude, longitude: schoolLongitude };
@@ -493,6 +503,15 @@ const metadata = {
           homeDistance.innerHTML = `<span class="hl font-extrabold">📍 ${escapeHtml(distance)} od tvého bydliště</span>
             <span class="text-muted-foreground">(${escapeHtml(activeHome.label)}, vzdušnou čarou)</span>
             <a href="#location-heading" class="ml-1 text-sm font-semibold text-primary hover:underline">změnit</a>`;
+        }
+        // Public transport route from home; without a home, Google Maps starts from the device's location.
+        if (googleDirections && homeKnown) {
+          const url = new URL("https://www.google.com/maps/dir/");
+          url.searchParams.set("api", "1");
+          url.searchParams.set("origin", `${activeHome.latitude},${activeHome.longitude}`);
+          url.searchParams.set("destination", `${schoolLatitude},${schoolLongitude}`);
+          url.searchParams.set("travelmode", "transit");
+          googleDirections.href = url.toString();
         }
         renderNearby();
       };
