@@ -23,9 +23,14 @@ postižení, speciální/praktická škola, více vad) a podle oborů (škola je
 pro zrakově, 6 pro sluchově, 1 pro tělesně postižené a 153 pro žáky se SVP. Test zájmů je doporučí jen tomu, kdo
 v otázce na podporu zvolí odpovídající možnost; katalog je umí filtrovat.
 
-**Hodnocení:** jediné otevřené hodnocení jednotlivých škol jsou inspekční zprávy ČŠI (slovní, bez známek). Recenze
-žáků a rodičů žádný otevřený zdroj nemá. Výsledky maturit a přijímaček (CERMAT, kapitoly 2 a 3) zatím zapojené
-nejsou – čeká se na ověření licence.
+**Hodnocení:** inspekční zprávy ČŠI (slovní, bez známek) a data CERMATu za rok 2026, zapojená na pokyn
+provozovatele (CERMAT výslovnou licenci neuvádí; je uveden jako zdroj s odkazem):
+- přijímačky, 1. kolo, denní studium bez zkráceného studia, k denní formě oborů přes IZO + kód oboru (5 468 oborů):
+  místa, přihlášky, přijatí, průměrný a nejnižší percentil přijatých (ČJ+MA),
+- společná část maturity (jaro + podzim) ke škole přes RED-IZO (1 109 škol): podíl úspěšných z přihlášených,
+  průměry ČJ a MA a úspěšnost po skupinách oborů (SMO16) proti celostátnímu průměru téže skupiny
+  (součet krajských řádků).
+Recenze žáků a rodičů žádný otevřený zdroj nemá.
 
 ---
 

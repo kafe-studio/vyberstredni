@@ -33,3 +33,4 @@ worker-configuration.d.ts
 
 # downloaded data sources (scripts/build-schools-data.py)
 .cache/
+__pycache__/

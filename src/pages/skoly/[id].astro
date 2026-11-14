@@ -4,6 +4,7 @@ export const prerender = true;
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { inspectionSource, schoolProgramSources, schoolProgramsSnapshotDate, schoolSnapshotDate, schoolSource, schools, uniqueSchoolPrograms } from "../../data/schools";
 import towns from "../../data/towns.json";
+import { cermatFor, cermatInfo } from "../../data/cermat";
 import { REGIONS } from "../../lib/regions";
 import { supportLabels } from "../../lib/special-needs";
 import { withBase } from "../../lib/urls";
@@ -34,6 +35,18 @@ const regionTowns = towns
   .sort((left, right) => left.name.localeCompare(right.name, "cs", { numeric: true }));
 const defaultTown = regionTowns.find((town) => town.name === school.town) ?? regionTowns[0];
 const inspection = school.inspection;
+const cermat = cermatFor(school.id);
+const maturita = cermat?.maturita ?? null;
+const admissionOf = (code: string) => cermat?.admission[code] ?? null;
+/** Percentiles below 1 would read as "lepší než 0 %". */
+const percentileText = (value: number) => (value < 1 ? "méně než 1 %" : `${value} %`);
+const programRows = activePrograms.map((program) => ({ ...program, admission: admissionOf(program.code) }));
+const percent = (value: number | null | undefined, digits = 0) =>
+  value === null || value === undefined
+    ? "—"
+    : `${value.toLocaleString("cs-CZ", { minimumFractionDigits: digits, maximumFractionDigits: digits })} %`;
+const demand = (applications: number, capacity: number) =>
+  capacity > 0 ? (applications / capacity).toLocaleString("cs-CZ", { maximumFractionDigits: 1 }) : null;
 const inspectionDate = inspection?.date
   ? new Date(`${inspection.date}T00:00:00`).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" })
   : null;
@@ -109,10 +122,40 @@ const metadata = {
           </p>
           {activePrograms.length > 0 ? (
             <ul class="mt-4 grid gap-3 sm:grid-cols-2">
-              {activePrograms.map((program) => (
+              {programRows.map((program) => (
                 <li class="rounded-xl border border-border bg-card p-4">
                   <span class="text-xs font-semibold tracking-wide text-primary">{program.code}</span>
                   <p class="mt-1 font-medium text-foreground">{program.name}</p>
+                  {program.admission && program.admission.capacity > 0 && (
+                    <dl class="mt-3 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
+                      <div class="flex justify-between gap-2">
+                        <dt>Přijímačky {cermatInfo.year}, 1. kolo</dt>
+                        <dd class="font-semibold text-foreground">{program.admission.capacity} míst</dd>
+                      </div>
+                      <div class="flex justify-between gap-2">
+                        <dt>Přihlášky / přijato</dt>
+                        <dd class="font-semibold text-foreground">
+                          {program.admission.applications} / {program.admission.admitted}
+                          {demand(program.admission.applications, program.admission.capacity) && (
+                            <span class="font-normal"> ({demand(program.admission.applications, program.admission.capacity)} na místo)</span>
+                          )}
+                        </dd>
+                      </div>
+                      {program.admission.percentileAvg !== null && (
+                        <div class="flex justify-between gap-2">
+                          <dt>Přijatí byli v průměru lepší než</dt>
+                          <dd class="font-semibold text-foreground">{percentileText(program.admission.percentileAvg)} uchazečů</dd>
+                        </div>
+                      )}
+                      {program.admission.percentileMin !== null && (
+                        <div class="flex justify-between gap-2">
+                          <dt>Nejslabší přijatý byl lepší než</dt>
+                          <dd class="font-semibold text-foreground">{percentileText(program.admission.percentileMin)} uchazečů</dd>
+                        </div>
+                      )}
+                      {!program.admission.entranceExam && <p>Bez jednotné přijímací zkoušky.</p>}
+                    </dl>
+                  )}
                 </li>
               ))}
             </ul>
@@ -132,8 +175,11 @@ const metadata = {
               </ul>
             </details>
           )}
-          <p class="mt-4 text-xs text-muted-foreground">
-            Zdroj: <a class="text-primary underline" href={programSource} target="_blank" rel="noreferrer">export Rejstříku škol MŠMT</a>, párování školy přes IZO {school.izo}.
+          <p class="mt-4 text-xs leading-5 text-muted-foreground">
+            Zdroj oborů: <a class="text-primary underline" href={programSource} target="_blank" rel="noreferrer">export Rejstříku škol MŠMT</a>, párování školy přes IZO {school.izo}.
+            Přijímačky: <a class="text-primary underline" href={cermatInfo.admissionSource} target="_blank" rel="noopener">CERMAT</a>, jednotná přijímací zkouška
+            z češtiny a matematiky v 1. kole. „Lepší než X % uchazečů“ znamená, že horší nebo stejný výsledek mělo X % všech uchazečů v ČR.
+            Školní část přijímaček (pohovory, talentovky, známky) v datech není, proto to není přesná hranice pro přijetí.
           </p>
         </section>
 
@@ -145,12 +191,51 @@ const metadata = {
         </div>
 
         <section class="mt-8 rounded-2xl border-2 border-ink bg-lilac/60 p-5" aria-labelledby="inspection-heading">
-          <h2 id="inspection-heading" class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Hodnocení a inspekce</h2>
+          <h2 id="inspection-heading" class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Hodnocení školy</h2>
+
+          {maturita && maturita.registered > 0 && (
+            <div class="mt-4 rounded-xl border-2 border-ink bg-white p-4">
+              <h3 class="font-display text-lg font-extrabold">Maturita {cermatInfo.year} (společná část)</h3>
+              {cermat?.maturitaSharedByComponents && (
+                <p class="mt-1 text-xs text-muted-foreground">Údaje jsou za celou školu jako právnickou osobu, včetně jejích dalších součástí.</p>
+              )}
+              <p class="mt-2 text-foreground">
+                Úspěšně odmaturovalo <strong>{percent(maturita.successRate, 1)}</strong> z {maturita.registered} přihlášených žáků.
+                Průměr celé ČR je {percent(cermatInfo.nationalMaturitaSuccessRate, 1)}.
+              </p>
+              {maturita.groups.length > 0 && (
+                <table class="mt-3 w-full text-sm">
+                  <thead>
+                    <tr class="text-left text-xs text-muted-foreground">
+                      <th class="py-1 font-medium">Skupina oborů</th>
+                      <th class="py-1 text-right font-medium">Škola</th>
+                      <th class="py-1 text-right font-medium">Průměr ČR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {maturita.groups.map((group) => (
+                      <tr class="border-t border-border">
+                        <td class="py-1.5">{group.label} <span class="text-xs text-muted-foreground">({group.registered} žáků)</span></td>
+                        <td class="py-1.5 text-right font-semibold">{percent(group.successRate, 1)}</td>
+                        <td class="py-1.5 text-right text-muted-foreground">{percent(group.nationalSuccessRate, 1)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              <p class="mt-3 text-xs text-muted-foreground">
+                Průměrný výsledek testu: čeština {percent(maturita.czechScore)}
+                {maturita.mathScore !== null && <>, matematika {percent(maturita.mathScore)} (maturovalo z ní {percent(maturita.mathShare)} žáků)</>}.
+                Srovnávej se stejnou skupinou oborů – gymnázia mají přirozeně vyšší úspěšnost než učiliště.
+              </p>
+            </div>
+          )}
+
           {inspection && inspectionDate ? (
             <>
               <p class="mt-3 text-foreground">
                 Česká školní inspekce školu naposledy navštívila <strong>{inspectionDate}</strong>
-                {inspection.count > 1 && <> (celkem {inspection.count} inspekčních zpráv)</>}.
+                {inspection.count > 1 && <> (celkem {inspection.count} {inspection.count < 5 ? "inspekční zprávy" : "inspekčních zpráv"})</>}.
               </p>
               <div class="mt-4 flex flex-wrap gap-3">
                 {inspection.reportUrl && (
@@ -167,7 +252,9 @@ const metadata = {
           <p class="mt-4 text-xs leading-5 text-muted-foreground">
             Inspekční zprávy jsou slovní hodnocení školy od státní inspekce, bez bodů či hvězdiček. Recenze žáků a rodičů
             nejsou k dispozici v žádném otevřeném zdroji, proto je neuvádíme.
-            Zdroj: <a class="underline" href={inspectionSource} target="_blank" rel="noopener">otevřená data ČŠI</a>.
+            Zdroje: <a class="underline" href={inspectionSource} target="_blank" rel="noopener">otevřená data ČŠI</a>,
+            <a class="underline" href={cermatInfo.maturitaSource} target="_blank" rel="noopener">CERMAT – výsledky maturit</a>
+            (podíl úspěšných = žáci, kteří uspěli, ze všech přihlášených).
           </p>
         </section>
 
