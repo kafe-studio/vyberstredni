@@ -107,6 +107,7 @@ const metadata = {
   <script>
     import { withBase } from "../lib/urls";
     import { escapeHtml, loadSchools, type SchoolSummary } from "../lib/school-data";
+    import { track } from "../lib/analytics";
 
     type Program = { code: string; name: string; kind: string; schoolIds: string[] };
     /* eslint-disable no-unused-vars */
@@ -229,6 +230,8 @@ const metadata = {
         if (!program || !results || !placeholder || !selectedName || !selectedCount || !schoolList) return;
         selectedIndex = index;
         const matching = schoolsFor(program);
+        // Only a click counts as interest; region changes re-render the same program.
+        if (scroll) track("program_view", { program: program.name, code: program.code, schools: matching.length });
         selectedName.textContent = program.name;
         selectedCount.textContent = `${program.kind ? `${program.kind[0]?.toLocaleUpperCase("cs")}${program.kind.slice(1)} · ` : ""}nabízí ${pluralSchools(matching.length)}`;
         schoolList.innerHTML = matching.map((school) => `
@@ -255,7 +258,17 @@ const metadata = {
         const button = target instanceof Element ? target.closest<HTMLButtonElement>(".program-option") : null;
         if (button) selectProgram(Number(button.dataset.programIndex), true);
       });
-      searchInput?.addEventListener("input", renderList);
+      let searchTimer: number | null = null;
+      searchInput?.addEventListener("input", () => {
+        renderList();
+        if (searchTimer !== null) window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(() => {
+          const query = searchInput.value.trim();
+          if (query.length < 2) return;
+          const results = programList.querySelectorAll("li:not([hidden])").length;
+          track("search", { where: "obory", q: query, results });
+        }, 1500);
+      });
       regionSelect?.addEventListener("change", () => {
         updateCounts();
         renderList();

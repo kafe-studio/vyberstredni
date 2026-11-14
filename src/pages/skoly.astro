@@ -143,6 +143,7 @@ const metadata = {
     import { withBase } from "../lib/urls";
     import { escapeHtml, getFavorites, loadSchoolPrograms, loadSchools, toggleFavorite, type SchoolSummary } from "../lib/school-data";
     import { supportLabels } from "../lib/special-needs";
+    import { track } from "../lib/analytics";
     import { isNotForNinthGraders, isStudyTrack, matchesTrack, type StudyTrack } from "../lib/interest-test";
 
     type CatalogSchool = SchoolSummary & { programNames: string[]; tracks: Set<StudyTrack>; searchText: string };
@@ -247,10 +248,31 @@ const metadata = {
         if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url);
       };
 
+      // A search is recorded once the student stops typing or changing filters for a moment.
+      let searchTimer: number | null = null;
+      const trackSearch = () => {
+        if (searchTimer !== null) window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(() => {
+          const query = searchInput.value.trim();
+          const filters = [regionSelect?.value, trackSelect?.value, founderSelect?.value, supportSelect?.value];
+          if (query.length < 2 && !filters.some(Boolean)) return;
+          track("search", {
+            where: "katalog",
+            q: query.length >= 2 ? query : "",
+            region: regionSelect?.value ?? "",
+            track: trackSelect?.value ?? "",
+            founder: founderSelect?.value ?? "",
+            support: supportSelect?.value ?? "",
+            results: getFilteredItems().length,
+          });
+        }, 1500);
+      };
+
       const resetAndRender = () => {
         visibleLimit = pageSize;
         syncQueryParam();
         render();
+        trackSearch();
       };
 
       schoolGrid.addEventListener("click", (event) => {
@@ -260,6 +282,7 @@ const metadata = {
         if (!id) return;
         toggleFavorite(id);
         updateFavoriteButtons();
+        track("favorite", { school: id, added: getFavorites().includes(id), where: "katalog" });
       });
       searchInput.addEventListener("input", resetAndRender);
       [regionSelect, trackSelect, founderSelect, supportSelect].forEach((select) => select?.addEventListener("change", resetAndRender));

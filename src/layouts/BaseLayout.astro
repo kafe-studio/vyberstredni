@@ -42,6 +42,10 @@ const finalIgnoreTitleTemplate = metadata?.ignoreTitleTemplate || false;
       <Footer showQuizBanner={showQuizBanner} />
     </div>
     <script>
+      import { startAnalytics } from "../lib/analytics";
+      startAnalytics();
+    </script>
+    <script>
       function setupReveal() {
         const vh = window.innerHeight;
         document.querySelectorAll(".reveal:not(.active)").forEach(el => {

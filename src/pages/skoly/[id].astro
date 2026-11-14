@@ -370,6 +370,7 @@ const metadata = {
     } from "../../lib/school-data";
     import towns from "../../data/towns.json";
     import { loadHome, saveHome, type SavedHome } from "../../lib/quiz-storage";
+    import { track } from "../../lib/analytics";
 
     type GeolocatedSchool = SchoolSummary & { latitude: number; longitude: number };
     /* eslint-disable no-unused-vars */
@@ -575,7 +576,9 @@ const metadata = {
       favoriteButton?.addEventListener("click", () => {
         toggleFavorite(schoolId);
         updateFavoriteButton();
+        track("favorite", { added: getFavorites().includes(schoolId), where: "detail" });
       });
+      googleDirections?.addEventListener("click", () => track("directions", { fromHome: homeKnown }));
       selectA?.addEventListener("change", renderComparison);
       selectB?.addEventListener("change", renderComparison);
       presetSelect?.addEventListener("change", () => {

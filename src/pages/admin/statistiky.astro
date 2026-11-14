@@ -1,0 +1,539 @@
+---
+export const prerender = true;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { withBase } from "../../lib/urls";
+
+const metadata = {
+  title: "Statistiky návštěvnosti",
+  description: "Přehled návštěvnosti webu Vyber střední pro administrátory.",
+};
+
+const ranges = [
+  { value: "0", label: "Dnes" },
+  { value: "1", label: "Včera" },
+  { value: "7", label: "7 dní" },
+  { value: "30", label: "30 dní" },
+  { value: "90", label: "90 dní" },
+  { value: "365", label: "Rok" },
+];
+
+/** Table panels filled by the script; key = stats field, columns = what the numbers mean. */
+const panels: Array<{ id: string; title: string; hint?: string; unit: string }> = [
+  { id: "sections", title: "Části webu", unit: "zobrazení" },
+  { id: "pages", title: "Nejčtenější stránky", unit: "zobrazení" },
+  { id: "schools", title: "Nejprohlíženější školy", unit: "zobrazení" },
+  { id: "entries", title: "Vstupní stránky", hint: "Kde návštěva začala.", unit: "návštěv" },
+  { id: "exits", title: "Odchodové stránky", hint: "Kde návštěva skončila.", unit: "návštěv" },
+  { id: "engagement", title: "Čas na stránce", hint: "Průměr za část webu, s průměrným doscrollováním.", unit: "" },
+  { id: "referrers", title: "Odkud přišli", hint: "Weby, ze kterých návštěvník přišel.", unit: "návštěvníků" },
+  { id: "campaigns", title: "Kampaně (UTM)", hint: "Odkazy s utm_source, fbclid nebo gclid.", unit: "návštěvníků" },
+  { id: "countries", title: "Země", unit: "návštěvníků" },
+  { id: "regions", title: "Kraje (Česko)", hint: "Podle IP adresy, orientačně.", unit: "návštěvníků" },
+  { id: "cities", title: "Města", hint: "Podle IP adresy, orientačně.", unit: "návštěvníků" },
+  { id: "devices", title: "Zařízení", unit: "návštěvníků" },
+  { id: "browsers", title: "Prohlížeče", unit: "návštěvníků" },
+  { id: "systems", title: "Operační systémy", unit: "návštěvníků" },
+  { id: "screens", title: "Šířka obrazovky", unit: "návštěvníků" },
+  { id: "interests", title: "Test: hlavní zájem", unit: "testů" },
+  { id: "tracks", title: "Test: typ studia", unit: "testů" },
+  { id: "supports", title: "Test: potřeba podpory", unit: "testů" },
+  { id: "homes", title: "Test: kraj bydliště", unit: "testů" },
+  { id: "distances", title: "Test: limit dojíždění", unit: "testů" },
+  { id: "searches", title: "Hledané výrazy a filtry", hint: "Katalog škol a seznam oborů, s průměrným počtem výsledků.", unit: "hledání" },
+  { id: "programViews", title: "Otevřené obory", hint: "Kliknutí na obor v seznamu oborů.", unit: "kliknutí" },
+  { id: "favorites", title: "Přidané do oblíbených", unit: "přidání" },
+  { id: "directions", title: "Navigace Google Mapy", unit: "kliknutí" },
+  { id: "outbound", title: "Odchody na jiné weby", hint: "Weby škol, naše další projekty, mapy.", unit: "kliknutí" },
+];
+---
+
+<BaseLayout {metadata} showQuizBanner={false}>
+  <section class="px-4 pb-24 pt-24 sm:px-6">
+    <div id="stats-root" class="mx-auto max-w-7xl" data-base={withBase("/")}>
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <a href={withBase("/admin/")} class="text-sm font-semibold text-primary hover:underline">← Administrace</a>
+          <h1 class="mt-2 text-3xl font-extrabold md:text-4xl">Statistiky návštěvnosti</h1>
+          <p class="mt-1 text-sm text-muted-foreground">
+            Vlastní měření bez cookies. Návštěvník = anonymní otisk, který se každý den mění, proto jde o součet denních návštěvníků.
+            Návštěvy přihlášeného admina a roboti se nepočítají.
+          </p>
+        </div>
+        <p id="live" class="rounded-[3px] bg-card px-4 py-2 text-sm font-bold shadow-paper" aria-live="polite">● Online: –</p>
+      </div>
+
+      <p id="stats-login" class="mt-8 hidden rounded-[3px] bg-card p-6 shadow-paper">
+        Pro zobrazení statistik se nejdřív <a class="font-bold text-primary underline" href={withBase("/admin/")}>přihlas do administrace</a>.
+      </p>
+
+      <div id="stats-body" class="hidden">
+        <div class="mt-6 flex flex-wrap items-center gap-2" role="group" aria-label="Období">
+          {ranges.map((range) => (
+            <button type="button" class="range-button rounded-[3px] border border-border bg-card px-3 py-2 text-sm font-bold hover:bg-sun aria-pressed:bg-ink aria-pressed:text-white" data-range={range.value} aria-pressed="false">{range.label}</button>
+          ))}
+          <span class="ml-2 flex flex-wrap items-center gap-2 text-sm">
+            <label class="sr-only" for="range-from">Od</label>
+            <input id="range-from" type="date" class="rounded-[3px] border border-border bg-card px-2 py-1.5" />
+            <span aria-hidden="true">–</span>
+            <label class="sr-only" for="range-to">Do</label>
+            <input id="range-to" type="date" class="rounded-[3px] border border-border bg-card px-2 py-1.5" />
+          </span>
+          <button id="refresh" type="button" class="btn-outline ml-auto px-4 py-2 text-sm">Obnovit</button>
+        </div>
+        <p id="stats-status" class="mt-2 text-sm text-muted-foreground" aria-live="polite"></p>
+
+        <div id="stats-content" class="transition-opacity">
+          <div id="kpis" class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4"></div>
+
+          <div class="mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]">
+            <section class="rounded-[3px] bg-card p-5 shadow-paper" aria-labelledby="trend-heading">
+              <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 id="trend-heading" class="text-lg font-extrabold">Návštěvnost v čase</h2>
+                <p class="flex gap-4 text-xs text-muted-foreground">
+                  <span class="flex items-center gap-1.5"><span class="inline-block h-0.5 w-4 bg-[#2f5bd3]"></span>Zobrazení stránek</span>
+                  <span class="flex items-center gap-1.5"><span class="inline-block h-0.5 w-4 bg-[#e0643a]"></span>Návštěvníci</span>
+                </p>
+              </div>
+              <div id="trend-chart" class="relative mt-4 h-64"></div>
+            </section>
+            <section class="rounded-[3px] bg-card p-5 shadow-paper" aria-labelledby="funnel-heading">
+              <h2 id="funnel-heading" class="text-lg font-extrabold">Trychtýř testu zájmů</h2>
+              <p class="mt-1 text-xs text-muted-foreground">Návštěvníci v jednotlivých krocích.</p>
+              <div id="funnel" class="mt-4 space-y-3"></div>
+            </section>
+          </div>
+
+          <section class="mt-6 rounded-[3px] bg-card p-5 shadow-paper" aria-labelledby="heatmap-heading">
+            <h2 id="heatmap-heading" class="text-lg font-extrabold">Kdy lidé chodí</h2>
+            <p class="mt-1 text-xs text-muted-foreground">Zobrazení stránek podle dne v týdnu a hodiny (český čas). Tmavší = víc.</p>
+            <div id="heatmap" class="relative mt-4 overflow-x-auto"></div>
+          </section>
+
+          <div class="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {panels.map((panel) => (
+              <section class="rounded-[3px] bg-card p-5 shadow-paper" aria-labelledby={`${panel.id}-heading`}>
+                <h2 id={`${panel.id}-heading`} class="text-lg font-extrabold">{panel.title}</h2>
+                {panel.hint && <p class="mt-1 text-xs text-muted-foreground">{panel.hint}</p>}
+                <ol id={`panel-${panel.id}`} class="stats-list mt-4 space-y-2 text-sm" data-unit={panel.unit}></ol>
+              </section>
+            ))}
+          </div>
+
+          <section class="mt-6 rounded-[3px] bg-card p-5 shadow-paper" aria-labelledby="recent-heading">
+            <h2 id="recent-heading" class="text-lg font-extrabold">Poslední aktivita</h2>
+            <p class="mt-1 text-xs text-muted-foreground">60 posledních zobrazení a akcí, nezávisle na zvoleném období.</p>
+            <div class="mt-4 overflow-x-auto">
+              <table class="w-full min-w-[720px] text-left text-sm">
+                <thead class="text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr><th class="py-2 pr-3">Čas</th><th class="py-2 pr-3">Akce</th><th class="py-2 pr-3">Stránka / detail</th><th class="py-2 pr-3">Odkud</th><th class="py-2">Zařízení</th></tr>
+                </thead>
+                <tbody id="recent" class="divide-y divide-border"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <div id="chart-tooltip" class="pointer-events-none fixed z-50 hidden rounded-[3px] bg-ink px-3 py-2 text-xs text-white shadow-paper" role="tooltip"></div>
+  </section>
+
+  <script>
+    import { withBase } from "../../lib/urls";
+    import { escapeHtml, loadSchools } from "../../lib/school-data";
+    import { categoryLabels, isCategory } from "../../lib/interest-test";
+    import { isSupportType, supportLabels } from "../../lib/special-needs";
+
+    type Row = Record<string, string | number | null>;
+    type Stats = Record<string, Row[]> & { from: string; to: string; generatedAt: number };
+
+    const VIEWS = "#2f5bd3";
+    const VISITORS = "#e0643a";
+    const WEEKDAYS = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
+    const SECTION_LABELS: Record<string, string> = {
+      home: "Úvodní stránka", catalog: "Katalog škol", school: "Detail školy", programs: "Obory", quiz: "Test zájmů",
+      favorites: "Oblíbené", blog: "Blog", other: "Ostatní",
+    };
+    const EVENT_LABELS: Record<string, string> = {
+      pageview: "Zobrazení", quiz_start: "Začal test", quiz_complete: "Dokončil test", quiz_reset: "Resetoval test",
+      search: "Hledání", directions: "Navigace", favorite: "Oblíbené", outbound: "Odkaz ven", program_view: "Otevřel obor",
+    };
+    const TRACK_LABELS: Record<string, string> = { general: "Gymnázium", maturita: "Odborná s maturitou", vyucni: "Učební obor", any: "Ještě neví" };
+    const DEVICE_LABELS: Record<string, string> = { mobile: "Mobil", tablet: "Tablet", desktop: "Počítač" };
+    const countryNames = new Intl.DisplayNames(["cs"], { type: "region" });
+    const numberFormat = new Intl.NumberFormat("cs-CZ");
+    const fmt = (value: number) => numberFormat.format(Math.round(value));
+    const countryName = (code: string) => {
+      try {
+        return countryNames.of(code) ?? code;
+      } catch {
+        return code;
+      }
+    };
+
+    /** YYYY-MM-DD in Czech time (the en-CA locale formats dates this way). */
+    const dayString = (date: Date) =>
+      new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Prague", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+    const addDays = (day: string, days: number) => {
+      const date = new Date(`${day}T12:00:00Z`);
+      date.setUTCDate(date.getUTCDate() + days);
+      return date.toISOString().slice(0, 10);
+    };
+    const num = (value: unknown) => (typeof value === "number" ? value : Number(value) || 0);
+    const str = (value: unknown) => (value === null || value === undefined ? "" : String(value));
+
+    document.addEventListener("astro:page-load", () => {
+      const root = document.getElementById("stats-root");
+      if (!root) return;
+      const body = document.getElementById("stats-body");
+      const login = document.getElementById("stats-login");
+      const content = document.getElementById("stats-content");
+      const status = document.getElementById("stats-status");
+      const fromInput = document.getElementById("range-from") as HTMLInputElement | null;
+      const toInput = document.getElementById("range-to") as HTMLInputElement | null;
+      const tooltip = document.getElementById("chart-tooltip");
+      const rangeButtons = [...document.querySelectorAll<HTMLButtonElement>(".range-button")];
+
+      let schoolNames = new Map<string, string>();
+      let lastStats: Stats | null = null;
+      let liveTimer: number | null = null;
+      void loadSchools().then((schools) => {
+        schoolNames = new Map(schools.map((school) => [school.id, school.name]));
+        if (lastStats) render(lastStats);
+      }).catch(() => undefined);
+
+      const schoolName = (id: string) => schoolNames.get(id) ?? id;
+      const schoolLink = (id: string) => `<a class="hover:text-primary hover:underline" href="${withBase(`/skoly/${encodeURIComponent(id)}/`)}">${escapeHtml(schoolName(id))}</a>`;
+      const pathLabel = (path: string) => {
+        const local = path.replace(/^\/vyberstredni/, "") || "/";
+        const school = /^\/skoly\/([^/]+)\/?$/.exec(local);
+        if (school?.[1]) return schoolLink(decodeURIComponent(school[1]));
+        return `<a class="hover:text-primary hover:underline" href="${escapeHtml(path)}">${escapeHtml(local)}</a>`;
+      };
+
+      const showTooltip = (event: MouseEvent | FocusEvent, html: string) => {
+        if (!tooltip) return;
+        tooltip.innerHTML = html;
+        tooltip.classList.remove("hidden");
+        const target = event.currentTarget instanceof Element ? event.currentTarget.getBoundingClientRect() : null;
+        const x = event instanceof MouseEvent ? event.clientX : (target?.left ?? 0) + (target?.width ?? 0) / 2;
+        const y = event instanceof MouseEvent ? event.clientY : target?.top ?? 0;
+        const width = tooltip.offsetWidth;
+        tooltip.style.left = `${Math.min(window.innerWidth - width - 8, Math.max(8, x + 14))}px`;
+        tooltip.style.top = `${Math.max(8, y - tooltip.offsetHeight - 12)}px`;
+      };
+      const hideTooltip = () => tooltip?.classList.add("hidden");
+
+      /** One list panel: label, value and a single-colour bar relative to the top row. */
+      const fillList = (id: string, rows: Array<{ label: string; value: number; detail?: string }>, emptyText = "Zatím žádná data.") => {
+        const list = document.getElementById(`panel-${id}`);
+        if (!list) return;
+        const unit = list.dataset.unit ?? "";
+        const max = Math.max(1, ...rows.map((row) => row.value));
+        list.innerHTML = rows.length
+          ? rows.map((row) => `
+            <li>
+              <div class="flex items-baseline justify-between gap-3">
+                <span class="min-w-0 break-words">${row.label}</span>
+                <span class="shrink-0 font-bold tabular-nums" title="${escapeHtml(unit)}">${fmt(row.value)}${row.detail ? `<span class="ml-1 font-normal text-muted-foreground">${row.detail}</span>` : ""}</span>
+              </div>
+              <div class="mt-1 h-1.5 rounded-full bg-muted"><div class="h-full rounded-full" style="width:${(row.value / max) * 100}%;background:${VIEWS}"></div></div>
+            </li>`).join("")
+          : `<li class="text-muted-foreground">${emptyText}</li>`;
+      };
+
+      const kpi = (label: string, value: string, current: number | null, previous: number | null, hint = "") => {
+        let delta = "";
+        if (current !== null && previous !== null && previous > 0) {
+          const change = Math.round(((current - previous) / previous) * 100);
+          delta = `<span class="text-xs font-bold ${change >= 0 ? "text-emerald-700" : "text-primary"}">${change >= 0 ? "▲" : "▼"} ${Math.abs(change)} %</span>`;
+        }
+        return `<div class="rounded-[3px] bg-card p-4 shadow-paper">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">${label}</p>
+          <p class="mt-2 text-3xl font-extrabold tabular-nums">${value}</p>
+          <p class="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">${delta}${hint}</p>
+        </div>`;
+      };
+
+      /** Two series on one count axis, with a crosshair tooltip. */
+      const drawTrend = (points: Array<{ label: string; views: number; visitors: number }>) => {
+        const box = document.getElementById("trend-chart");
+        if (!box) return;
+        const width = Math.max(320, box.clientWidth);
+        const height = box.clientHeight || 256;
+        const pad = { left: 40, right: 12, top: 10, bottom: 26 };
+        const innerW = width - pad.left - pad.right;
+        const innerH = height - pad.top - pad.bottom;
+        const max = Math.max(1, ...points.map((point) => Math.max(point.views, point.visitors)));
+        const niceMax = (() => {
+          const step = 10 ** Math.floor(Math.log10(max));
+          return Math.ceil(max / step) * step;
+        })();
+        const x = (index: number) => pad.left + (points.length === 1 ? innerW / 2 : (index / (points.length - 1)) * innerW);
+        const y = (value: number) => pad.top + innerH - (value / niceMax) * innerH;
+        const line = (key: "views" | "visitors") => points.map((point, index) => `${index ? "L" : "M"}${x(index).toFixed(1)},${y(point[key]).toFixed(1)}`).join(" ");
+        const ticks = [0, 0.25, 0.5, 0.75, 1].map((share) => niceMax * share);
+        const labelEvery = Math.max(1, Math.ceil(points.length / 8));
+        box.innerHTML = `<svg width="${width}" height="${height}" role="img" aria-label="Zobrazení stránek a návštěvníci v čase">
+          ${ticks.map((tick) => `<line x1="${pad.left}" x2="${width - pad.right}" y1="${y(tick)}" y2="${y(tick)}" stroke="rgba(30,35,51,.08)" />
+            <text x="${pad.left - 6}" y="${y(tick) + 4}" text-anchor="end" font-size="11" fill="#565e6e">${fmt(tick)}</text>`).join("")}
+          ${points.map((point, index) => index % labelEvery === 0 ? `<text x="${x(index)}" y="${height - 6}" text-anchor="middle" font-size="11" fill="#565e6e">${escapeHtml(point.label)}</text>` : "").join("")}
+          <path d="${line("views")}" fill="none" stroke="${VIEWS}" stroke-width="2" stroke-linejoin="round" />
+          <path d="${line("visitors")}" fill="none" stroke="${VISITORS}" stroke-width="2" stroke-linejoin="round" />
+          ${points.length <= 45 ? points.map((point, index) => `<circle cx="${x(index)}" cy="${y(point.views)}" r="3" fill="${VIEWS}" /><circle cx="${x(index)}" cy="${y(point.visitors)}" r="3" fill="${VISITORS}" />`).join("") : ""}
+          <line id="crosshair" x1="0" x2="0" y1="${pad.top}" y2="${pad.top + innerH}" stroke="#1e2333" stroke-width="1" opacity="0" />
+          <rect id="trend-hit" x="${pad.left}" y="${pad.top}" width="${innerW}" height="${innerH}" fill="transparent" />
+        </svg>`;
+        const hit = box.querySelector("#trend-hit");
+        const crosshair = box.querySelector("#crosshair");
+        hit?.addEventListener("mousemove", (event) => {
+          if (!(event instanceof MouseEvent) || !points.length) return;
+          const rect = box.getBoundingClientRect();
+          const relative = (event.clientX - rect.left - pad.left) / innerW;
+          const index = Math.max(0, Math.min(points.length - 1, Math.round(relative * (points.length - 1))));
+          const point = points[index];
+          if (!point) return;
+          crosshair?.setAttribute("x1", String(x(index)));
+          crosshair?.setAttribute("x2", String(x(index)));
+          crosshair?.setAttribute("opacity", "0.4");
+          showTooltip(event, `<p class="font-bold">${escapeHtml(point.label)}</p>
+            <p><span style="color:${VIEWS}">━</span> <b>${fmt(point.views)}</b> zobrazení</p>
+            <p><span style="color:${VISITORS}">━</span> <b>${fmt(point.visitors)}</b> návštěvníků</p>`);
+        });
+        hit?.addEventListener("mouseleave", () => {
+          crosshair?.setAttribute("opacity", "0");
+          hideTooltip();
+        });
+      };
+
+      const drawHeatmap = (rows: Row[]) => {
+        const box = document.getElementById("heatmap");
+        if (!box) return;
+        const grid = Array.from({ length: 7 }, () => Array<number>(24).fill(0));
+        rows.forEach((row) => {
+          const day = grid[num(row.weekday)];
+          if (day) day[num(row.hour)] = num(row.pageviews);
+        });
+        const max = Math.max(1, ...grid.flat());
+        // Sequential: one hue, light to dark.
+        const shade = (value: number) => value === 0 ? "#f1ede3" : `color-mix(in oklab, ${VIEWS} ${Math.round(15 + (value / max) * 85)}%, #eef2fb)`;
+        box.innerHTML = `<table class="border-separate text-xs" style="border-spacing:2px">
+          <thead><tr><th></th>${Array.from({ length: 24 }, (_, hour) => `<th class="w-7 font-normal text-muted-foreground">${hour % 3 === 0 ? hour : ""}</th>`).join("")}</tr></thead>
+          <tbody>${grid.map((hours, weekday) => `<tr><th class="pr-2 text-right font-semibold">${WEEKDAYS[weekday]}</th>${hours.map((value, hour) =>
+            `<td class="heat-cell h-6 w-7 rounded-[3px]" tabindex="0" style="background:${shade(value)}" data-tip="${WEEKDAYS[weekday]} ${hour}:00–${hour}:59 · ${fmt(value)} zobrazení"></td>`).join("")}</tr>`).join("")}</tbody>
+        </table>`;
+        box.querySelectorAll<HTMLElement>(".heat-cell").forEach((cell) => {
+          const show = (event: MouseEvent | FocusEvent) => showTooltip(event, escapeHtml(cell.dataset.tip ?? ""));
+          cell.addEventListener("mousemove", show);
+          cell.addEventListener("focus", show);
+          cell.addEventListener("mouseleave", hideTooltip);
+          cell.addEventListener("blur", hideTooltip);
+        });
+      };
+
+      const eventRow = (stats: Stats, type: string) => stats.events?.find((row) => row.label === type);
+      const sectionVisitors = (stats: Stats, kind: string) => num(stats.sections?.find((row) => row.label === kind)?.visitors);
+
+      const render = (stats: Stats) => {
+        lastStats = stats;
+        const totals = stats.totals?.[0] ?? {};
+        const previous = stats.previous?.[0] ?? {};
+        const sessions = stats.sessions?.[0] ?? {};
+        const visitors = num(totals.visitors);
+        const pageviews = num(totals.pageviews);
+        const bounceRate = num(sessions.sessions) ? (num(sessions.bounces) / num(sessions.sessions)) * 100 : 0;
+        const quizDone = num(eventRow(stats, "quiz_complete")?.visitors);
+        const quizVisitors = sectionVisitors(stats, "quiz");
+        const kpis = document.getElementById("kpis");
+        if (kpis) {
+          kpis.innerHTML = [
+            kpi("Návštěvníci", fmt(visitors), visitors, num(previous.visitors), "vs. předchozí období"),
+            kpi("Zobrazení stránek", fmt(pageviews), pageviews, num(previous.pageviews)),
+            kpi("Stránek na návštěvu", num(sessions.pagesPerVisit).toFixed(1).replace(".", ","), null, null),
+            kpi("Odchod po 1 stránce", `${Math.round(bounceRate)} %`, null, null, "míra okamžitého odchodu"),
+            kpi("Dokončené testy", fmt(num(eventRow(stats, "quiz_complete")?.events)), null, null, `${fmt(quizDone)} návštěvníků`),
+            kpi("Test dokončí", quizVisitors ? `${Math.round((quizDone / quizVisitors) * 100)} %` : "–", null, null, "z návštěvníků stránky testu"),
+            kpi("Hledání", fmt(num(eventRow(stats, "search")?.events)), null, null, "katalog a obory"),
+            kpi("Detail školy", fmt(sectionVisitors(stats, "school")), null, null, "návštěvníků"),
+          ].join("");
+        }
+
+        const oneDay = stats.from === stats.to;
+        if (oneDay) {
+          // A single day is shown by hour.
+          const byHour = new Map((stats.hourly ?? []).map((row) => [num(row.hour), row]));
+          drawTrend(Array.from({ length: 24 }, (_, hour) => ({
+            label: `${hour}:00`,
+            views: num(byHour.get(hour)?.pageviews),
+            visitors: num(byHour.get(hour)?.visitors),
+          })));
+        } else {
+          const byDay = new Map((stats.daily ?? []).map((row) => [str(row.day), row]));
+          const points: Array<{ label: string; views: number; visitors: number }> = [];
+          for (let day = stats.from; day <= stats.to; day = addDays(day, 1)) {
+            const row = byDay.get(day);
+            const [, month, date] = day.split("-");
+            points.push({ label: `${Number(date)}. ${Number(month)}.`, views: num(row?.pageviews), visitors: num(row?.visitors) });
+          }
+          drawTrend(points);
+        }
+
+        const funnel = document.getElementById("funnel");
+        if (funnel) {
+          const steps = [
+            { label: "Navštívili web", value: visitors },
+            { label: "Otevřeli test", value: quizVisitors },
+            { label: "Začali odpovídat", value: num(eventRow(stats, "quiz_start")?.visitors) },
+            { label: "Dokončili test", value: quizDone },
+            { label: "Otevřeli detail školy", value: sectionVisitors(stats, "school") },
+          ];
+          const top = Math.max(1, steps[0]?.value ?? 1);
+          funnel.innerHTML = steps.map((step) => `<div>
+            <div class="flex justify-between text-sm"><span>${step.label}</span><span class="font-bold tabular-nums">${fmt(step.value)} <span class="font-normal text-muted-foreground">${Math.round((step.value / top) * 100)} %</span></span></div>
+            <div class="mt-1 h-2.5 rounded-[3px] bg-muted"><div class="h-full rounded-[3px]" style="width:${(step.value / top) * 100}%;background:${VISITORS}"></div></div>
+          </div>`).join("");
+        }
+
+        drawHeatmap(stats.heatmap ?? []);
+
+        // eslint-disable-next-line no-unused-vars
+        const simple = (rows: Row[] | undefined, valueKey: string, label: (...args: [Row]) => string) =>
+          (rows ?? []).map((row) => ({ label: label(row), value: num(row[valueKey]) }));
+        fillList("sections", (stats.sections ?? []).map((row) => ({ label: escapeHtml(SECTION_LABELS[str(row.label)] ?? str(row.label)), value: num(row.pageviews), detail: `· ${fmt(num(row.visitors))} lidí` })));
+        fillList("pages", (stats.pages ?? []).map((row) => ({ label: pathLabel(str(row.path)), value: num(row.pageviews), detail: `· ${fmt(num(row.visitors))} lidí` })));
+        fillList("schools", (stats.schools ?? []).map((row) => ({ label: schoolLink(str(row.id)), value: num(row.pageviews), detail: `· ${fmt(num(row.visitors))} lidí` })));
+        fillList("entries", simple(stats.entries, "visitors", (row) => pathLabel(str(row.label))));
+        fillList("exits", simple(stats.exits, "visitors", (row) => pathLabel(str(row.label))));
+        fillList("engagement", (stats.engagement ?? []).map((row) => {
+          const seconds = Math.round(num(row.seconds));
+          return {
+            label: `${escapeHtml(SECTION_LABELS[str(row.label)] ?? str(row.label))} <span class="text-muted-foreground">· scroll ${Math.round(num(row.scroll))} %</span>`,
+            value: seconds,
+            detail: `s (${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} min)`,
+          };
+        }));
+        fillList("referrers", simple(stats.referrers, "visitors", (row) => escapeHtml(str(row.label))));
+        fillList("campaigns", simple(stats.campaigns, "visitors", (row) => escapeHtml(str(row.label))));
+        fillList("countries", simple(stats.countries, "visitors", (row) => {
+          const code = str(row.label);
+          return escapeHtml(code.length === 2 ? countryName(code) : code);
+        }));
+        fillList("regions", simple(stats.regions, "visitors", (row) => escapeHtml(str(row.label))));
+        fillList("cities", simple(stats.cities, "visitors", (row) => escapeHtml(str(row.label))));
+        fillList("devices", simple(stats.devices, "visitors", (row) => escapeHtml(DEVICE_LABELS[str(row.label)] ?? str(row.label))));
+        fillList("browsers", simple(stats.browsers, "visitors", (row) => escapeHtml(str(row.label))));
+        fillList("systems", simple(stats.systems, "visitors", (row) => escapeHtml(str(row.label))));
+        fillList("screens", simple(stats.screens, "visitors", (row) => escapeHtml(str(row.label))));
+        fillList("interests", simple(stats.interests, "events", (row) => {
+          const value = str(row.label);
+          return escapeHtml(isCategory(value) ? categoryLabels[value] : value || "(bez odpovědi)");
+        }));
+        fillList("tracks", simple(stats.tracks, "events", (row) => escapeHtml(TRACK_LABELS[str(row.label)] ?? str(row.label))));
+        fillList("supports", simple(stats.supports, "events", (row) => {
+          const value = str(row.label);
+          return escapeHtml(isSupportType(value) ? `Ano: ${supportLabels[value]}` : "Nepotřebuje");
+        }));
+        fillList("homes", simple(stats.homes, "events", (row) => escapeHtml(str(row.label) === "poloha" ? "Poloha zařízení" : str(row.label))));
+        fillList("distances", simple(stats.distances, "events", (row) => escapeHtml(/^\d+$/.test(str(row.label)) ? `do ${str(row.label)} km` : str(row.label))));
+        fillList("searches", (stats.searches ?? []).map((row) => ({
+          label: `${escapeHtml(str(row.label) || "(jen filtry)")} <span class="text-muted-foreground">· ${escapeHtml(str(row.place))}</span>`,
+          value: num(row.events),
+          detail: `· ⌀ ${fmt(num(row.results))} výsl.`,
+        })));
+        fillList("programViews", simple(stats.programViews, "events", (row) => escapeHtml(str(row.label))));
+        fillList("favorites", simple(stats.favorites, "events", (row) => row.id ? schoolLink(str(row.id)) : "(neznámá škola)"));
+        fillList("directions", simple(stats.directions, "events", (row) => schoolLink(str(row.id))));
+        fillList("outbound", simple(stats.outbound, "events", (row) => escapeHtml(str(row.label))));
+
+        const recent = document.getElementById("recent");
+        if (recent) {
+          const time = new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+          recent.innerHTML = (stats.recent ?? []).map((row) => {
+            let detail = "";
+            try {
+              const data: unknown = row.data ? JSON.parse(str(row.data)) : null;
+              if (data && typeof data === "object") {
+                detail = Object.entries(data).map(([key, value]) => `${key}: ${String(value)}`).join(", ");
+              }
+            } catch { detail = ""; }
+            const place = [row.city, row.country].filter(Boolean).map(str).join(", ");
+            return `<tr>
+              <td class="whitespace-nowrap py-2 pr-3 tabular-nums text-muted-foreground">${time.format(new Date(num(row.ts)))}</td>
+              <td class="whitespace-nowrap py-2 pr-3 font-semibold">${escapeHtml(EVENT_LABELS[str(row.type)] ?? str(row.type))}</td>
+              <td class="py-2 pr-3">${pathLabel(str(row.path))}${detail ? `<span class="block text-xs text-muted-foreground">${escapeHtml(detail)}</span>` : ""}</td>
+              <td class="py-2 pr-3">${escapeHtml(str(row.referrer))}<span class="block text-xs text-muted-foreground">${escapeHtml(place)}</span></td>
+              <td class="py-2">${escapeHtml(DEVICE_LABELS[str(row.device)] ?? str(row.device))}<span class="block text-xs text-muted-foreground">${escapeHtml(str(row.browser))}</span></td>
+            </tr>`;
+          }).join("") || `<tr><td colspan="5" class="py-4 text-muted-foreground">Zatím žádná aktivita.</td></tr>`;
+        }
+
+        const live = document.getElementById("live");
+        const liveRow = stats.live?.[0] ?? {};
+        if (live) live.textContent = `● Online: ${fmt(num(liveRow.visitors5))} (5 min) · ${fmt(num(liveRow.visitors30))} (30 min)`;
+      };
+
+      const load = async () => {
+        if (!fromInput?.value || !toInput?.value) return;
+        content?.classList.add("opacity-50");
+        if (status) status.textContent = "Načítám…";
+        try {
+          const response = await fetch(withBase(`/api/admin/stats/?from=${fromInput.value}&to=${toInput.value}`), { credentials: "same-origin" });
+          if (response.status === 401) {
+            body?.classList.add("hidden");
+            login?.classList.remove("hidden");
+            return;
+          }
+          if (!response.ok) throw new Error(String(response.status));
+          const stats: Stats = await response.json();
+          body?.classList.remove("hidden");
+          login?.classList.add("hidden");
+          render(stats);
+          if (status) status.textContent = `Aktualizováno ${new Date(stats.generatedAt).toLocaleTimeString("cs-CZ")}`;
+        } catch {
+          if (status) status.textContent = "Statistiky se nepodařilo načíst. Zkus to znovu.";
+        } finally {
+          content?.classList.remove("opacity-50");
+        }
+      };
+
+      const setRange = (value: string) => {
+        const today = dayString(new Date());
+        const days = Number(value);
+        if (!fromInput || !toInput) return;
+        if (value === "1") {
+          fromInput.value = addDays(today, -1);
+          toInput.value = addDays(today, -1);
+        } else {
+          fromInput.value = days === 0 ? today : addDays(today, -(days - 1));
+          toInput.value = today;
+        }
+        rangeButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.range === value)));
+        void load();
+      };
+
+      rangeButtons.forEach((button) => button.addEventListener("click", () => setRange(button.dataset.range ?? "30")));
+      [fromInput, toInput].forEach((input) => input?.addEventListener("change", () => {
+        rangeButtons.forEach((button) => button.setAttribute("aria-pressed", "false"));
+        if (fromInput && toInput && fromInput.value > toInput.value) toInput.value = fromInput.value;
+        void load();
+      }));
+      document.getElementById("refresh")?.addEventListener("click", () => void load());
+      let resizeTimer: number | null = null;
+      window.addEventListener("resize", () => {
+        if (resizeTimer !== null) window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(() => { if (lastStats && document.getElementById("stats-root")) render(lastStats); }, 200);
+      });
+      // Keep the online counter and the activity feed fresh while the page is open.
+      if (liveTimer !== null) window.clearInterval(liveTimer);
+      liveTimer = window.setInterval(() => {
+        if (!document.getElementById("stats-root")) {
+          if (liveTimer !== null) window.clearInterval(liveTimer);
+          return;
+        }
+        if (document.visibilityState === "visible") void load();
+      }, 60_000);
+
+      setRange("30");
+    });
+  </script>
+</BaseLayout>

@@ -149,6 +149,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
     import { isInCzechRepublic } from "../lib/regions";
     import { supportLabels } from "../lib/special-needs";
     import { clearQuiz, loadQuiz, saveQuiz, type SavedHome } from "../lib/quiz-storage";
+    import { track as trackEvent } from "../lib/analytics";
     import towns from "../data/towns.json";
 
     const PAGE_SIZE = 6;
@@ -257,6 +258,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         const value = option?.dataset.value;
         if (!option || !step || !questionId || !value) return;
 
+        if (answers.size === 0) trackEvent("quiz_start");
         answers.set(questionId, value);
         answersVersion += 1;
         completed = false;
@@ -420,6 +422,17 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
             support,
           });
           ranked = result.schools;
+          if (!restoring) {
+            trackEvent("quiz_complete", {
+              interest: primary ?? "",
+              track: track ?? "",
+              support: support ?? "none",
+              homeRegion: home ? home.region || "poloha" : null,
+              maxDistance: maxDistance ?? "",
+              results: result.schools.length,
+              mainMatches: result.schools.filter((school) => school.matchesMain).length,
+            });
+          }
           withoutLocation = result.withoutLocation;
           mainInterest = result.mainInterest;
         } catch {
@@ -491,6 +504,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
       moreButton?.addEventListener("click", renderMore);
       document.getElementById("edit-answers")?.addEventListener("click", backToQuiz);
       const resetQuiz = () => {
+        trackEvent("quiz_reset");
         answers.clear();
         answersVersion += 1;
         completed = false;
