@@ -556,7 +556,35 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         return true;
       };
 
-      if (!restore()) showStep(0, false);
+      /**
+       * The homepage asks the first question itself and links here with ?zajem=<answer>.
+       * The answer replaces a saved one, and the quiz continues with the next question.
+       */
+      const startFromHomepage = () => {
+        const url = new URL(window.location.href);
+        const value = url.searchParams.get("zajem");
+        if (!value) return false;
+        url.searchParams.delete("zajem");
+        window.history.replaceState(window.history.state, "", url);
+        const firstStep = steps[0];
+        const questionId = firstStep?.dataset.question;
+        const option = [...(firstStep?.querySelectorAll<HTMLElement>(".quiz-option") ?? [])].find((button) => button.dataset.value === value);
+        if (!firstStep || !questionId || !option) return false;
+        if (answers.size === 0) trackEvent("quiz_start", { from: "home" });
+        answers.set(questionId, value);
+        answersVersion += 1;
+        completed = false;
+        firstStep.querySelectorAll(".quiz-option").forEach((button) => button.setAttribute("aria-pressed", String(button === option)));
+        results.hidden = true;
+        quiz.hidden = false;
+        document.getElementById("step-companions")?.removeAttribute("hidden");
+        persist();
+        showStep(1, false);
+        return true;
+      };
+
+      const restored = restore();
+      if (!startFromHomepage() && !restored) showStep(0, false);
     });
   </script>
 </BaseLayout>

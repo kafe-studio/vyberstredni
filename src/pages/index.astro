@@ -5,6 +5,7 @@ import Character from "../components/Character.astro";
 import { siteConfig } from "../config/site";
 import { withBase } from "../lib/urls";
 import { currentProgramGroups, schools } from "../data/schools";
+import { PRIMARY_QUESTION_ID, QUESTIONS } from "../lib/quiz-questions";
 
 const metadata = {
   title: siteConfig.name,
@@ -41,17 +42,9 @@ const steps = [
   },
 ];
 
-/** Shortcuts into the catalog search; the query matches program names. */
-const interests = [
-  { icon: "💻", label: "IT a programování", query: "informační technologie", color: "bg-sky/20 hover:bg-sky/35" },
-  { icon: "🎨", label: "Design a média", query: "design", color: "bg-pink/15 hover:bg-pink/30" },
-  { icon: "⚙️", label: "Technika a stroje", query: "strojírenství", color: "bg-orange/15 hover:bg-orange/30" },
-  { icon: "🩺", label: "Zdravotnictví", query: "zdravotnick", color: "bg-mint hover:bg-lime/40" },
-  { icon: "🍳", label: "Gastro a hotely", query: "kuchař", color: "bg-sun/30 hover:bg-sun/50" },
-  { icon: "💼", label: "Ekonomika", query: "ekonomika", color: "bg-lilac hover:bg-primary/20" },
-  { icon: "🐾", label: "Zvířata a příroda", query: "veterin", color: "bg-lime/25 hover:bg-lime/45" },
-  { icon: "🤝", label: "Pedagogika", query: "pedagog", color: "bg-peach hover:bg-orange/25" },
-];
+/** The quiz starts right on the homepage: its first question, answered here, opens the quiz at question 2. */
+const firstQuestion = QUESTIONS.find((question) => question.id === PRIMARY_QUESTION_ID);
+const remainingQuestions = QUESTIONS.length - 1;
 ---
 
 <BaseLayout {metadata}>
@@ -86,6 +79,33 @@ const interests = [
     </div>
   </section>
 
+  {firstQuestion && (
+    <section class="px-4 py-12 sm:px-6" aria-labelledby="quiz-start-heading">
+      <div class="track-card relative mx-auto max-w-3xl px-5 pb-6 pt-8 sm:px-8 sm:pb-8">
+        <span class="absolute -top-3 left-8 h-6 w-24 -rotate-3 bg-sun/80" aria-hidden="true"></span>
+        <span class="absolute -top-3 right-10 h-6 w-20 rotate-3 bg-pink/70" aria-hidden="true"></span>
+        <p class="text-sm font-bold text-muted-foreground">Test podle zájmů · otázka 1 z {QUESTIONS.length}</p>
+        <div class="mt-2 h-3 overflow-hidden rounded-full border-2 border-ink bg-white" aria-hidden="true">
+          <div class="h-full rounded-full" style={`width: ${100 / (QUESTIONS.length + 1)}%; background: repeating-linear-gradient(-45deg, var(--primary) 0 10px, #d9493f 10px 20px)`}></div>
+        </div>
+        <h2 id="quiz-start-heading" class="mt-5 text-2xl font-extrabold sm:text-3xl">{firstQuestion.prompt}</h2>
+        <p class="mt-1 text-sm text-muted-foreground">Klikni na odpověď a test pokračuje. Zbývá {remainingQuestions} krátkých otázek.</p>
+        <div class="mt-5 grid gap-3 sm:grid-cols-2">
+          {firstQuestion.options.map((option) => (
+            <a
+              href={`${withBase("/test/")}?zajem=${encodeURIComponent(option.value)}`}
+              class="flex min-h-14 items-center gap-3 rounded-[4px] border border-border bg-card p-4 font-semibold text-ink shadow-paper transition hover:-translate-y-0.5 hover:bg-sun hover:shadow-paper-lift"
+            >
+              <span class="text-2xl" aria-hidden="true">{option.icon}</span>
+              <span>{option.label}</span>
+              <span class="ml-auto text-primary" aria-hidden="true">→</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
   <section class="px-6 py-16" aria-labelledby="how-heading">
     <div class="mx-auto max-w-6xl">
       <h2 id="how-heading" class="font-hand text-center text-5xl font-bold md:text-6xl">Jak to funguje</h2>
@@ -107,23 +127,6 @@ const interests = [
     </div>
   </section>
 
-  <section class="px-6 py-16" aria-labelledby="interests-heading">
-    <div class="mx-auto max-w-6xl">
-      <h2 id="interests-heading" class="font-hand text-5xl font-bold md:text-6xl">Co tě baví?</h2>
-      <p class="mt-2 text-muted-foreground">Klikni a uvidíš školy, které to učí.</p>
-      <div class="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-        {interests.map((interest) => (
-          <a
-            href={`${withBase("/skoly/")}?q=${encodeURIComponent(interest.query)}`}
-            class:list={["flex items-center gap-2 rounded-[3px] p-3 text-sm font-bold leading-tight shadow-paper odd:-rotate-1 even:rotate-1 transition hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-paper-lift sm:gap-3 sm:p-4 sm:text-base", interest.color]}
-          >
-            <span class="shrink-0 text-xl sm:text-2xl" aria-hidden="true">{interest.icon}</span>
-            <span class="min-w-0 hyphens-auto break-words">{interest.label}</span>
-          </a>
-        ))}
-      </div>
-    </div>
-  </section>
 
   <section class="px-6 py-16">
     <div class="track-card lined-paper relative mx-auto grid max-w-5xl items-center gap-6 overflow-hidden p-8 md:grid-cols-[1fr_14rem] md:p-12">
