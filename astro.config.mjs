@@ -40,21 +40,21 @@ export default defineConfig({
   fonts: [
     {
       provider: fontProviders.fontsource(),
-      name: "Inter",
-      cssVariable: "--font-inter",
-      weights: ["100 900"],
+      name: "Nunito",
+      cssVariable: "--font-nunito",
+      weights: ["400 900"],
       styles: ["normal"],
       subsets: ["latin", "latin-ext"],
       fallbacks: ["ui-sans-serif", "system-ui", "sans-serif"],
     },
     {
       provider: fontProviders.fontsource(),
-      name: "Bricolage Grotesque",
-      cssVariable: "--font-bricolage",
-      weights: ["600 800"],
+      name: "Caveat",
+      cssVariable: "--font-caveat",
+      weights: ["500 700"],
       styles: ["normal"],
       subsets: ["latin", "latin-ext"],
-      fallbacks: ["ui-sans-serif", "system-ui", "sans-serif"],
+      fallbacks: ["cursive"],
     },
   ],
   vite: {

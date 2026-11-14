@@ -50,7 +50,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
               <button id="next-button" type="button" class="font-semibold text-primary hover:underline disabled:invisible" disabled>Další →</button>
             </span>
           </div>
-          <div class="h-3 overflow-hidden rounded-full border-2 border-ink bg-white">
+          <div class="h-3 overflow-hidden rounded-[3px] border border-border bg-card">
             <div id="progress-bar" class="h-full rounded-full bg-primary transition-all duration-300" style={`width: ${100 / totalSteps}%`}></div>
           </div>
         </div>
@@ -63,7 +63,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
               {question.options.map((option) => (
                 <button
                   type="button"
-                  class="quiz-option flex items-center gap-3 rounded-2xl border-2 border-ink bg-white p-4 text-left shadow-[3px_3px_0_var(--ink)] transition hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-lilac hover:shadow-[5px_5px_0_var(--ink)] aria-pressed:bg-sun"
+                  class="quiz-option flex items-center gap-3 rounded-[4px] border border-border bg-card p-4 text-left shadow-paper transition hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-lilac hover:shadow-paper-lift aria-pressed:bg-sun"
                   data-value={option.value}
                   aria-pressed="false"
                 >
@@ -82,14 +82,14 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
             <div class="grid gap-3 sm:grid-cols-2">
               <label class="block">
                 <span class="mb-2 block text-sm font-medium">Kraj</span>
-                <select id="home-region" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-3 text-ink">
+                <select id="home-region" class="w-full rounded-[6px] border-2 border-ink/60 bg-card px-3 py-3 text-ink">
                   <option value="">Vyber kraj…</option>
                   {REGIONS.map((region) => <option value={region}>{region}</option>)}
                 </select>
               </label>
               <label class="block">
                 <span class="mb-2 block text-sm font-medium">Obec</span>
-                <select id="home-select" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-3 text-ink disabled:opacity-60" disabled>
+                <select id="home-select" class="w-full rounded-[6px] border-2 border-ink/60 bg-card px-3 py-3 text-ink disabled:opacity-60" disabled>
                   <option value="">Nejdřív vyber kraj</option>
                 </select>
               </label>
@@ -98,7 +98,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
             <p id="home-status" class="text-sm text-muted-foreground" aria-live="polite"></p>
             <label id="distance-field" class="block" hidden>
               <span class="mb-2 block text-sm font-medium">Jak daleko můžeš dojíždět?</span>
-              <select id="max-distance" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-3 text-ink">
+              <select id="max-distance" class="w-full rounded-[6px] border-2 border-ink/60 bg-card px-3 py-3 text-ink">
                 <option value="">Nezáleží</option>
                 <option value="10">Do 10 km</option>
                 <option value="20">Do 20 km</option>
@@ -433,7 +433,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         const top = rankInterests(totals, primary).slice(0, 3).map((category) => categoryLabels[category]);
         if (topInterests) {
           topInterests.innerHTML = (top.length ? top : ["Zatím bez jasného směru"])
-            .map((label, index) => `<span class="rounded-full border-2 border-ink px-4 py-2 text-sm font-bold shadow-[2px_2px_0_var(--ink)] ${["bg-primary text-white", "bg-sun text-ink", "bg-mint text-ink"][index] ?? "bg-white text-ink"}">${escapeHtml(label)}</span>`)
+            .map((label, index) => `<span class="font-hand rounded-[2px] px-3 py-0.5 text-2xl font-bold odd:-rotate-1 even:rotate-1 ${["bg-primary text-white", "bg-sun text-ink", "bg-mint text-ink"][index] ?? "bg-white text-ink"}">${escapeHtml(label)}</span>`)
             .join("");
         }
         if (resultsNote) {

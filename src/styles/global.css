@@ -12,6 +12,7 @@
   --color-card: var(--card);
   --color-accent: var(--accent);
   --color-ink: var(--ink);
+  --color-pen: var(--pen);
   --color-orange: var(--orange);
   --color-lime: var(--lime);
   --color-pink: var(--pink);
@@ -20,47 +21,61 @@
   --color-lilac: var(--lilac);
   --color-peach: var(--peach);
   --color-sun: var(--sun);
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-bricolage);
+  --font-sans: var(--font-nunito);
+  --font-display: var(--font-nunito);
+  /* Handwritten accents: labels, numbers, notes in the margin. */
+  --font-hand: var(--font-caveat);
+  /* Paper sheets lying on the desk, and the same sheet picked up. */
+  --shadow-paper: 0 1px 2px rgba(30, 35, 51, 0.08), 0 6px 18px rgba(30, 35, 51, 0.1);
+  --shadow-paper-lift: 0 2px 4px rgba(30, 35, 51, 0.1), 0 14px 30px rgba(30, 35, 51, 0.16);
 }
 
-/* Palette taken from the student illustrations: violet hoodie, orange top, lime vest, sky jacket, mint backdrop. */
+/* School notebook: squared paper, red margin, red and blue pens, highlighters. */
 :root {
-  --ink: #1a1033;
-  --background: #fff8ef;
+  --ink: #1e2333;
+  --pen: #1f3a93;
+  --background: #fbf8f1;
+  --paper: #fffdf7;
+  --grid-line: #dce6f2;
+  --margin-line: #f08a8a;
   --foreground: var(--ink);
-  --primary: #6d28ff;
-  --primary-btn: #6d28ff;
-  --primary-btn-hover: #5a14f0;
-  --accent: #ff7a00;
-  --orange: #ff7a00;
-  --lime: #a3e635;
-  --pink: #ff4fa3;
-  --sky: #22b8ff;
-  --mint: #d2fbe4;
-  --lilac: #ece3ff;
-  --peach: #ffe2c6;
-  --sun: #ffd43b;
-  --border: rgba(26, 16, 51, 0.12);
-  --border-interactive: rgba(26, 16, 51, 0.45);
-  --muted: #f1ebfb;
-  --muted-foreground: #5f5677;
-  --card: #ffffff;
-  --shadow-pop: 4px 4px 0 var(--ink);
+  --primary: #c8352c;
+  --primary-btn: #c8352c;
+  --primary-btn-hover: #a92a22;
+  --accent: #f08a24;
+  --orange: #f08a24;
+  --lime: #9be3a8;
+  --pink: #ff9eb8;
+  --sky: #8fbdf2;
+  --mint: #ddf3e2;
+  --lilac: #e8eef8;
+  --peach: #ffe6d2;
+  --sun: #ffe45c;
+  --border: rgba(30, 35, 51, 0.14);
+  --border-interactive: rgba(30, 35, 51, 0.45);
+  --muted: #f1ede3;
+  --muted-foreground: #565e6e;
+  --card: var(--paper);
+  --shadow-pop: 3px 4px 0 var(--ink);
+  --tape: rgba(255, 228, 92, 0.75);
 }
 
 @layer base {
   body {
     background-color: var(--background);
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 28px 28px;
     color: var(--foreground);
     font-family: var(--font-sans);
   }
-  h1, h2, h3, .font-display {
+  h1, h2, h3 {
     font-family: var(--font-display), var(--font-sans);
     letter-spacing: -0.02em;
   }
-  :focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
-  ::selection { background-color: color-mix(in srgb, var(--primary) 25%, transparent); }
+  :focus-visible { outline: 3px solid var(--pen); outline-offset: 2px; }
+  ::selection { background-color: var(--sun); }
 }
 
 .reveal {
@@ -77,85 +92,128 @@ html.reveal-ready .reveal.active {
 
 /* Components live in a layer so Tailwind utilities (bg-*, px-*) can override them. */
 @layer components {
-  .glass {
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 2px solid var(--ink);
+  /* The red margin line of a notebook page, on wide screens only. */
+  .notebook-margin {
+    position: fixed;
+    inset-block: 0;
+    left: max(1.25rem, calc((100vw - 80rem) / 2 - 1.5rem));
+    width: 2px;
+    background: var(--margin-line);
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 0;
   }
 
-  /* Buttons: sticker style with a hard offset shadow. */
+  .glass {
+    background: var(--paper);
+    box-shadow: var(--shadow-paper);
+  }
+
+  /* Buttons: a cut-out piece of card with a pen shadow, slightly hand-cut corners. */
   .btn-primary,
   .btn-outline {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-    border-radius: 9999px; border: 2px solid var(--ink);
-    font-weight: 700; font-size: 1rem; padding: 0.8rem 1.75rem; cursor: pointer;
+    border-radius: 14px 10px 16px 9px; border: 2px solid var(--ink);
+    font-weight: 800; font-size: 1rem; padding: 0.8rem 1.6rem; cursor: pointer;
     box-shadow: var(--shadow-pop);
     transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
   }
   .btn-primary { background: var(--primary-btn); color: #fff; }
-  .btn-outline { background: #fff; color: var(--ink); }
+  .btn-outline { background: var(--paper); color: var(--ink); }
   .btn-primary:hover { background: var(--primary-btn-hover); }
   .btn-outline:hover { background: var(--sun); }
   .btn-primary:hover,
-  .btn-outline:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+  .btn-outline:hover { transform: translate(-1px, -2px) rotate(-0.5deg); box-shadow: 5px 6px 0 var(--ink); }
   .btn-primary:active,
   .btn-outline:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
   .btn-primary:disabled,
   .btn-outline:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: var(--shadow-pop); }
 
+  /* A sheet of paper: the quiz, panels, banners. */
   .track-card {
     background: var(--card);
-    border: 2px solid var(--ink);
-    border-radius: 1.5rem;
-    box-shadow: 6px 6px 0 var(--ink);
+    border-radius: 4px;
+    box-shadow: var(--shadow-paper);
   }
 
+  /* A card pinned to the page with a piece of tape. */
   .school-card {
+    position: relative;
     background: var(--card);
-    border: 2px solid var(--ink);
-    border-radius: 1.25rem;
-    box-shadow: 4px 4px 0 var(--ink);
+    border-radius: 4px;
+    box-shadow: var(--shadow-paper);
     transition: transform 0.18s ease, box-shadow 0.18s ease;
   }
-  .school-card:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 7px 7px 0 var(--primary);
+  .school-card::before {
+    content: "";
+    position: absolute;
+    top: -9px;
+    left: 1.5rem;
+    width: 4.5rem;
+    height: 1.25rem;
+    background: var(--tape);
+    transform: rotate(-4deg);
+    pointer-events: none;
+    z-index: 1;
   }
+  .school-card:nth-child(3n + 2)::before { left: auto; right: 1.75rem; transform: rotate(5deg); background: rgba(255, 158, 184, 0.7); }
+  .school-card:nth-child(3n)::before { left: 45%; transform: rotate(-2deg); background: rgba(155, 227, 168, 0.75); }
+  .school-card:hover {
+    transform: translateY(-3px) rotate(-0.4deg);
+    box-shadow: var(--shadow-paper-lift);
+  }
+
+  /* Lined paper for notes and step cards. */
+  .lined-paper {
+    background-color: var(--paper);
+    background-image: repeating-linear-gradient(var(--paper) 0 31px, #c9d8ea 31px 32px);
+  }
+
+  /* Highlighter stroke behind a word. */
+  .hl {
+    background: linear-gradient(transparent 52%, var(--sun) 52%, var(--sun) 90%, transparent 90%);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  .hl-pink { background-image: linear-gradient(transparent 52%, var(--pink) 52%, var(--pink) 90%, transparent 90%); }
+  .hl-green { background-image: linear-gradient(transparent 52%, var(--lime) 52%, var(--lime) 90%, transparent 90%); }
 
   /* Characters: cut-out students from the illustration. */
   .character {
     display: block;
     height: auto;
     max-width: 100%;
-    filter: drop-shadow(0 14px 18px rgba(26, 16, 51, 0.18));
+    filter: drop-shadow(0 10px 12px rgba(30, 35, 51, 0.16));
     pointer-events: none;
     user-select: none;
   }
   .character-float { animation: character-float 5s ease-in-out infinite; }
   .character-float-delay { animation: character-float 5s ease-in-out 1.2s infinite; }
 
-  /* Organic colour blobs placed behind characters. */
+  /* Sticky notes stuck behind the characters. */
   .blob {
     position: absolute;
     z-index: -1;
-    border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%;
+    border-radius: 3px;
+    transform: rotate(3deg);
+    box-shadow: var(--shadow-paper);
   }
-  .blob-alt { border-radius: 63% 37% 41% 59% / 52% 61% 39% 48%; }
+  .blob-alt { transform: rotate(-6deg); }
 
+  /* A handwritten label on a strip of tape. */
   .sticker-note {
     display: inline-block;
-    border: 2px solid var(--ink);
-    border-radius: 9999px;
-    padding: 0.4rem 0.85rem;
+    border-radius: 2px;
+    padding: 0.05rem 0.7rem 0.15rem;
     color: var(--ink);
-    font-size: 0.8rem;
-    font-weight: 800;
-    box-shadow: 3px 3px 0 var(--ink);
+    font-family: var(--font-hand), cursive;
+    font-size: 1.45rem;
+    font-weight: 700;
+    line-height: 1.3;
     max-width: 100%;
   }
 
-  /* Footer banner */
+  /* Footer banner: a page torn out of the notebook. */
   .site-student-banner {
     position: relative;
     display: grid;
@@ -166,10 +224,10 @@ html.reveal-ready .reveal.active {
     width: calc(100% - 3rem);
     margin: 0 auto;
     padding: 2rem 2.25rem;
-    border: 2px solid var(--ink);
-    border-radius: 2rem;
-    background: var(--lilac);
-    box-shadow: 6px 6px 0 var(--ink);
+    border-radius: 4px;
+    background-color: var(--paper);
+    background-image: repeating-linear-gradient(var(--paper) 0 31px, #c9d8ea 31px 32px);
+    box-shadow: var(--shadow-paper);
     overflow: hidden;
   }
 }
@@ -180,13 +238,18 @@ html.reveal-ready .reveal.active {
 }
 
 #progress-bar {
-  background: linear-gradient(90deg, var(--primary) 0%, var(--pink) 55%, var(--orange) 100%);
+  background: repeating-linear-gradient(-45deg, var(--primary) 0 10px, #d9493f 10px 20px);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .reveal { transition: none; }
   html.reveal-ready .reveal:not(.active) { opacity: 1; transform: none; }
   .character-float, .character-float-delay { animation: none; }
+  .school-card:hover { transform: none; }
+}
+
+@media (max-width: 1023px) {
+  .notebook-margin { display: none; }
 }
 
 @media (max-width: 640px) {

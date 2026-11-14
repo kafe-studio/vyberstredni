@@ -56,20 +56,20 @@ const metadata = {
             id="school-search"
             type="search"
             placeholder="🔍 Hledej školu, obor nebo město…"
-            class="w-full rounded-xl border-2 border-ink bg-white px-4 py-3 text-lg text-foreground placeholder:text-muted-foreground"
+            class="w-full rounded-[6px] border-2 border-ink/60 bg-card px-4 py-3 text-lg text-foreground placeholder:text-muted-foreground"
           />
         </label>
         <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label class="block">
             <span class="mb-1 block text-xs font-medium text-muted-foreground">Kraj</span>
-            <select id="filter-region" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
+            <select id="filter-region" class="w-full rounded-[6px] border-2 border-ink/60 bg-card px-3 py-2.5 text-foreground">
               <option value="">Celé Česko</option>
               {REGIONS.map((region) => <option value={region}>{region}</option>)}
             </select>
           </label>
           <label class="block">
             <span class="mb-1 block text-xs font-medium text-muted-foreground">Typ studia</span>
-            <select id="filter-track" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
+            <select id="filter-track" class="w-full rounded-[6px] border-2 border-ink/60 bg-card px-3 py-2.5 text-foreground">
               <option value="">Všechny</option>
               <option value="general">Gymnázium</option>
               <option value="maturita">Odborná škola s maturitou</option>
@@ -78,7 +78,7 @@ const metadata = {
           </label>
           <label class="block">
             <span class="mb-1 block text-xs font-medium text-muted-foreground">Zřizovatel</span>
-            <select id="filter-founder" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
+            <select id="filter-founder" class="w-full rounded-[6px] border-2 border-ink/60 bg-card px-3 py-2.5 text-foreground">
               <option value="">Všechny</option>
               <option value="public">Veřejné</option>
               <option value="private">Soukromé</option>
@@ -87,7 +87,7 @@ const metadata = {
           </label>
           <label class="block">
             <span class="mb-1 block text-xs font-medium text-muted-foreground">Podpora</span>
-            <select id="filter-support" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
+            <select id="filter-support" class="w-full rounded-[6px] border-2 border-ink/60 bg-card px-3 py-2.5 text-foreground">
               <option value="">Všechny školy</option>
               <option value="mainstream">Běžné školy</option>
               {SUPPORT_TYPES.map((support) => <option value={support}>Školy {supportLabels[support]}</option>)}
