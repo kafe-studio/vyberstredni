@@ -1,6 +1,36 @@
-# Průzkum zdrojů dat – průvodce výběrem SŠ (Praha + Středočeský kraj)
+# Průzkum zdrojů dat – průvodce výběrem SŠ
 
-Stav k 11. 11. 2026. Všechny soubory označené ✅ jsem stáhl a ověřil jejich obsah, ne jen popis na webu.
+## Aktualizace 14. 11. 2026: celá Česká republika
+
+Katalog pokrývá **1 378 středních škol a konzervatoří ve všech 14 krajích**. Data sestavuje skript
+`scripts/build-schools-data.py` (jen standardní knihovna Pythonu); stažené zdroje ukládá do `.cache/data-sources/`
+(není v gitu). Obnova dat: `python scripts/build-schools-data.py --refresh`.
+
+| Co | Zdroj | Výsledek |
+|---|---|---|
+| Školy, součásti, obory, kódy RÚIAN | Rejstřík škol MŠMT, export celé ČR (`RSSZ-cela-CR.jsonld` na lkod-ftp.msmt.gov.cz, nalezeno přes NKOD) | 1 378 škol, 7 836 záznamů oborů |
+| Telefon, web, e-mail | Export adresáře z isv.gov.cz/rssz (`POST /rssz/api/v1/sub/export/ADRESAR/CSV`, totéž co tlačítko na webu) | propojeno přes RED-IZO |
+| Souřadnice | ČÚZK RÚIAN, mapová služba `Prohlizeci_sluzba_nad_daty_RUIAN`, vrstva AdresniMisto, výstup WGS84 | 1 375 škol |
+| Inspekční zprávy | ČŠI, otevřená data (`opendata.csicr.cz/Transformation/Download/139/Distribution`) | 1 342 škol, poslední zpráva + odkaz na portál |
+| Obce pro výběr bydliště | odvozeno z adres škol (Praha po obvodech) | `src/data/towns.json`, 347 obcí |
+
+**Poloha školy:** sídlo právnické osoby bývá jen kancelář a seznam míst výuky může začínat pobočkou v jiném městě.
+Skript proto bere jediné místo výuky; při více místech to v obci sídla (přednostně na adrese ředitelství nebo sídla);
+jinak sídlo.
+
+**Speciální školy:** rejstřík je výslovně neoznačuje. Aplikace je pozná podle názvu (zrakové, sluchové, tělesné
+postižení, speciální/praktická škola, více vad) a podle oborů (škola jen s obory kategorie E a C). Výsledek: 2 školy
+pro zrakově, 6 pro sluchově, 1 pro tělesně postižené a 153 pro žáky se SVP. Test zájmů je doporučí jen tomu, kdo
+v otázce na podporu zvolí odpovídající možnost; katalog je umí filtrovat.
+
+**Hodnocení:** jediné otevřené hodnocení jednotlivých škol jsou inspekční zprávy ČŠI (slovní, bez známek). Recenze
+žáků a rodičů žádný otevřený zdroj nemá. Výsledky maturit a přijímaček (CERMAT, kapitoly 2 a 3) zatím zapojené
+nejsou – čeká se na ověření licence.
+
+---
+
+Původní průzkum (stav k 11. 11. 2026, Praha a Středočeský kraj). Všechny soubory označené ✅ jsem stáhl a ověřil
+jejich obsah, ne jen popis na webu.
 
 ## Shrnutí
 

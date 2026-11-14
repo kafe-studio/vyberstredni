@@ -5,6 +5,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Character from "../components/Character.astro";
 import { currentProgramGroups, schoolSnapshotDate, schoolSource } from "../data/schools";
 import { programLevel } from "../lib/interest-test";
+import { REGIONS } from "../lib/regions";
 
 /** Plain-language label for the level letter (and gymnázium length) in a program code. */
 const programKind = (code: string) => {
@@ -26,7 +27,7 @@ const programCatalog = [...programGroups.values()]
 
 const metadata = {
   title: "Obory",
-  description: "Najdi studijní obor a podívej se, které školy v Praze a Středočeském kraji ho nabízejí.",
+  description: "Najdi studijní obor a podívej se, které střední školy v Česku ho nabízejí.",
 };
 ---
 
@@ -46,9 +47,8 @@ const metadata = {
             <input id="program-search" type="search" class="w-full rounded-xl border-2 border-ink bg-white px-4 py-3 text-foreground placeholder:text-muted-foreground" placeholder="🔍 Hledej obor, např. kuchař" />
           </label>
           <select id="program-region" class="mt-3 w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground" aria-label="Kraj">
-            <option value="">Praha i Středočeský kraj</option>
-            <option value="Praha">Praha</option>
-            <option value="Středočeský kraj">Středočeský kraj</option>
+            <option value="">Celé Česko</option>
+            {REGIONS.map((region) => <option value={region}>{region}</option>)}
           </select>
           <p id="program-count" class="mt-3 text-xs text-muted-foreground" aria-live="polite">{programCatalog.length} oborů</p>
           <ul id="program-list" class="mt-2 max-h-[32rem] space-y-1 overflow-y-auto pr-1">

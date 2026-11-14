@@ -3,6 +3,7 @@ export const prerender = true;
 
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { withBase } from "../lib/urls";
+import { REGIONS } from "../lib/regions";
 
 const metadata = {
   title: "Admin",
@@ -62,7 +63,7 @@ const metadata = {
             <p id="count-praha" class="mt-3 text-3xl font-bold">0</p>
           </div>
           <div class="track-card p-5">
-            <p class="text-sm text-muted-foreground">Středočeský kraj</p>
+            <p class="text-sm text-muted-foreground">Ostatní kraje</p>
             <p id="count-region" class="mt-3 text-3xl font-bold">0</p>
           </div>
           <div class="track-card p-5">
@@ -86,8 +87,7 @@ const metadata = {
                 <div>
                   <label for="school-region" class="mb-2 block text-sm font-medium">Region</label>
                   <select id="school-region" name="region" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
-                    <option value="Praha">Praha</option>
-                    <option value="Středočeský kraj">Středočeský kraj</option>
+                    {REGIONS.map((region) => <option value={region}>{region}</option>)}
                   </select>
                 </div>
 
@@ -380,7 +380,7 @@ const metadata = {
     const renderStats = (items: SchoolRecord[]) => {
       if (totalSchools) totalSchools.textContent = String(items.length);
       if (countPraha) countPraha.textContent = String(items.filter((item) => item.region === "Praha").length);
-      if (countRegion) countRegion.textContent = String(items.filter((item) => item.region === "Středočeský kraj").length);
+      if (countRegion) countRegion.textContent = String(items.filter((item) => item.region !== "Praha").length);
       if (countFocus) countFocus.textContent = String(new Set(items.map((item) => item.focus)).size);
     };
 

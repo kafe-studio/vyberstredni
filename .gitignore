@@ -30,3 +30,6 @@ worker-configuration.d.ts
 
 # browser automation artifacts
 .playwright-mcp/
+
+# downloaded data sources (scripts/build-schools-data.py)
+.cache/

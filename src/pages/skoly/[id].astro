@@ -2,7 +2,10 @@
 export const prerender = true;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { schoolProgramSources, schoolProgramsSnapshotDate, schoolSnapshotDate, schoolSource, schools, uniqueSchoolPrograms } from "../../data/schools";
+import { inspectionSource, schoolProgramSources, schoolProgramsSnapshotDate, schoolSnapshotDate, schoolSource, schools, uniqueSchoolPrograms } from "../../data/schools";
+import towns from "../../data/towns.json";
+import { REGIONS } from "../../lib/regions";
+import { supportLabels } from "../../lib/special-needs";
 import { withBase } from "../../lib/urls";
 
 const typeLabels = {
@@ -24,7 +27,16 @@ const activePrograms = uniqueSchoolPrograms(school.programs.filter((program) => 
   .sort((left, right) => left.name.localeCompare(right.name, "cs") || left.code.localeCompare(right.code, "cs"));
 const phasingOutPrograms = uniqueSchoolPrograms(school.programs.filter((program) => program.isPhasingOut))
   .sort((left, right) => left.name.localeCompare(right.name, "cs") || left.code.localeCompare(right.code, "cs"));
-const programSource = schoolProgramSources[school.region === "Praha" ? 0 : 1];
+const programSource = schoolProgramSources[0];
+/** Home locations offered on the map: towns of the school's region, starting at the school's own town. */
+const regionTowns = towns
+  .filter((town) => town.region === school.region)
+  .sort((left, right) => left.name.localeCompare(right.name, "cs", { numeric: true }));
+const defaultTown = regionTowns.find((town) => town.name === school.town) ?? regionTowns[0];
+const inspection = school.inspection;
+const inspectionDate = inspection?.date
+  ? new Date(`${inspection.date}T00:00:00`).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" })
+  : null;
 const hasCoordinates = school.latitude !== null && school.longitude !== null;
 const metadata = {
   title: school.name,
@@ -44,6 +56,9 @@ const metadata = {
           </div>
           <div class="flex flex-wrap items-center gap-3">
             <span class="inline-flex rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-muted-foreground">{school.region}</span>
+            {school.support && (
+              <span class="inline-flex rounded-full bg-sky/25 px-3 py-1.5 text-sm font-medium text-ink">Škola {supportLabels[school.support]}</span>
+            )}
             <button id="favorite-school-btn" type="button" class="favorite-toggle inline-flex items-center gap-2 rounded-full border-2 border-ink bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-primary/50 hover:text-primary" data-school-id={school.id} aria-pressed="false">
               <span class="favorite-icon text-sm">♡</span><span>Oblíbené</span>
             </button>
@@ -90,7 +105,7 @@ const metadata = {
             <span class="text-xs text-muted-foreground">{activePrograms.length} aktuálně evidovaných · {phasingOutPrograms.length} dobíhajících</span>
           </div>
           <p class="mt-2 text-sm leading-6 text-muted-foreground">
-            Kódy a názvy podle regionálního exportu MŠMT z {schoolProgramsSnapshotDate}. Zápis oboru v rejstříku nepotvrzuje jeho otevření v konkrétním přijímacím řízení.
+            Kódy a názvy podle exportu Rejstříku škol MŠMT z {schoolProgramsSnapshotDate}. Zápis oboru v rejstříku nepotvrzuje jeho otevření v konkrétním přijímacím řízení.
           </p>
           {activePrograms.length > 0 ? (
             <ul class="mt-4 grid gap-3 sm:grid-cols-2">
@@ -118,7 +133,7 @@ const metadata = {
             </details>
           )}
           <p class="mt-4 text-xs text-muted-foreground">
-            Zdroj: <a class="text-primary underline" href={programSource} target="_blank" rel="noreferrer">regionální export MŠMT</a>, párování školy přes IZO {school.izo}.
+            Zdroj: <a class="text-primary underline" href={programSource} target="_blank" rel="noreferrer">export Rejstříku škol MŠMT</a>, párování školy přes IZO {school.izo}.
           </p>
         </section>
 
@@ -129,27 +144,52 @@ const metadata = {
           <p class="mt-2">Zdroj údajů: <a class="text-primary underline" href={schoolSource} target="_blank" rel="noreferrer">Rejstřík škol MŠMT</a>, export {schoolSnapshotDate}.</p>
         </div>
 
+        <section class="mt-8 rounded-2xl border-2 border-ink bg-lilac/60 p-5" aria-labelledby="inspection-heading">
+          <h2 id="inspection-heading" class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Hodnocení a inspekce</h2>
+          {inspection && inspectionDate ? (
+            <>
+              <p class="mt-3 text-foreground">
+                Česká školní inspekce školu naposledy navštívila <strong>{inspectionDate}</strong>
+                {inspection.count > 1 && <> (celkem {inspection.count} inspekčních zpráv)</>}.
+              </p>
+              <div class="mt-4 flex flex-wrap gap-3">
+                {inspection.reportUrl && (
+                  <a class="btn-outline px-4 py-2 text-sm" href={inspection.reportUrl} target="_blank" rel="noopener">📄 Inspekční zpráva (PDF)</a>
+                )}
+                {inspection.portalUrl && (
+                  <a class="btn-outline px-4 py-2 text-sm" href={inspection.portalUrl} target="_blank" rel="noopener">Profil školy na portálu ČŠI</a>
+                )}
+              </div>
+            </>
+          ) : (
+            <p class="mt-3 text-foreground">K této škole jsme v otevřených datech České školní inspekce nenašli žádnou inspekční zprávu.</p>
+          )}
+          <p class="mt-4 text-xs leading-5 text-muted-foreground">
+            Inspekční zprávy jsou slovní hodnocení školy od státní inspekce, bez bodů či hvězdiček. Recenze žáků a rodičů
+            nejsou k dispozici v žádném otevřeném zdroji, proto je neuvádíme.
+            Zdroj: <a class="underline" href={inspectionSource} target="_blank" rel="noopener">otevřená data ČŠI</a>.
+          </p>
+        </section>
+
         {hasCoordinates ? (
           <section class="mt-8 rounded-2xl border-2 border-ink bg-white p-5" aria-labelledby="location-heading">
             <h2 id="location-heading" class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Mapa a vzdálenost</h2>
             <p class="mt-2 text-sm text-muted-foreground">Vzdálenost je vzdušnou čarou od zvoleného místa, nejde o délku ani čas cesty.</p>
             <div class="mt-4 flex flex-wrap gap-3">
-              <label class="sr-only" for="home-location-preset">Výchozí místo</label>
-              <select id="home-location-preset" class="min-w-52 rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
-                <option value="praha-karlin">Praha - Karlín</option>
-                <option value="praha-liben">Praha - Libeň</option>
-                <option value="praha-cakovice">Praha - Čakovice</option>
-                <option value="praha-vinohrady">Praha - Vinohrady</option>
-                <option value="kladno">Kladno</option>
-                <option value="slany">Slaný</option>
-                <option value="benesov">Benešov</option>
-                <option value="melnik">Mělník</option>
-                <option value="kolin">Kolín</option>
+              <label class="sr-only" for="home-region">Kraj, kde bydlíš</label>
+              <select id="home-region" class="min-w-44 rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
+                {REGIONS.map((region) => <option value={region} selected={region === school.region}>{region}</option>)}
+              </select>
+              <label class="sr-only" for="home-location-preset">Obec, kde bydlíš</label>
+              <select id="home-location-preset" class="min-w-44 rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
+                {regionTowns.map((town) => (
+                  <option value={town.name} data-latitude={town.latitude} data-longitude={town.longitude} selected={town === defaultTown}>{town.name}</option>
+                ))}
               </select>
               <button id="use-geolocation-btn" type="button" class="btn-outline">Použít moji polohu</button>
               <button id="open-map-location-btn" type="button" class="btn-outline">Zvolit místo na mapě</button>
             </div>
-            <p id="location-status" class="mt-3 text-xs text-muted-foreground" aria-live="polite">Kliknutím do mapy zvol místo bydliště.</p>
+            <p id="location-status" class="mt-3 text-xs text-muted-foreground" aria-live="polite">Vyber obec, kde bydlíš, použij svou polohu nebo klikni do mapy.</p>
             <div class="mt-4 grid gap-4 md:grid-cols-[1fr_2fr]">
               <div class="rounded-2xl border border-primary/20 bg-primary/5 p-4">
                 <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Vzdušná vzdálenost</p>
@@ -227,6 +267,7 @@ const metadata = {
       toggleFavorite,
       type SchoolSummary,
     } from "../../lib/school-data";
+    import towns from "../../data/towns.json";
 
     type GeolocatedSchool = SchoolSummary & { latitude: number; longitude: number };
     /* eslint-disable no-unused-vars */
@@ -252,17 +293,6 @@ const metadata = {
     /* eslint-enable no-unused-vars */
     type WindowWithLeaflet = Window & { L?: LeafletApi };
 
-    const presets: Record<string, { label: string; latitude: number; longitude: number }> = {
-      "praha-karlin": { label: "Praha - Karlín", latitude: 50.0904, longitude: 14.4337 },
-      "praha-liben": { label: "Praha - Libeň", latitude: 50.1064, longitude: 14.4598 },
-      "praha-cakovice": { label: "Praha - Čakovice", latitude: 50.1176, longitude: 14.4977 },
-      "praha-vinohrady": { label: "Praha - Vinohrady", latitude: 50.0766, longitude: 14.4407 },
-      kladno: { label: "Kladno", latitude: 50.1474, longitude: 14.1034 },
-      slany: { label: "Slaný", latitude: 50.2312, longitude: 14.0877 },
-      benesov: { label: "Benešov", latitude: 49.7811, longitude: 14.6907 },
-      melnik: { label: "Mělník", latitude: 50.3502, longitude: 14.4757 },
-      kolin: { label: "Kolín", latitude: 50.0281, longitude: 15.1985 },
-    };
 
     document.addEventListener("astro:page-load", () => {
       const positionElement = document.getElementById("school-position-data") as HTMLElement | null;
@@ -281,12 +311,21 @@ const metadata = {
       const nearbyOutput = document.getElementById("nearby-schools-output");
       const locationStatus = document.getElementById("location-status");
       const presetSelect = document.getElementById("home-location-preset") as HTMLSelectElement | null;
+      const regionSelect = document.getElementById("home-region") as HTMLSelectElement | null;
       const geolocationButton = document.getElementById("use-geolocation-btn") as HTMLButtonElement | null;
       const mapLocationButton = document.getElementById("open-map-location-btn") as HTMLButtonElement | null;
       const mapElement = document.getElementById("home-map");
 
       let schoolList: SchoolSummary[] = [];
-      let activeHome = { ...presets["praha-karlin"] };
+      const presetFrom = (option: HTMLOptionElement | undefined) => {
+        const latitude = Number(option?.dataset.latitude);
+        const longitude = Number(option?.dataset.longitude);
+        return option && Number.isFinite(latitude) && Number.isFinite(longitude)
+          ? { label: option.textContent ?? "", latitude, longitude }
+          : null;
+      };
+      // Start at the school's own town (or the school itself) until the student picks a home.
+      let activeHome = presetFrom(presetSelect?.selectedOptions[0]) ?? { label: schoolName, latitude: schoolLatitude, longitude: schoolLongitude };
       let map: LeafletMap | null = null;
       let homeMarker: LeafletMarker | null = null;
       const leaflet = (window as WindowWithLeaflet).L;
@@ -356,15 +395,39 @@ const metadata = {
         renderNearby();
       };
 
+      /** Shows home and school; when they (almost) coincide, a fixed zoom instead of zero-size bounds. */
+      const frameMap = () => {
+        if (!map) return;
+        if (distanceKm(activeHome.latitude, activeHome.longitude, schoolLatitude, schoolLongitude) < 0.3) {
+          map.setView([schoolLatitude, schoolLongitude], 14);
+        } else {
+          map.fitBounds([[activeHome.latitude, activeHome.longitude], [schoolLatitude, schoolLongitude]]);
+        }
+      };
+
       const applyHomeLocation = (label: string, latitude: number, longitude: number) => {
         activeHome = { label, latitude, longitude };
         if (locationStatus) locationStatus.textContent = `Zvolené místo: ${label}. Vzdálenost je vzdušnou čarou.`;
         if (homeMarker && map) {
           homeMarker.setLatLng([latitude, longitude]);
-          map.fitBounds([[latitude, longitude], [schoolLatitude, schoolLongitude]]);
+          frameMap();
         }
         renderDistance();
       };
+
+      // Students often commute from another region (Kladno -> Prague): any region's towns can be picked.
+      regionSelect?.addEventListener("change", () => {
+        if (!presetSelect) return;
+        const regionTowns = towns
+          .filter((town) => town.region === regionSelect.value)
+          .sort((left, right) => left.name.localeCompare(right.name, "cs", { numeric: true }));
+        presetSelect.replaceChildren(new Option("Vyber obec…", ""), ...regionTowns.map((town) => {
+          const option = new Option(town.name, town.name);
+          option.dataset.latitude = String(town.latitude);
+          option.dataset.longitude = String(town.longitude);
+          return option;
+        }));
+      });
 
       favoriteButton?.addEventListener("click", () => {
         toggleFavorite(schoolId);
@@ -373,7 +436,7 @@ const metadata = {
       selectA?.addEventListener("change", renderComparison);
       selectB?.addEventListener("change", renderComparison);
       presetSelect?.addEventListener("change", () => {
-        const preset = presets[presetSelect.value];
+        const preset = presetFrom(presetSelect.selectedOptions[0]);
         if (preset) applyHomeLocation(preset.label, preset.latitude, preset.longitude);
       });
       geolocationButton?.addEventListener("click", () => {
@@ -409,7 +472,7 @@ const metadata = {
           if (position) applyHomeLocation("Vybrané místo na mapě", position.lat, position.lng);
         });
         map.on("click", ({ latlng }) => applyHomeLocation("Vybrané místo na mapě", latlng.lat, latlng.lng));
-        map.fitBounds([[activeHome.latitude, activeHome.longitude], [schoolLatitude, schoolLongitude]]);
+        frameMap();
         window.setTimeout(() => map?.invalidateSize(), 0);
       } else if (hasCoordinates && locationStatus) {
         locationStatus.textContent = "Mapu se nepodařilo načíst. Zkontroluj připojení a zkus stránku obnovit.";

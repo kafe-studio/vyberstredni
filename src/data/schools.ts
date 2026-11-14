@@ -1,11 +1,13 @@
 import officialSchools from "./official-schools.json";
 import type { CatalogProgram, SchoolSummary } from "../lib/school-data";
+import { REGIONS, regionFromRegister, type Region } from "../lib/regions";
+import { classifySupport, type SupportType } from "../lib/special-needs";
 
-export const SCHOOL_REGIONS = ["Praha", "Středočeský kraj"] as const;
+export const SCHOOL_REGIONS = REGIONS;
 export const SCHOOL_TYPES = ["gymnázium", "střední škola", "odborné lyceum", "učiliště", "konzervatoř"] as const;
 export const FOCUS_AREAS = ["technologie", "design", "ekonomie", "zdravotnictví", "společnost"] as const;
 
-export type SchoolRegion = (typeof SCHOOL_REGIONS)[number];
+export type SchoolRegion = Region;
 export type SchoolType = (typeof SCHOOL_TYPES)[number];
 export type FocusArea = (typeof FOCUS_AREAS)[number];
 
@@ -30,10 +32,18 @@ export const uniqueSchoolPrograms = <T extends Pick<SchoolProgram, "code" | "nam
   return [...unique.values()];
 };
 
+/** Latest Czech School Inspectorate (ČŠI) report for the school. */
+export type SchoolInspection = { date: string; reportUrl: string; portalUrl: string; count: number };
+
 export type School = {
   id: string;
   name: string;
   region: SchoolRegion;
+  /** Municipality (Prague by district), used for search and for home locations in the quiz. */
+  town: string;
+  /** Set for schools meant for pupils with disabilities or special educational needs. */
+  support: SupportType | null;
+  inspection: SchoolInspection | null;
   type: SchoolType;
   focus: FocusArea;
   description: string;
@@ -90,17 +100,20 @@ const officialTypeLabel = (officialTypeCode: string) =>
 export const schools: School[] = officialSchools.schools.map((record) => {
   const type = classifyType(record.name, record.officialTypeCode);
   const focus = classifyFocus(record.name);
-  const region: SchoolRegion =
-    record.region === "Hlavní město Praha" ? "Praha" : "Středočeský kraj";
+  const region = regionFromRegister(record.region);
   const founder = record.founder || "neuvedený";
+  const currentCodes = record.programs.filter((program) => !program.isPhasingOut).map((program) => program.code);
 
   return {
     id: record.id,
     name: record.name,
     region,
+    town: record.town ?? "",
+    support: classifySupport(record.name, currentCodes),
+    inspection: record.inspection ?? null,
     type,
     focus,
-    description: `Oficiální záznam MŠMT. Typ zařízení: ${officialTypeLabel(record.officialTypeCode)}. Evidované obory jsou převzaty z regionálního exportu MŠMT.`,
+    description: `Oficiální záznam MŠMT. Typ zařízení: ${officialTypeLabel(record.officialTypeCode)}. Evidované obory jsou převzaty z exportu Rejstříku škol MŠMT.`,
     acceptance: "Aktuální podmínky přijímacího řízení ověř na webu školy.",
     capacity: record.capacity
       ? `${record.capacity} míst (celková kapacita školy v rejstříku)`
@@ -133,6 +146,7 @@ export const schools: School[] = officialSchools.schools.map((record) => {
 export const schoolSnapshotDate = officialSchools.exportedAt;
 export const schoolSource = officialSchools.source;
 export const schoolProgramSources = officialSchools.programSource;
+export const inspectionSource = officialSchools.inspectionSource;
 export const schoolProgramsSnapshotDate = officialSchools.programsExportedAt;
 
 /**
@@ -155,6 +169,8 @@ export const toSchoolSummary = (school: School): SchoolSummary => ({
   id: school.id,
   name: school.name,
   region: school.region,
+  town: school.town,
+  support: school.support,
   type: school.type,
   focus: school.focus,
   founder: school.founder,

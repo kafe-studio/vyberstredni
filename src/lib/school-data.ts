@@ -1,10 +1,13 @@
 import { withBase } from "./urls";
+import type { SupportType } from "./special-needs";
 
 /** Compact school record shared by the catalog, detail, favorites, programs and quiz pages. */
 export type SchoolSummary = {
   id: string;
   name: string;
   region: string;
+  town: string;
+  support: SupportType | null;
   type: string;
   focus: string;
   founder: string;

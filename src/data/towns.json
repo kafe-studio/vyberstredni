@@ -1,0 +1,2078 @@
+[
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Blansko",
+    "latitude": 49.35973,
+    "longitude": 16.6491
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Boskovice",
+    "latitude": 49.49053,
+    "longitude": 16.66221
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Brno",
+    "latitude": 49.20431,
+    "longitude": 16.60516
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Bučovice",
+    "latitude": 49.15221,
+    "longitude": 17.00578
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Bzenec",
+    "latitude": 48.97254,
+    "longitude": 17.26709
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Břeclav",
+    "latitude": 48.75556,
+    "longitude": 16.88912
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Cvrčovice",
+    "latitude": 48.99096,
+    "longitude": 16.51463
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Hodonín",
+    "latitude": 48.85696,
+    "longitude": 17.1199
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Hustopeče",
+    "latitude": 48.94186,
+    "longitude": 16.73505
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Ivančice",
+    "latitude": 49.10301,
+    "longitude": 16.36915
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Jedovnice",
+    "latitude": 49.34191,
+    "longitude": 16.75998
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Klobouky u Brna",
+    "latitude": 48.99659,
+    "longitude": 16.86213
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Kuřim",
+    "latitude": 49.29634,
+    "longitude": 16.52499
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Kyjov",
+    "latitude": 49.00807,
+    "longitude": 17.12817
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Letovice",
+    "latitude": 49.54552,
+    "longitude": 16.57187
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Lomnice",
+    "latitude": 49.40416,
+    "longitude": 16.41196
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Mikulov",
+    "latitude": 48.8037,
+    "longitude": 16.63678
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Moravský Krumlov",
+    "latitude": 49.04722,
+    "longitude": 16.31499
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Olešnice",
+    "latitude": 49.56072,
+    "longitude": 16.42316
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Pohořelice",
+    "latitude": 48.98108,
+    "longitude": 16.52466
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Rajhrad",
+    "latitude": 49.0822,
+    "longitude": 16.60387
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Rájec-Jestřebí",
+    "latitude": 49.41282,
+    "longitude": 16.63699
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Sedlec",
+    "latitude": 48.78004,
+    "longitude": 16.6974
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Slavkov u Brna",
+    "latitude": 49.15602,
+    "longitude": 16.87811
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Sokolnice",
+    "latitude": 49.11579,
+    "longitude": 16.70129
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Strážnice",
+    "latitude": 48.90045,
+    "longitude": 17.31587
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Tišnov",
+    "latitude": 49.34922,
+    "longitude": 16.42418
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Valtice",
+    "latitude": 48.74072,
+    "longitude": 16.75102
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Velké Pavlovice",
+    "latitude": 48.90483,
+    "longitude": 16.81746
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Veselí nad Moravou",
+    "latitude": 48.94781,
+    "longitude": 17.38794
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Višňové",
+    "latitude": 48.98078,
+    "longitude": 16.14931
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Vyškov",
+    "latitude": 49.28256,
+    "longitude": 16.9937
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Vřesovice",
+    "latitude": 49.06057,
+    "longitude": 17.21148
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Zastávka",
+    "latitude": 49.19347,
+    "longitude": 16.36198
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Znojmo",
+    "latitude": 48.8571,
+    "longitude": 16.05214
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Šlapanice",
+    "latitude": 49.16608,
+    "longitude": 16.72579
+  },
+  {
+    "region": "Jihomoravský kraj",
+    "name": "Židlochovice",
+    "latitude": 49.03719,
+    "longitude": 16.61302
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Bechyně",
+    "latitude": 49.30012,
+    "longitude": 14.47269
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Blatná",
+    "latitude": 49.42343,
+    "longitude": 13.87368
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Dačice",
+    "latitude": 49.0826,
+    "longitude": 15.43772
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Hluboká nad Vltavou",
+    "latitude": 49.03701,
+    "longitude": 14.42004
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Jindřichův Hradec",
+    "latitude": 49.14529,
+    "longitude": 15.00157
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Kaplice",
+    "latitude": 48.73585,
+    "longitude": 14.50022
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Lišov",
+    "latitude": 49.01604,
+    "longitude": 14.60363
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Milevsko",
+    "latitude": 49.44685,
+    "longitude": 14.36578
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Prachatice",
+    "latitude": 49.01073,
+    "longitude": 13.99874
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Písek",
+    "latitude": 49.30742,
+    "longitude": 14.14929
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Sezimovo Ústí",
+    "latitude": 49.3783,
+    "longitude": 14.70022
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Soběslav",
+    "latitude": 49.26153,
+    "longitude": 14.71428
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Strakonice",
+    "latitude": 49.26558,
+    "longitude": 13.89811
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Trhové Sviny",
+    "latitude": 48.84226,
+    "longitude": 14.63681
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Tábor",
+    "latitude": 49.40937,
+    "longitude": 14.6744
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Týn nad Vltavou",
+    "latitude": 49.20237,
+    "longitude": 14.43911
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Třeboň",
+    "latitude": 49.00718,
+    "longitude": 14.7626
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Velešín",
+    "latitude": 48.83474,
+    "longitude": 14.46589
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Veselí nad Lužnicí",
+    "latitude": 49.18732,
+    "longitude": 14.69841
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Vimperk",
+    "latitude": 49.05409,
+    "longitude": 13.77965
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Vodňany",
+    "latitude": 49.14999,
+    "longitude": 14.17317
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Volyně",
+    "latitude": 49.16935,
+    "longitude": 13.88535
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Větřní",
+    "latitude": 48.77432,
+    "longitude": 14.28903
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "České Budějovice",
+    "latitude": 48.97906,
+    "longitude": 14.47558
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "České Velenice",
+    "latitude": 48.76434,
+    "longitude": 14.95966
+  },
+  {
+    "region": "Jihočeský kraj",
+    "name": "Český Krumlov",
+    "latitude": 48.8101,
+    "longitude": 14.31365
+  },
+  {
+    "region": "Karlovarský kraj",
+    "name": "Aš",
+    "latitude": 50.22057,
+    "longitude": 12.19037
+  },
+  {
+    "region": "Karlovarský kraj",
+    "name": "Cheb",
+    "latitude": 50.07842,
+    "longitude": 12.36575
+  },
+  {
+    "region": "Karlovarský kraj",
+    "name": "Chodov",
+    "latitude": 50.23908,
+    "longitude": 12.74947
+  },
+  {
+    "region": "Karlovarský kraj",
+    "name": "Dalovice",
+    "latitude": 50.24689,
+    "longitude": 12.8924
+  },
+  {
+    "region": "Karlovarský kraj",
+    "name": "Karlovy Vary",
+    "latitude": 50.23436,
+    "longitude": 12.87123
+  },
+  {
+    "region": "Karlovarský kraj",
+    "name": "Kraslice",
+    "latitude": 50.33236,
+    "longitude": 12.51594
+  },
+  {
+    "region": "Karlovarský kraj",
+    "name": "Mariánské Lázně",
+    "latitude": 49.96927,
+    "longitude": 12.70821
+  },
+  {
+    "region": "Karlovarský kraj",
+    "name": "Ostrov",
+    "latitude": 50.30379,
+    "longitude": 12.95243
+  },
+  {
+    "region": "Karlovarský kraj",
+    "name": "Sokolov",
+    "latitude": 50.17917,
+    "longitude": 12.65207
+  },
+  {
+    "region": "Karlovarský kraj",
+    "name": "Žlutice",
+    "latitude": 50.096,
+    "longitude": 13.1598
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Bystřice nad Pernštejnem",
+    "latitude": 49.52085,
+    "longitude": 16.25701
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Chotěboř",
+    "latitude": 49.71937,
+    "longitude": 15.67306
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Havlíčkův Brod",
+    "latitude": 49.60748,
+    "longitude": 15.58066
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Humpolec",
+    "latitude": 49.54044,
+    "longitude": 15.35592
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Jihlava",
+    "latitude": 49.39685,
+    "longitude": 15.59009
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Ledeč nad Sázavou",
+    "latitude": 49.69451,
+    "longitude": 15.27884
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Moravské Budějovice",
+    "latitude": 49.05257,
+    "longitude": 15.81024
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Nové Město na Moravě",
+    "latitude": 49.56689,
+    "longitude": 16.07384
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Obrataň",
+    "latitude": 49.42197,
+    "longitude": 14.94577
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Pacov",
+    "latitude": 49.47109,
+    "longitude": 15.00368
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Pelhřimov",
+    "latitude": 49.42759,
+    "longitude": 15.22259
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Polná",
+    "latitude": 49.48154,
+    "longitude": 15.71758
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Pozďatín",
+    "latitude": 49.24185,
+    "longitude": 16.04242
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Počátky",
+    "latitude": 49.2639,
+    "longitude": 15.24237
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Sviny",
+    "latitude": 49.34956,
+    "longitude": 16.11061
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Světlá nad Sázavou",
+    "latitude": 49.66572,
+    "longitude": 15.40227
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Telč",
+    "latitude": 49.18295,
+    "longitude": 15.44865
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Třebíč",
+    "latitude": 49.21474,
+    "longitude": 15.88374
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Třešť",
+    "latitude": 49.28525,
+    "longitude": 15.4747
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Velká Bíteš",
+    "latitude": 49.29194,
+    "longitude": 16.22483
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Velké Meziříčí",
+    "latitude": 49.35602,
+    "longitude": 16.01249
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Černovice",
+    "latitude": 49.37797,
+    "longitude": 14.96607
+  },
+  {
+    "region": "Kraj Vysočina",
+    "name": "Žďár nad Sázavou",
+    "latitude": 49.56646,
+    "longitude": 15.93711
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Broumov",
+    "latitude": 50.58267,
+    "longitude": 16.33622
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Dobruška",
+    "latitude": 50.29252,
+    "longitude": 16.15105
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Dvůr Králové nad Labem",
+    "latitude": 50.43196,
+    "longitude": 15.81135
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Hostinné",
+    "latitude": 50.5416,
+    "longitude": 15.72621
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Hořice",
+    "latitude": 50.36542,
+    "longitude": 15.63351
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Hradec Králové",
+    "latitude": 50.21104,
+    "longitude": 15.83457
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Hronov",
+    "latitude": 50.47532,
+    "longitude": 16.17906
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Janské Lázně",
+    "latitude": 50.63216,
+    "longitude": 15.78281
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Jaroměř",
+    "latitude": 50.35351,
+    "longitude": 15.92303
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Jičín",
+    "latitude": 50.43793,
+    "longitude": 15.35414
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Kopidlno",
+    "latitude": 50.33068,
+    "longitude": 15.27195
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Kostelec nad Orlicí",
+    "latitude": 50.12454,
+    "longitude": 16.20821
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Malé Svatoňovice",
+    "latitude": 50.53508,
+    "longitude": 16.0442
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Nová Paka",
+    "latitude": 50.49425,
+    "longitude": 15.51479
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Nové Město nad Metují",
+    "latitude": 50.35199,
+    "longitude": 16.15325
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Nový Bydžov",
+    "latitude": 50.24003,
+    "longitude": 15.48767
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Náchod",
+    "latitude": 50.41637,
+    "longitude": 16.16612
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Rychnov nad Kněžnou",
+    "latitude": 50.16432,
+    "longitude": 16.27763
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Trutnov",
+    "latitude": 50.5664,
+    "longitude": 15.9082
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Třebechovice pod Orebem",
+    "latitude": 50.2011,
+    "longitude": 15.98451
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Vrchlabí",
+    "latitude": 50.61887,
+    "longitude": 15.61331
+  },
+  {
+    "region": "Královéhradecký kraj",
+    "name": "Úpice",
+    "latitude": 50.50897,
+    "longitude": 16.02149
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Frýdlant",
+    "latitude": 50.92148,
+    "longitude": 15.08546
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Hejnice",
+    "latitude": 50.88153,
+    "longitude": 15.18493
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Jablonec nad Nisou",
+    "latitude": 50.72845,
+    "longitude": 15.16497
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Jilemnice",
+    "latitude": 50.60607,
+    "longitude": 15.50587
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Kamenický Šenov",
+    "latitude": 50.77363,
+    "longitude": 14.47086
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Liberec",
+    "latitude": 50.77023,
+    "longitude": 15.06469
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Lomnice nad Popelkou",
+    "latitude": 50.52809,
+    "longitude": 15.36863
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Mimoň",
+    "latitude": 50.66679,
+    "longitude": 14.72892
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Nový Bor",
+    "latitude": 50.7591,
+    "longitude": 14.54974
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Semily",
+    "latitude": 50.60288,
+    "longitude": 15.33509
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Tanvald",
+    "latitude": 50.73823,
+    "longitude": 15.30566
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Turnov",
+    "latitude": 50.58932,
+    "longitude": 15.16197
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Vysoké nad Jizerou",
+    "latitude": 50.68116,
+    "longitude": 15.40604
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Česká Lípa",
+    "latitude": 50.69101,
+    "longitude": 14.53837
+  },
+  {
+    "region": "Liberecký kraj",
+    "name": "Železný Brod",
+    "latitude": 50.64257,
+    "longitude": 15.25165
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Bohumín",
+    "latitude": 49.90538,
+    "longitude": 18.36056
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Bruntál",
+    "latitude": 49.9927,
+    "longitude": 17.46643
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Bílovec",
+    "latitude": 49.75931,
+    "longitude": 18.01895
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Frenštát pod Radhoštěm",
+    "latitude": 49.54343,
+    "longitude": 18.20975
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Frýdek-Místek",
+    "latitude": 49.68081,
+    "longitude": 18.3464
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Frýdlant nad Ostravicí",
+    "latitude": 49.59052,
+    "longitude": 18.35839
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Havířov",
+    "latitude": 49.78584,
+    "longitude": 18.43501
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Hlučín",
+    "latitude": 49.89927,
+    "longitude": 18.18878
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Jablunkov",
+    "latitude": 49.57429,
+    "longitude": 18.76557
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Karviná",
+    "latitude": 49.86227,
+    "longitude": 18.54535
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Klimkovice",
+    "latitude": 49.78527,
+    "longitude": 18.13386
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Kopřivnice",
+    "latitude": 49.58966,
+    "longitude": 18.15309
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Krnov",
+    "latitude": 50.08973,
+    "longitude": 17.69881
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Město Albrechtice",
+    "latitude": 50.16053,
+    "longitude": 17.57505
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Nový Jičín",
+    "latitude": 49.59213,
+    "longitude": 18.00895
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Odry",
+    "latitude": 49.66547,
+    "longitude": 17.82772
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Opava",
+    "latitude": 49.93372,
+    "longitude": 17.90404
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Orlová",
+    "latitude": 49.8724,
+    "longitude": 18.42634
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Ostrava",
+    "latitude": 49.81871,
+    "longitude": 18.2461
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Petrovice u Karviné",
+    "latitude": 49.89336,
+    "longitude": 18.53965
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Příbor",
+    "latitude": 49.64031,
+    "longitude": 18.14033
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Rýmařov",
+    "latitude": 49.93379,
+    "longitude": 17.26712
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Studénka",
+    "latitude": 49.71564,
+    "longitude": 18.05586
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Třinec",
+    "latitude": 49.66803,
+    "longitude": 18.66881
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Velké Heraltice",
+    "latitude": 49.97519,
+    "longitude": 17.73719
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Vítkov",
+    "latitude": 49.77775,
+    "longitude": 17.75748
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Český Těšín",
+    "latitude": 49.74404,
+    "longitude": 18.61918
+  },
+  {
+    "region": "Moravskoslezský kraj",
+    "name": "Šilheřovice",
+    "latitude": 49.92737,
+    "longitude": 18.27341
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Dřevohostice",
+    "latitude": 49.42507,
+    "longitude": 17.58511
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Hranice",
+    "latitude": 49.55403,
+    "longitude": 17.73872
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Jeseník",
+    "latitude": 50.2304,
+    "longitude": 17.20168
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Kojetín",
+    "latitude": 49.34993,
+    "longitude": 17.30178
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Konice",
+    "latitude": 49.59383,
+    "longitude": 16.88757
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Křenovice",
+    "latitude": 49.33091,
+    "longitude": 17.2751
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Lipník nad Bečvou",
+    "latitude": 49.5274,
+    "longitude": 17.58246
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Lipová-lázně",
+    "latitude": 50.22644,
+    "longitude": 17.13157
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Litovel",
+    "latitude": 49.70192,
+    "longitude": 17.07744
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Lutín",
+    "latitude": 49.55455,
+    "longitude": 17.14651
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Mohelnice",
+    "latitude": 49.77727,
+    "longitude": 16.92307
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Němčice nad Hanou",
+    "latitude": 49.3416,
+    "longitude": 17.20027
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Olomouc",
+    "latitude": 49.59718,
+    "longitude": 17.25258
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Prostějov",
+    "latitude": 49.47213,
+    "longitude": 17.11444
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Přerov",
+    "latitude": 49.45298,
+    "longitude": 17.45287
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Tovačov",
+    "latitude": 49.42537,
+    "longitude": 17.28257
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Uničov",
+    "latitude": 49.76928,
+    "longitude": 17.12207
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Velký Újezd",
+    "latitude": 49.57762,
+    "longitude": 17.48015
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Výšovice",
+    "latitude": 49.41627,
+    "longitude": 17.13998
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Zábřeh",
+    "latitude": 49.88375,
+    "longitude": 16.87869
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Šternberk",
+    "latitude": 49.73076,
+    "longitude": 17.30072
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Šumperk",
+    "latitude": 49.96809,
+    "longitude": 16.97352
+  },
+  {
+    "region": "Olomoucký kraj",
+    "name": "Žulová",
+    "latitude": 50.31177,
+    "longitude": 17.09854
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Choceň",
+    "latitude": 49.99738,
+    "longitude": 16.22108
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Chroustovice",
+    "latitude": 49.95333,
+    "longitude": 15.99319
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Chrudim",
+    "latitude": 49.95173,
+    "longitude": 15.78969
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Chvaletice",
+    "latitude": 50.03195,
+    "longitude": 15.41601
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Hlinsko",
+    "latitude": 49.76137,
+    "longitude": 15.90687
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Holice",
+    "latitude": 50.07192,
+    "longitude": 15.98762
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Jevíčko",
+    "latitude": 49.63103,
+    "longitude": 16.70764
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Kladruby nad Labem",
+    "latitude": 50.06145,
+    "longitude": 15.48026
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Králíky",
+    "latitude": 50.08389,
+    "longitude": 16.72252
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Lanškroun",
+    "latitude": 49.91718,
+    "longitude": 16.60962
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Letohrad",
+    "latitude": 50.03678,
+    "longitude": 16.49496
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Litomyšl",
+    "latitude": 49.87051,
+    "longitude": 16.30937
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Moravská Třebová",
+    "latitude": 49.7567,
+    "longitude": 16.66393
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Nasavrky",
+    "latitude": 49.84827,
+    "longitude": 15.80805
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Pardubice",
+    "latitude": 50.03892,
+    "longitude": 15.78047
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Polička",
+    "latitude": 49.7131,
+    "longitude": 16.26682
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Přelouč",
+    "latitude": 50.03465,
+    "longitude": 15.56059
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Rybitví",
+    "latitude": 50.05938,
+    "longitude": 15.69716
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Skuteč",
+    "latitude": 49.84075,
+    "longitude": 15.99577
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Svitavy",
+    "latitude": 49.75714,
+    "longitude": 16.46896
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Třemošnice",
+    "latitude": 49.86769,
+    "longitude": 15.57324
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Vysoké Mýto",
+    "latitude": 49.95188,
+    "longitude": 16.15585
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Ústí nad Orlicí",
+    "latitude": 49.97077,
+    "longitude": 16.39791
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Česká Třebová",
+    "latitude": 49.9043,
+    "longitude": 16.44218
+  },
+  {
+    "region": "Pardubický kraj",
+    "name": "Žamberk",
+    "latitude": 50.08591,
+    "longitude": 16.46691
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Blovice",
+    "latitude": 49.58393,
+    "longitude": 13.53405
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Bor",
+    "latitude": 49.71084,
+    "longitude": 12.77718
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Domažlice",
+    "latitude": 49.44497,
+    "longitude": 12.92687
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Horažďovice",
+    "latitude": 49.32092,
+    "longitude": 13.7054
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Horšovský Týn",
+    "latitude": 49.53094,
+    "longitude": 12.94768
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Hostouň",
+    "latitude": 49.55968,
+    "longitude": 12.77059
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Klatovy",
+    "latitude": 49.39444,
+    "longitude": 13.29503
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Kralovice",
+    "latitude": 49.98069,
+    "longitude": 13.48668
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Merklín",
+    "latitude": 49.5639,
+    "longitude": 13.19718
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Oselce",
+    "latitude": 49.43465,
+    "longitude": 13.67331
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Planá",
+    "latitude": 49.86769,
+    "longitude": 12.73743
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Plasy",
+    "latitude": 49.93326,
+    "longitude": 13.3815
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Plzeň",
+    "latitude": 49.74407,
+    "longitude": 13.36644
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Rokycany",
+    "latitude": 49.74219,
+    "longitude": 13.59471
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Staňkov",
+    "latitude": 49.55642,
+    "longitude": 13.07173
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Stříbro",
+    "latitude": 49.75685,
+    "longitude": 12.99924
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Sušice",
+    "latitude": 49.23529,
+    "longitude": 13.51811
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Tachov",
+    "latitude": 49.80081,
+    "longitude": 12.61857
+  },
+  {
+    "region": "Plzeňský kraj",
+    "name": "Terešov",
+    "latitude": 49.8942,
+    "longitude": 13.70161
+  },
+  {
+    "region": "Praha",
+    "name": "Praha 1",
+    "latitude": 50.08534,
+    "longitude": 14.41764
+  },
+  {
+    "region": "Praha",
+    "name": "Praha 2",
+    "latitude": 50.07364,
+    "longitude": 14.4282
+  },
+  {
+    "region": "Praha",
+    "name": "Praha 3",
+    "latitude": 50.08521,
+    "longitude": 14.46311
+  },
+  {
+    "region": "Praha",
+    "name": "Praha 4",
+    "latitude": 50.03728,
+    "longitude": 14.46138
+  },
+  {
+    "region": "Praha",
+    "name": "Praha 5",
+    "latitude": 50.04954,
+    "longitude": 14.36493
+  },
+  {
+    "region": "Praha",
+    "name": "Praha 6",
+    "latitude": 50.08581,
+    "longitude": 14.3425
+  },
+  {
+    "region": "Praha",
+    "name": "Praha 7",
+    "latitude": 50.10937,
+    "longitude": 14.4357
+  },
+  {
+    "region": "Praha",
+    "name": "Praha 8",
+    "latitude": 50.11402,
+    "longitude": 14.44719
+  },
+  {
+    "region": "Praha",
+    "name": "Praha 9",
+    "latitude": 50.11014,
+    "longitude": 14.53375
+  },
+  {
+    "region": "Praha",
+    "name": "Praha 10",
+    "latitude": 50.06054,
+    "longitude": 14.50752
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Babice",
+    "latitude": 50.00679,
+    "longitude": 14.71606
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Benešov",
+    "latitude": 49.77974,
+    "longitude": 14.68715
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Benátky nad Jizerou",
+    "latitude": 50.28754,
+    "longitude": 14.83434
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Beroun",
+    "latitude": 49.96054,
+    "longitude": 14.06445
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Bradlec",
+    "latitude": 50.44902,
+    "longitude": 14.9056
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Brandýs nad Labem-Stará Boleslav",
+    "latitude": 50.18358,
+    "longitude": 14.66802
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Březnice",
+    "latitude": 49.56173,
+    "longitude": 13.94676
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Dobříš",
+    "latitude": 49.77948,
+    "longitude": 14.17406
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Dolní Břežany",
+    "latitude": 49.96398,
+    "longitude": 14.45425
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Dubno",
+    "latitude": 49.68769,
+    "longitude": 14.04825
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Hluboš",
+    "latitude": 49.74913,
+    "longitude": 14.01534
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Horky nad Jizerou",
+    "latitude": 50.32744,
+    "longitude": 14.85696
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Hostivice",
+    "latitude": 50.07807,
+    "longitude": 14.25668
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Hořovice",
+    "latitude": 49.83598,
+    "longitude": 13.90445
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Jesenice",
+    "latitude": 50.03581,
+    "longitude": 14.00276
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Jílové u Prahy",
+    "latitude": 49.8977,
+    "longitude": 14.4856
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Kladno",
+    "latitude": 50.14334,
+    "longitude": 14.10838
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Kolín",
+    "latitude": 50.02576,
+    "longitude": 15.20396
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Kosmonosy",
+    "latitude": 50.43975,
+    "longitude": 14.92754
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Kostelec nad Černými lesy",
+    "latitude": 49.99035,
+    "longitude": 14.86017
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Kralupy nad Vltavou",
+    "latitude": 50.23976,
+    "longitude": 14.30143
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Králův Dvůr",
+    "latitude": 49.94733,
+    "longitude": 14.03637
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Kunice",
+    "latitude": 49.91989,
+    "longitude": 14.68795
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Kutná Hora",
+    "latitude": 49.9522,
+    "longitude": 15.27603
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Kvílice",
+    "latitude": 50.2588,
+    "longitude": 14.00404
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Křivoklát",
+    "latitude": 50.05847,
+    "longitude": 13.89515
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Liběchov",
+    "latitude": 50.41881,
+    "longitude": 14.45873
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Loukovec",
+    "latitude": 50.55916,
+    "longitude": 15.01392
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Lysá nad Labem",
+    "latitude": 50.20297,
+    "longitude": 14.83679
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Mladá Boleslav",
+    "latitude": 50.41412,
+    "longitude": 14.9139
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Mnichovice",
+    "latitude": 49.93411,
+    "longitude": 14.71296
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Mnichovo Hradiště",
+    "latitude": 50.52252,
+    "longitude": 14.96913
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Mělník",
+    "latitude": 50.34768,
+    "longitude": 14.48257
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Městec Králové",
+    "latitude": 50.20757,
+    "longitude": 15.29968
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Neprobylice",
+    "latitude": 50.26201,
+    "longitude": 14.02586
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Neratovice",
+    "latitude": 50.25743,
+    "longitude": 14.51217
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Neveklov",
+    "latitude": 49.7566,
+    "longitude": 14.53328
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Nové Strašecí",
+    "latitude": 50.15648,
+    "longitude": 13.90124
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Nymburk",
+    "latitude": 50.19019,
+    "longitude": 15.04379
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Obořiště",
+    "latitude": 49.74359,
+    "longitude": 14.15013
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Pchery",
+    "latitude": 50.19328,
+    "longitude": 14.11284
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Poděbrady",
+    "latitude": 50.14556,
+    "longitude": 15.12401
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Psáry",
+    "latitude": 49.93297,
+    "longitude": 14.50858
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Příbram",
+    "latitude": 49.6878,
+    "longitude": 14.01037
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Rakovník",
+    "latitude": 50.10252,
+    "longitude": 13.7331
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Sedlčany",
+    "latitude": 49.65635,
+    "longitude": 14.42486
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Slaný",
+    "latitude": 50.23294,
+    "longitude": 14.08478
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Stochov",
+    "latitude": 50.14681,
+    "longitude": 13.95584
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Sulice",
+    "latitude": 49.918,
+    "longitude": 14.57878
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Světice",
+    "latitude": 49.96943,
+    "longitude": 14.65571
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Vinařice",
+    "latitude": 50.16595,
+    "longitude": 14.08558
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Vlašim",
+    "latitude": 49.70163,
+    "longitude": 14.89723
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Čelákovice",
+    "latitude": 50.16143,
+    "longitude": 14.74767
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Český Brod",
+    "latitude": 50.07479,
+    "longitude": 14.86272
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Čáslav",
+    "latitude": 49.90966,
+    "longitude": 15.39168
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Řevnice",
+    "latitude": 49.91269,
+    "longitude": 14.23433
+  },
+  {
+    "region": "Středočeský kraj",
+    "name": "Říčany",
+    "latitude": 49.99293,
+    "longitude": 14.66428
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Bojkovice",
+    "latitude": 49.04063,
+    "longitude": 17.80692
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Bystřice pod Hostýnem",
+    "latitude": 49.3989,
+    "longitude": 17.66405
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Březová",
+    "latitude": 48.9307,
+    "longitude": 17.74296
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Holešov",
+    "latitude": 49.32735,
+    "longitude": 17.5771
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Kelč",
+    "latitude": 49.47795,
+    "longitude": 17.81583
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Kroměříž",
+    "latitude": 49.29801,
+    "longitude": 17.38858
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Kunovice",
+    "latitude": 49.0374,
+    "longitude": 17.45323
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Luhačovice",
+    "latitude": 49.09587,
+    "longitude": 17.74767
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Otrokovice",
+    "latitude": 49.22082,
+    "longitude": 17.51216
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Rožnov pod Radhoštěm",
+    "latitude": 49.46617,
+    "longitude": 18.13905
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Slavičín",
+    "latitude": 49.09054,
+    "longitude": 17.88021
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Staré Město",
+    "latitude": 49.08049,
+    "longitude": 17.4383
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Střílky",
+    "latitude": 49.14177,
+    "longitude": 17.20887
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Uherské Hradiště",
+    "latitude": 49.06817,
+    "longitude": 17.46245
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Uherský Brod",
+    "latitude": 49.02111,
+    "longitude": 17.6444
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Valašské Klobouky",
+    "latitude": 49.14238,
+    "longitude": 18.0043
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Valašské Meziříčí",
+    "latitude": 49.47056,
+    "longitude": 17.97196
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Velehrad",
+    "latitude": 49.10273,
+    "longitude": 17.39461
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Vizovice",
+    "latitude": 49.22388,
+    "longitude": 17.84415
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Vsetín",
+    "latitude": 49.33586,
+    "longitude": 17.99671
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Zlín",
+    "latitude": 49.22138,
+    "longitude": 17.6729
+  },
+  {
+    "region": "Zlínský kraj",
+    "name": "Zádveřice-Raková",
+    "latitude": 49.225,
+    "longitude": 17.80667
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Bílina",
+    "latitude": 50.55376,
+    "longitude": 13.78868
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Chomutov",
+    "latitude": 50.45983,
+    "longitude": 13.41272
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Dolní Poustevna",
+    "latitude": 50.98026,
+    "longitude": 14.29178
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Dubí",
+    "latitude": 50.66613,
+    "longitude": 13.80232
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Duchcov",
+    "latitude": 50.60473,
+    "longitude": 13.74808
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Děčín",
+    "latitude": 50.77192,
+    "longitude": 14.20281
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Jirkov",
+    "latitude": 50.50027,
+    "longitude": 13.45418
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Kadaň",
+    "latitude": 50.37933,
+    "longitude": 13.27093
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Klášterec nad Ohří",
+    "latitude": 50.38712,
+    "longitude": 13.1826
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Kostomlaty pod Milešovkou",
+    "latitude": 50.56181,
+    "longitude": 13.87132
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Krupka",
+    "latitude": 50.68414,
+    "longitude": 13.87944
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Litoměřice",
+    "latitude": 50.53722,
+    "longitude": 14.13439
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Litvínov",
+    "latitude": 50.59879,
+    "longitude": 13.60533
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Louny",
+    "latitude": 50.35492,
+    "longitude": 13.79838
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Lovosice",
+    "latitude": 50.51383,
+    "longitude": 14.05124
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Meziboří",
+    "latitude": 50.62184,
+    "longitude": 13.59929
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Most",
+    "latitude": 50.4996,
+    "longitude": 13.64239
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Místo",
+    "latitude": 50.44881,
+    "longitude": 13.25989
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Panenský Týnec",
+    "latitude": 50.29476,
+    "longitude": 13.91762
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Podbořany",
+    "latitude": 50.22699,
+    "longitude": 13.38768
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Roudnice nad Labem",
+    "latitude": 50.42332,
+    "longitude": 14.25274
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Rumburk",
+    "latitude": 50.95255,
+    "longitude": 14.55462
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Teplice",
+    "latitude": 50.64321,
+    "longitude": 13.83125
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Varnsdorf",
+    "latitude": 50.9059,
+    "longitude": 14.62541
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Ústí nad Labem",
+    "latitude": 50.66673,
+    "longitude": 14.03962
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Česká Kamenice",
+    "latitude": 50.79844,
+    "longitude": 14.41842
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Šluknov",
+    "latitude": 51.00475,
+    "longitude": 14.45722
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Štětí",
+    "latitude": 50.45251,
+    "longitude": 14.37342
+  },
+  {
+    "region": "Ústecký kraj",
+    "name": "Žatec",
+    "latitude": 50.32609,
+    "longitude": 13.54411
+  }
+]

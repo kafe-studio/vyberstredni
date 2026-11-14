@@ -1,7 +1,7 @@
 export const siteConfig = {
   name: "Vyber střední",
   description:
-    "Najdi střední školu, která ti sedí. Prohlédni si oficiální katalog škol a konzervatoří v Praze a Středočeském kraji, včetně soukromých škol.",
+    "Najdi střední školu, která ti sedí. Oficiální katalog středních škol a konzervatoří z celého Česka, včetně soukromých, církevních a speciálních škol.",
   url: "https://georgeduckling.com/vyberstredni/",
   lang: "cs",
   locale: "cs_CZ",

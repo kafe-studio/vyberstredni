@@ -1,4 +1,5 @@
 import { distanceKm, type CatalogProgram, type SchoolProgramsById, type SchoolSummary } from "./school-data";
+import { isPlacementInstitution, type SupportType } from "./special-needs";
 
 export const CATEGORIES = [
   "digital",
@@ -157,17 +158,12 @@ export const matchesTrack = (code: string, track: StudyTrack) => {
 };
 
 /**
- * Levels the quiz never recommends (they stay in the catalog):
- * C = praktická škola, E = programs designed for pupils with special educational needs,
- * J = short "střední vzdělání" without maturita or výuční list.
+ * Levels the quiz recommends only to students who asked for special support (they are always in the catalog):
+ * C = praktická škola, E = programs designed for pupils with special educational needs.
+ * J (short "střední vzdělání" without maturita or výuční list) is never recommended.
  */
-const NOT_RECOMMENDED_LEVELS = new Set(["C", "E", "J"]);
-
-/** Schools serving pupils with disabilities or special educational needs, recognised by their official name. */
-const SPECIAL_NEEDS_SCHOOL =
-  /pro\s+(?:zrakově|sluchově|tělesně)|postižen|s\s+více\s+vadami|speciální|speciálně\s+pedagog|praktická\s+škola/i;
-
-export const isSpecialNeedsSchool = (name: string) => SPECIAL_NEEDS_SCHOOL.test(name);
+const SUPPORT_ONLY_LEVELS = new Set(["C", "E"]);
+const NEVER_RECOMMENDED_LEVELS = new Set(["J"]);
 
 const isLyceum = (code: string) => code.startsWith("78-42-M");
 
@@ -193,14 +189,23 @@ export const gymnasiumProfile = (schoolName: string): Category[] => {
   return profile;
 };
 
+/** Programs a 9th grader can enter, optionally including the special-support levels C and E. */
+const recommendable = (code: string, allowSupportLevels: boolean) => {
+  const level = programLevel(code);
+  if (NEVER_RECOMMENDED_LEVELS.has(level) || isNotForNinthGraders(code)) return false;
+  return allowSupportLevels || !SUPPORT_ONLY_LEVELS.has(level);
+};
+
 /**
  * Programs the quiz may recommend for a study track. The gymnázium track also includes lycea:
  * they combine a general base with a focus, which is what "široký základ, pak vysoká" looks for.
+ * With special support, praktická škola (C) counts like an apprenticeship.
  */
-const eligibleForQuiz = (code: string, track: StudyTrack) => {
+const eligibleForQuiz = (code: string, track: StudyTrack, allowSupportLevels: boolean) => {
+  if (!recommendable(code, allowSupportLevels)) return false;
   const level = programLevel(code);
-  if (NOT_RECOMMENDED_LEVELS.has(level) || isNotForNinthGraders(code)) return false;
   if (track === "general") return level === "K" || isLyceum(code);
+  if (level === "C") return track === "vyucni" || track === "any";
   return matchesTrack(code, track);
 };
 
@@ -229,6 +234,8 @@ export type HomeLocation = { label: string; latitude: number; longitude: number 
 export type MatchedProgram = CatalogProgram & { score: number; categories: Category[]; matchesMain: boolean };
 export type Recommendation = SchoolSummary & {
   score: number;
+  /** The school (or, for SVP, the program level) fits the special support the student asked for. */
+  supportMatch: boolean;
   /** The best program serves the student's main interest. */
   matchesMain: boolean;
   /** The school teaches the main interest in some program (used to order otherwise equal gymnázia). */
@@ -238,25 +245,45 @@ export type Recommendation = SchoolSummary & {
 };
 export type RankingResult = { schools: Recommendation[]; withoutLocation: number; mainInterest: Category | null };
 
+export type RankingInput = {
+  schools: readonly SchoolSummary[];
+  programsById: SchoolProgramsById;
+  totals: Record<Category, number>;
+  track: StudyTrack;
+  home?: HomeLocation | null;
+  maxDistanceKm?: number | null;
+  primaryInterest?: Category | null;
+  /** Special support the student needs; null = mainstream schools only. */
+  support?: SupportType | null;
+};
+
 /**
  * Orders schools for the quiz result:
+ * 0. with special support: schools for that support first (always listed, even without an interest match),
  * 1. schools whose best program serves the main interest, 2. program score, 3. the school also teaches the main
  * interest, 4. distance (when a home is set), 5. number of fitting programs, 6. name.
+ * Schools for a different kind of support are never shown.
  */
-export const rankSchools = (
-  schools: readonly SchoolSummary[],
-  programsById: SchoolProgramsById,
-  totals: Record<Category, number>,
-  track: StudyTrack,
-  home: HomeLocation | null,
-  maxDistanceKm: number | null,
-  primaryInterest: Category | null = null,
-): RankingResult => {
+export const rankSchools = ({
+  schools,
+  programsById,
+  totals,
+  track,
+  home = null,
+  maxDistanceKm = null,
+  primaryInterest = null,
+  support = null,
+}: RankingInput): RankingResult => {
   const mainInterest = rankInterests(totals, primaryInterest)[0] ?? null;
+  // E/C programs are meant for pupils with special educational needs; other disabilities get them only at their
+  // own support schools (see the fallback below).
+  const allowSupportLevels = support === "svp";
 
   const matching = schools
-    .filter((school) => !isSpecialNeedsSchool(school.name))
+    .filter((school) => !isPlacementInstitution(school.name))
+    .filter((school) => school.support === null || school.support === support)
     .map((school): Recommendation => {
+      const supportSchool = support !== null && school.support === support;
       const profile = gymnasiumProfile(school.name);
       const categoriesOf = (program: CatalogProgram): Category[] => {
         const base = programCategories(program);
@@ -264,35 +291,46 @@ export const rankSchools = (
       };
       const current = (programsById[school.id] ?? []).filter((program) => !program.isPhasingOut);
 
-      const programs = uniqueByName(current
-        .filter((program) => eligibleForQuiz(program.code, track))
-        .map((program): MatchedProgram => {
-          const categories = categoriesOf(program);
-          const bonus = track === "general" ? GENERAL_TRACK_BONUS : 0;
-          return {
-            ...program,
-            categories,
-            score: categories.reduce((sum, category) => sum + totals[category], 0) + bonus,
-            matchesMain: mainInterest !== null && categories.includes(mainInterest),
-          };
-        })
+      const toMatched = (program: CatalogProgram): MatchedProgram => {
+        const categories = categoriesOf(program);
+        const bonus = track === "general" ? GENERAL_TRACK_BONUS : 0;
+        return {
+          ...program,
+          categories,
+          score: categories.reduce((sum, category) => sum + totals[category], 0) + bonus,
+          matchesMain: mainInterest !== null && categories.includes(mainInterest),
+        };
+      };
+      const byFit = (left: MatchedProgram, right: MatchedProgram) =>
+        Number(right.matchesMain) - Number(left.matchesMain) ||
+        right.score - left.score ||
+        left.name.localeCompare(right.name, "cs");
+
+      let programs = uniqueByName(current
+        .filter((program) => eligibleForQuiz(program.code, track, allowSupportLevels))
+        .map(toMatched)
         .filter((program) => program.score > 0)
-        .sort((left, right) =>
-          Number(right.matchesMain) - Number(left.matchesMain) ||
-          right.score - left.score ||
-          left.name.localeCompare(right.name, "cs")));
+        .sort(byFit));
+
+      // A school for a visual, hearing or physical disability is always listed: there are only a few of them in the
+      // whole country, so its programs are shown even when they match neither the interests nor the track.
+      // SVP schools (over 150) must match like any other school.
+      if (supportSchool && support !== "svp" && programs.length === 0) {
+        programs = uniqueByName(current.filter((program) => recommendable(program.code, true)).map(toMatched).sort(byFit));
+      }
 
       // Only programs a 9th grader can actually enter count towards the school's affinity.
       const mainAffinity = mainInterest !== null && current.some((program) =>
-        !NOT_RECOMMENDED_LEVELS.has(programLevel(program.code)) &&
-        !isNotForNinthGraders(program.code) &&
-        categoriesOf(program).includes(mainInterest));
+        recommendable(program.code, allowSupportLevels) && categoriesOf(program).includes(mainInterest));
       const distance = home && school.latitude !== null && school.longitude !== null
         ? distanceKm(home.latitude, home.longitude, school.latitude, school.longitude)
         : null;
       const best = programs[0];
+      const supportMatch = supportSchool ||
+        (support === "svp" && best !== undefined && SUPPORT_ONLY_LEVELS.has(programLevel(best.code)));
       return {
         ...school,
+        supportMatch,
         score: best?.score ?? 0,
         matchesMain: best?.matchesMain ?? false,
         mainAffinity,
@@ -307,6 +345,7 @@ export const rankSchools = (
   const ranked = matching
     .filter((school) => maxDistanceKm === null || (school.distanceKm !== null && school.distanceKm <= maxDistanceKm))
     .sort((left, right) =>
+      Number(right.supportMatch) - Number(left.supportMatch) ||
       Number(right.matchesMain) - Number(left.matchesMain) ||
       right.score - left.score ||
       Number(right.mainAffinity) - Number(left.mainAffinity) ||

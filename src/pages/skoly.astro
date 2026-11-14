@@ -5,6 +5,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Character from "../components/Character.astro";
 import { withBase } from "../lib/urls";
 import { schoolSnapshotDate, schoolSource, schools, schoolsByName, uniqueSchoolPrograms } from "../data/schools";
+import { REGIONS } from "../lib/regions";
+import { SUPPORT_TYPES, supportLabels } from "../lib/special-needs";
 
 /** Cards rendered into the HTML; the rest is rendered on demand from /data/*.json. */
 const PAGE_SIZE = 24;
@@ -26,7 +28,7 @@ const initialSchools = schoolsByName.slice(0, PAGE_SIZE).map((school) => ({
 
 const metadata = {
   title: "Katalog škol",
-  description: "Střední školy a konzervatoře v Praze a Středočeském kraji. Hledej podle názvu, oboru nebo místa.",
+  description: "Střední školy a konzervatoře v celém Česku. Hledej podle názvu, oboru, města nebo kraje.",
 };
 ---
 
@@ -38,7 +40,7 @@ const metadata = {
           <span class="sticker-note -rotate-2 bg-sky text-ink">{schools.length} škol</span>
           <h1 class="mt-4 text-4xl font-extrabold md:text-6xl">Katalog škol</h1>
           <p class="mt-3 text-lg text-muted-foreground">
-            Střední školy a konzervatoře v Praze a Středočeském kraji.
+            Střední školy a konzervatoře v celém Česku.
           </p>
         </div>
         <div class="relative isolate hidden w-36 shrink-0 sm:block md:w-44">
@@ -57,13 +59,12 @@ const metadata = {
             class="w-full rounded-xl border-2 border-ink bg-white px-4 py-3 text-lg text-foreground placeholder:text-muted-foreground"
           />
         </label>
-        <div class="mt-3 grid gap-3 sm:grid-cols-3">
+        <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label class="block">
             <span class="mb-1 block text-xs font-medium text-muted-foreground">Kraj</span>
             <select id="filter-region" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
-              <option value="">Praha i Středočeský kraj</option>
-              <option value="Praha">Praha</option>
-              <option value="Středočeský kraj">Středočeský kraj</option>
+              <option value="">Celé Česko</option>
+              {REGIONS.map((region) => <option value={region}>{region}</option>)}
             </select>
           </label>
           <label class="block">
@@ -84,6 +85,14 @@ const metadata = {
               <option value="church">Církevní</option>
             </select>
           </label>
+          <label class="block">
+            <span class="mb-1 block text-xs font-medium text-muted-foreground">Podpora</span>
+            <select id="filter-support" class="w-full rounded-xl border-2 border-ink bg-white px-3 py-2.5 text-foreground">
+              <option value="">Všechny školy</option>
+              <option value="mainstream">Běžné školy</option>
+              {SUPPORT_TYPES.map((support) => <option value={support}>Školy {supportLabels[support]}</option>)}
+            </select>
+          </label>
         </div>
       </div>
 
@@ -101,6 +110,7 @@ const metadata = {
               <div class="flex flex-wrap gap-2 text-xs">
                 <span class="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">{school.region}</span>
                 {school.badge && <span class="rounded-full bg-primary/10 px-2.5 py-1 text-primary">{school.badge}</span>}
+                {school.support && <span class="rounded-full bg-sky/25 px-2.5 py-1 text-ink">{supportLabels[school.support]}</span>}
               </div>
               <button type="button" class="favorite-toggle -m-1 p-1 text-xl leading-none text-muted-foreground transition hover:text-primary" data-school-id={school.id} aria-pressed="false" aria-label={`Přidat do oblíbených: ${school.name}`}>
                 <span class="favorite-icon" aria-hidden="true">♡</span>
@@ -132,6 +142,7 @@ const metadata = {
   <script>
     import { withBase } from "../lib/urls";
     import { escapeHtml, getFavorites, loadSchoolPrograms, loadSchools, toggleFavorite, type SchoolSummary } from "../lib/school-data";
+    import { supportLabels } from "../lib/special-needs";
     import { isNotForNinthGraders, isStudyTrack, matchesTrack, type StudyTrack } from "../lib/interest-test";
 
     type CatalogSchool = SchoolSummary & { programNames: string[]; tracks: Set<StudyTrack>; searchText: string };
@@ -148,6 +159,7 @@ const metadata = {
       const regionSelect = document.getElementById("filter-region") as HTMLSelectElement | null;
       const trackSelect = document.getElementById("filter-track") as HTMLSelectElement | null;
       const founderSelect = document.getElementById("filter-founder") as HTMLSelectElement | null;
+      const supportSelect = document.getElementById("filter-support") as HTMLSelectElement | null;
       const resetButton = document.getElementById("reset-filters") as HTMLButtonElement | null;
       const schoolCount = document.getElementById("school-count");
       const emptyResults = document.getElementById("empty-results");
@@ -174,8 +186,10 @@ const metadata = {
         const trackValue = trackSelect?.value ?? "";
         const track = isStudyTrack(trackValue) ? trackValue : null;
         const founder = founderSelect?.value ?? "";
+        const support = supportSelect?.value ?? "";
         return entries.filter((school) =>
           (!region || school.region === region) &&
+          (!support || (support === "mainstream" ? school.support === null : school.support === support)) &&
           (!track || school.tracks.has(track)) &&
           (!founder ||
             (founder === "private" && school.founderCode === "5") ||
@@ -194,6 +208,7 @@ const metadata = {
               <div class="flex flex-wrap gap-2 text-xs">
                 <span class="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">${escapeHtml(school.region)}</span>
                 ${badge ? `<span class="rounded-full bg-primary/10 px-2.5 py-1 text-primary">${badge}</span>` : ""}
+                ${school.support ? `<span class="rounded-full bg-sky/25 px-2.5 py-1 text-ink">${escapeHtml(supportLabels[school.support])}</span>` : ""}
               </div>
               <button type="button" class="favorite-toggle -m-1 p-1 text-xl leading-none text-muted-foreground transition hover:text-primary" data-school-id="${escapeHtml(school.id)}" aria-pressed="false" aria-label="Přidat do oblíbených: ${escapeHtml(school.name)}">
                 <span class="favorite-icon" aria-hidden="true">♡</span>
@@ -218,7 +233,7 @@ const metadata = {
           loadMoreButton.textContent = `Zobrazit další školy (${remaining})`;
         }
         if (resetButton) {
-          resetButton.hidden = !searchInput.value && !regionSelect?.value && !trackSelect?.value && !founderSelect?.value;
+          resetButton.hidden = !searchInput.value && !regionSelect?.value && !trackSelect?.value && !founderSelect?.value && !supportSelect?.value;
         }
         schoolGrid.innerHTML = visible.map(renderCard).join("");
         updateFavoriteButtons();
@@ -247,10 +262,10 @@ const metadata = {
         updateFavoriteButtons();
       });
       searchInput.addEventListener("input", resetAndRender);
-      [regionSelect, trackSelect, founderSelect].forEach((select) => select?.addEventListener("change", resetAndRender));
+      [regionSelect, trackSelect, founderSelect, supportSelect].forEach((select) => select?.addEventListener("change", resetAndRender));
       resetButton?.addEventListener("click", () => {
         searchInput.value = "";
-        [regionSelect, trackSelect, founderSelect].forEach((select) => { if (select) select.value = ""; });
+        [regionSelect, trackSelect, founderSelect, supportSelect].forEach((select) => { if (select) select.value = ""; });
         resetAndRender();
       });
       loadMoreButton?.addEventListener("click", () => {
@@ -270,7 +285,7 @@ const metadata = {
             const programs = (programsById[school.id] ?? []).filter((program) => !program.isPhasingOut);
             const programNames = [...new Set(programs.map((program) => program.name))];
             const searchText = [
-              school.name, school.region, school.founder, school.address, school.izo,
+              school.name, school.region, school.town, school.founder, school.address, school.izo,
               ...programs.flatMap((program) => [program.name, program.code]),
             ].join(" ").toLocaleLowerCase("cs");
             // Same rules as the quiz: only programs a 9th grader can apply to count for the study-type filter.

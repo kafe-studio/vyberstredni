@@ -1,12 +1,15 @@
 import { emptyTotals, isCategory, isStudyTrack, type Category, type StudyTrack } from "./interest-test";
+import { isSupportType, type SupportType } from "./special-needs";
 
 export type QuizOption = { value: string; label: string; icon: string };
 export type Question = { id: string; prompt: string; hint?: string; weight: number; options: QuizOption[] };
 
 /** The first question names the student's main interest; it breaks ties between equally strong interests. */
 export const PRIMARY_QUESTION_ID = "interest";
-/** The last question picks the study track instead of an interest. */
+/** Picks the study track instead of an interest. */
 export const TRACK_QUESTION_ID = "track";
+/** Optional special support (disability or special educational needs); never stored or sent anywhere. */
+export const SUPPORT_QUESTION_ID = "support";
 
 /** Option values are interest categories (see interest-test.ts), except the study track question. */
 export const QUESTIONS: readonly Question[] = [
@@ -84,6 +87,19 @@ export const QUESTIONS: readonly Question[] = [
       { value: "any", label: "Ještě nevím", icon: "🤔" },
     ],
   },
+  {
+    id: "support",
+    prompt: "Potřebuješ ve škole zvláštní podporu?",
+    hint: "Například kvůli zdravotnímu postižení. Odpověď zůstává jen v tvém prohlížeči.",
+    weight: 0,
+    options: [
+      { value: "none", label: "Ne, nepotřebuji", icon: "🙂" },
+      { value: "visual", label: "Ano – mám zrakové postižení", icon: "👓" },
+      { value: "hearing", label: "Ano – mám sluchové postižení", icon: "🦻" },
+      { value: "physical", label: "Ano – mám tělesné postižení", icon: "♿" },
+      { value: "svp", label: "Ano – jiné speciální vzdělávací potřeby", icon: "🧩" },
+    ],
+  },
 ];
 
 export type QuizAnswers = Readonly<Record<string, string | undefined>>;
@@ -106,4 +122,9 @@ export const primaryInterest = (answers: QuizAnswers): Category | null => {
 export const studyTrack = (answers: QuizAnswers): StudyTrack => {
   const value = answers[TRACK_QUESTION_ID] ?? "any";
   return isStudyTrack(value) ? value : "any";
+};
+
+export const supportNeed = (answers: QuizAnswers): SupportType | null => {
+  const value = answers[SUPPORT_QUESTION_ID];
+  return value && isSupportType(value) ? value : null;
 };
