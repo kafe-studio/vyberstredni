@@ -71,6 +71,15 @@ export const saveQuiz = (quiz: SavedQuiz) => {
   }
 };
 
+/** The student's home, shared by the quiz and the school pages. */
+export const loadHome = (): SavedHome | null => loadQuiz()?.home ?? null;
+
+/** Changes only the home and keeps the quiz answers; the shown results are recomputed for the new home next time. */
+export const saveHome = (home: SavedHome) => {
+  const saved = loadQuiz();
+  saveQuiz({ answers: saved?.answers ?? {}, home, maxDistance: saved?.maxDistance ?? "", completed: saved?.completed ?? false });
+};
+
 export const clearQuiz = () => {
   try {
     localStorage.removeItem(STORAGE_KEY);

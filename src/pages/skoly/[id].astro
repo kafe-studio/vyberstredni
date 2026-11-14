@@ -79,6 +79,11 @@ const metadata = {
         </div>
 
         <p class="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">{school.address}</p>
+        {hasCoordinates && (
+          <p id="home-distance" class="mt-3 text-lg" aria-live="polite">
+            <a href="#location-heading" class="font-semibold text-primary hover:underline">Zadej, kde bydlíš, a uvidíš, jak daleko to máš →</a>
+          </p>
+        )}
         <div class="mt-8 grid gap-4 sm:grid-cols-2">
           <div class="rounded-[3px] border border-border bg-card p-4">
             <p class="text-sm text-muted-foreground">Typ v rejstříku</p>
@@ -355,6 +360,7 @@ const metadata = {
       type SchoolSummary,
     } from "../../lib/school-data";
     import towns from "../../data/towns.json";
+    import { loadHome, saveHome, type SavedHome } from "../../lib/quiz-storage";
 
     type GeolocatedSchool = SchoolSummary & { latitude: number; longitude: number };
     /* eslint-disable no-unused-vars */
@@ -411,8 +417,11 @@ const metadata = {
           ? { label: option.textContent ?? "", latitude, longitude }
           : null;
       };
-      // Start at the school's own town (or the school itself) until the student picks a home.
-      let activeHome = presetFrom(presetSelect?.selectedOptions[0]) ?? { label: schoolName, latitude: schoolLatitude, longitude: schoolLongitude };
+      const homeDistance = document.getElementById("home-distance");
+      // The home saved by the quiz or on another school page; until there is one, the map starts at the school's own town.
+      const savedHome = loadHome();
+      let activeHome = savedHome ?? presetFrom(presetSelect?.selectedOptions[0]) ?? { label: schoolName, latitude: schoolLatitude, longitude: schoolLongitude };
+      let homeKnown = savedHome !== null;
       let map: LeafletMap | null = null;
       let homeMarker: LeafletMarker | null = null;
       const leaflet = (window as WindowWithLeaflet).L;
@@ -478,9 +487,41 @@ const metadata = {
 
       const renderDistance = () => {
         if (!hasCoordinates || !distanceOutput) return;
-        distanceOutput.textContent = formatDistance(distanceKm(activeHome.latitude, activeHome.longitude, schoolLatitude, schoolLongitude));
+        const distance = formatDistance(distanceKm(activeHome.latitude, activeHome.longitude, schoolLatitude, schoolLongitude));
+        distanceOutput.textContent = distance;
+        if (homeDistance && homeKnown) {
+          homeDistance.innerHTML = `<span class="hl font-extrabold">📍 ${escapeHtml(distance)} od tvého bydliště</span>
+            <span class="text-muted-foreground">(${escapeHtml(activeHome.label)}, vzdušnou čarou)</span>
+            <a href="#location-heading" class="ml-1 text-sm font-semibold text-primary hover:underline">změnit</a>`;
+        }
         renderNearby();
       };
+
+      /** Fills the town select with the region's towns; values are town names. */
+      const fillTowns = (region: string) => {
+        if (!presetSelect) return;
+        const regionTowns = towns
+          .filter((town) => town.region === region)
+          .sort((left, right) => left.name.localeCompare(right.name, "cs", { numeric: true }));
+        presetSelect.replaceChildren(new Option("Vyber obec…", ""), ...regionTowns.map((town) => {
+          const option = new Option(town.name, town.name);
+          option.dataset.latitude = String(town.latitude);
+          option.dataset.longitude = String(town.longitude);
+          return option;
+        }));
+      };
+
+      // Show the saved home in the selects too: its region and town, or an empty town for a device or map location.
+      if (savedHome && regionSelect && presetSelect) {
+        if (savedHome.region) {
+          regionSelect.value = savedHome.region;
+          fillTowns(savedHome.region);
+          presetSelect.value = savedHome.town.slice(savedHome.region.length + 1);
+        } else {
+          presetSelect.value = "";
+        }
+        if (locationStatus) locationStatus.textContent = `Tvoje bydliště: ${savedHome.label}. Pamatujeme si ho z testu zájmů nebo z jiné školy.`;
+      }
 
       /** Shows home and school; when they (almost) coincide, a fixed zoom instead of zero-size bounds. */
       const frameMap = () => {
@@ -492,8 +533,15 @@ const metadata = {
         }
       };
 
-      const applyHomeLocation = (label: string, latitude: number, longitude: number) => {
-        activeHome = { label, latitude, longitude };
+      /** fromTown: picked from the town select; otherwise a device or map location, which clears the town. */
+      const applyHomeLocation = (label: string, latitude: number, longitude: number, fromTown = false) => {
+        if (!fromTown && presetSelect) presetSelect.value = "";
+        const town = fromTown ? presetSelect?.value ?? "" : "";
+        const region = town && regionSelect ? regionSelect.value : "";
+        const home: SavedHome = { label, latitude, longitude, region, town: region ? `${region}|${town}` : "" };
+        activeHome = home;
+        homeKnown = true;
+        saveHome(home);
         if (locationStatus) locationStatus.textContent = `Zvolené místo: ${label}. Vzdálenost je vzdušnou čarou.`;
         if (homeMarker && map) {
           homeMarker.setLatLng([latitude, longitude]);
@@ -503,18 +551,7 @@ const metadata = {
       };
 
       // Students often commute from another region (Kladno -> Prague): any region's towns can be picked.
-      regionSelect?.addEventListener("change", () => {
-        if (!presetSelect) return;
-        const regionTowns = towns
-          .filter((town) => town.region === regionSelect.value)
-          .sort((left, right) => left.name.localeCompare(right.name, "cs", { numeric: true }));
-        presetSelect.replaceChildren(new Option("Vyber obec…", ""), ...regionTowns.map((town) => {
-          const option = new Option(town.name, town.name);
-          option.dataset.latitude = String(town.latitude);
-          option.dataset.longitude = String(town.longitude);
-          return option;
-        }));
-      });
+      regionSelect?.addEventListener("change", () => fillTowns(regionSelect.value));
 
       favoriteButton?.addEventListener("click", () => {
         toggleFavorite(schoolId);
@@ -524,7 +561,7 @@ const metadata = {
       selectB?.addEventListener("change", renderComparison);
       presetSelect?.addEventListener("change", () => {
         const preset = presetFrom(presetSelect.selectedOptions[0]);
-        if (preset) applyHomeLocation(preset.label, preset.latitude, preset.longitude);
+        if (preset) applyHomeLocation(preset.label, preset.latitude, preset.longitude, true);
       });
       geolocationButton?.addEventListener("click", () => {
         if (!navigator.geolocation) {

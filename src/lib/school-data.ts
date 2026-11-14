@@ -71,7 +71,12 @@ export const distanceKm = (fromLatitude: number, fromLongitude: number, toLatitu
   return 6371 * 2 * Math.atan2(Math.sqrt(bounded), Math.sqrt(1 - bounded));
 };
 
-export const formatDistance = (km: number) => km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+/** Czech format: "850 m", "4,2 km", and whole kilometres from 10 km, where decimals add nothing. */
+export const formatDistance = (km: number) => {
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  if (km < 10) return `${km.toFixed(1).replace(".", ",")} km`;
+  return `${Math.round(km)} km`;
+};
 
 export const getFavorites = (): string[] => {
   try {
