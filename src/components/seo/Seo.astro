@@ -47,6 +47,13 @@ const canonicalURL =
 <meta property="og:title" content={fullTitle} />
 <meta property="og:description" content={description} />
 <meta property="og:image" content={new URL(withBase(ogImageSrc), siteConfig.url)} />
+{ogImageSrc === siteConfig.ogImage && (
+  <>
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Nevíš, kam na střední? Udělej test zájmů: 6 otázek, 2 minuty." />
+  </>
+)}
 <meta property="og:locale" content={siteConfig.locale} />
 
 <meta name="twitter:card" content="summary_large_image" />
