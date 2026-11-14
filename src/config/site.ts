@@ -15,7 +15,7 @@ export const siteConfig = {
   address: "",
   socialLinks: {
     instagram: "https://instagram.com/georgeduckling",
-    facebook: "https://facebook.com/georgeduckling",
+    facebook: "https://www.facebook.com/jirikacirekzhostomic",
   },
   /** Other projects by the same author, listed in the footer. Entries without a url are shown as plain text. */
   otherProjects: [
