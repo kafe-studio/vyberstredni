@@ -21,7 +21,7 @@ export const siteConfig = {
   otherProjects: [
     { name: "SOS Fotograf", description: "foto/grafická pohotovost", url: "https://sosfotograf.cz/" },
     { name: "George Duckling", description: "portál seniorních profesionálů", url: "https://georgeduckling.com/" },
-    { name: "Pingupedia", description: "", url: "" },
+    { name: "Pingupedia", description: "", url: "https://pingupedia.hrava.wiki/" },
     { name: "OnlyPeoples", description: "", url: "" },
   ],
   /** Main navigation; the quiz is rendered separately as the call-to-action button. */
