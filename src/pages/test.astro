@@ -9,7 +9,7 @@ import { withBase } from "../lib/urls";
 
 const metadata = {
   title: "Test zájmů",
-  description: "Pár krátkých otázek o tom, co tě baví. Na konci uvidíš obory a střední školy po celém Česku, které ti sedí.",
+  description: "Pár krátkých otázek o tom, co tě baví. Na konci uvidíš obory a střední školy po celém Česku, které odpovídají tvým zájmům.",
 };
 
 
@@ -25,8 +25,8 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
   <section class="px-6 pb-20 pt-28 md:pt-32">
     <div class="mx-auto max-w-2xl">
       <header class="mb-8 text-center">
-        <span class="sticker-note -rotate-2 bg-lime">Test zájmů · 2 minuty</span>
-        <h1 class="mt-4 text-4xl font-extrabold md:text-5xl">Co ti sedí?</h1>
+        <span class="sticker-note -rotate-2 bg-lime">6 otázek, asi 2 minuty</span>
+        <h1 class="mt-4 text-4xl font-extrabold md:text-5xl">Test zájmů</h1>
         <p class="mt-3 text-muted-foreground">{questions.length} krátkých otázek. Klikni na to, co tě nejvíc láká.</p>
       </header>
 
@@ -107,7 +107,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
               </select>
             </label>
           </div>
-          <button id="show-results" type="button" class="btn-primary mt-6 w-full">Zobrazit výsledky 🎉</button>
+          <button id="show-results" type="button" class="btn-primary mt-6 w-full">Zobrazit výsledky</button>
         </section>
       </div>
       </div>
@@ -117,8 +117,8 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           <div class="pointer-events-none absolute -bottom-6 -right-6 hidden w-56 md:block" aria-hidden="true">
             <Character name="duo-hoodie-bun" class="w-full" />
           </div>
-          <span class="sticker-note -rotate-2 bg-sun">Tvůj výsledek 🎉</span>
-          <h2 class="mt-3 text-3xl font-extrabold">Nejvíc tě táhne</h2>
+          <span class="sticker-note -rotate-2 bg-sun">Výsledek testu</span>
+          <h2 class="mt-3 text-3xl font-extrabold">Tvoje hlavní zájmy</h2>
           <div id="top-interests" class="mt-4 flex flex-wrap gap-2"></div>
           <p id="results-note" class="mt-4 text-sm text-muted-foreground"></p>
           <div class="mt-5 flex flex-wrap gap-3">
@@ -128,7 +128,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           <p class="mt-3 text-xs text-muted-foreground">Odpovědi i bydliště si pamatujeme jen v tomto prohlížeči, dokud je neresetuješ.</p>
         </div>
 
-        <h2 class="mb-4 mt-10 text-2xl font-extrabold">Školy, které by ti mohly sednout</h2>
+        <h2 class="mb-4 mt-10 text-2xl font-extrabold">Doporučené školy</h2>
         <div id="recommendations" class="space-y-4"></div>
         <button id="more-results" type="button" class="btn-outline mt-6 w-full" hidden>Zobrazit další školy</button>
         <p class="mt-8 text-xs leading-5 text-muted-foreground">
