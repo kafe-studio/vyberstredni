@@ -1,7 +1,7 @@
 export const siteConfig = {
   name: "Vyber střední",
   description:
-    "Oficiální katalog středních škol a konzervatoří z celého Česka, včetně soukromých, církevních a speciálních škol.",
+    "Neoficiální katalog středních škol a konzervatoří z celého Česka, včetně soukromých, církevních a speciálních škol.",
   url: "https://georgeduckling.com/vyberstredni/",
   lang: "cs",
   locale: "cs_CZ",
