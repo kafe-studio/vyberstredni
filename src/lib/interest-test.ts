@@ -3,13 +3,21 @@ import { isPlacementInstitution, type SupportType } from "./special-needs";
 
 export const CATEGORIES = [
   "digital",
+  "electro",
   "engineering",
+  "cars",
+  "building",
+  "wood",
   "science",
   "nature",
   "health",
+  "beauty",
   "safety",
   "design",
+  "music",
+  "fashion",
   "business",
+  "languages",
   "hospitality",
   "people",
   "practical",
@@ -20,13 +28,21 @@ export type Category = (typeof CATEGORIES)[number];
 
 export const categoryLabels: Record<Category, string> = {
   digital: "Počítače a IT",
-  engineering: "Technika a stavby",
-  science: "Přírodní vědy",
+  electro: "Elektro a elektronika",
+  engineering: "Strojírenství a kovo",
+  cars: "Auta a doprava",
+  building: "Stavebnictví",
+  wood: "Dřevo a nábytek",
+  science: "Chemie a přírodní vědy",
   nature: "Příroda a zvířata",
   health: "Zdravotnictví",
+  beauty: "Kadeřnictví a kosmetika",
   safety: "Bezpečnost a IZS",
-  design: "Umění a média",
+  design: "Výtvarné umění a design",
+  music: "Hudba, tanec a divadlo",
+  fashion: "Móda a textil",
   business: "Ekonomika a obchod",
+  languages: "Cizí jazyky",
   hospitality: "Gastronomie a cestovní ruch",
   people: "Práce s lidmi",
   practical: "Řemesla",
@@ -44,31 +60,75 @@ export const isStudyTrack = (value: string): value is StudyTrack =>
 export const emptyTotals = (): Record<Category, number> =>
   Object.fromEntries(CATEGORIES.map((category) => [category, 0])) as Record<Category, number>;
 
+/** Base categories of a program code group (the first two digits of the official program code). */
 const categoryByCodeGroup: Partial<Record<string, Category[]>> = {
-  "16": ["science", "nature"],
+  "16": ["nature", "science"],
   "18": ["digital"],
   "21": ["engineering", "science"],
   "23": ["engineering"],
-  "26": ["engineering", "science"],
+  "26": ["electro"],
   "29": ["practical"],
-  "31": ["design", "practical"],
-  "32": ["design", "practical"],
-  "33": ["design", "practical"],
+  "31": ["fashion", "practical"],
+  "32": ["fashion", "practical"],
+  "33": ["wood", "practical"],
   "34": ["design", "practical"],
-  "36": ["engineering"],
-  "37": ["engineering", "business"],
+  "36": ["building"],
+  "37": ["cars", "business"],
   "41": ["nature", "practical"],
   "43": ["nature"],
   "53": ["health"],
   "63": ["business"],
   "64": ["business"],
   "65": ["hospitality"],
-  "68": ["safety"],
+  "66": ["business"],
   "69": ["practical"],
   "72": ["people"],
   "74": ["sport", "people"],
   "75": ["people"],
-  "82": ["design"],
+};
+
+/** Categories a program name adds within its code group; every matching rule applies. */
+const nameRules: Partial<Record<string, Array<[RegExp, Category[]]>>> = {
+  "23": [[/motorových vozidel|karosář|autolak|dopravní prostředky|silničních strojů|letecký|lodník/, ["cars"]]],
+  "26": [[/autoelektr/, ["cars"]], [/telekomunikace|spojový/, ["digital"]]],
+  "28": [[/keram|sklář|bižuter|silikát/, ["design", "practical"]], [/chemi/, ["science"]]],
+  "29": [[/analýza|technologie potravin/, ["science"]], [/kuchař|číšník|cukrář|pekař|řezník|gastronom/, ["hospitality"]]],
+  "36": [[/tesař/, ["wood", "practical"]], [/geodézie/, ["science"]]],
+  "39": [
+    [/požární|bezpečnost/, ["safety"]],
+    [/malíř|lakýr/, ["building", "practical"]],
+    [/autotronik/, ["cars", "electro"]],
+    [/instalatér/, ["building", "electro"]],
+    [/mechatronik/, ["engineering", "electro"]],
+  ],
+  "41": [[/opravář|mechanizátor|mechanizace|strojů/, ["engineering"]], [/zpracovatel dřeva/, ["wood"]]],
+  "63": [[/obchodní akademie/, ["languages"]]],
+  "65": [[/hotelnictví|cestovní ruch/, ["business", "languages"]]],
+  "66": [[/aranžér/, ["design"]]],
+  "68": [[/bezpečnost|pořád|požár|vojen|polic/, ["safety"]], [/veřejnospráv|správ/, ["business", "people"]]],
+  "69": [
+    [/kadeřník|kosmeti|vlasov|maskér|manikúr|pedikúr/, ["beauty"]],
+    [/masér/, ["health", "sport"]],
+    [/optik/, ["health"]],
+    [/autoservis/, ["cars"]],
+  ],
+  "82": [
+    [/zpěv|hudb|tanec|dramat|hudebních nástrojů|varhan|herectví/, ["music"]],
+    [/oděv|textil|obuvi|módních/, ["fashion", "design"]],
+    [/truhlář|dřev|řezb/, ["wood", "design"]],
+    [/maskér|vlásenk/, ["beauty", "design"]],
+    [/design|grafi|malba|fotograf|multimedi|scénick|keramik|sklo|skla|kov|kamen|zlatník|rytec|štukatér|pozlacovač|restaurát|starožitník|hrač|bižuter/, ["design"]],
+  ],
+};
+
+/** Lycea: a general base with a focus (78-42-M/01 … /06), plus the military lyceum. */
+const lyceumCategories: Partial<Record<string, Category[]>> = {
+  "78-42-M/01": ["engineering", "electro", "digital", "science"],
+  "78-42-M/02": ["business"],
+  "78-42-M/03": ["people"],
+  "78-42-M/04": ["health"],
+  "78-42-M/05": ["science", "nature"],
+  "78-42-M/06": ["general", "people"],
 };
 
 const programCategoryCache = new Map<string, Category[]>();
@@ -87,47 +147,22 @@ const computeProgramCategories = (program: CatalogProgram): Category[] => {
   const codeGroup = program.code.slice(0, 2);
   const name = program.name.toLocaleLowerCase("cs");
   if (codeGroup === "79") return program.code.startsWith("79-42") ? ["general", "sport"] : ["general"];
+  if (codeGroup === "78") {
+    if (/vojensk/.test(name)) return ["safety", "general"];
+    return lyceumCategories[program.code] ?? ["general"];
+  }
 
   const categories = new Set(categoryByCodeGroup[codeGroup] ?? []);
+  for (const [pattern, added] of nameRules[codeGroup] ?? []) {
+    if (pattern.test(name)) added.forEach((category) => categories.add(category));
+  }
+  // Fallbacks for groups whose base depends entirely on the name.
+  if (codeGroup === "28" && categories.size === 0) categories.add("science");
+  if (codeGroup === "39" && categories.size === 0) categories.add("engineering");
+  if (codeGroup === "82" && categories.size === 0) categories.add("design");
+  if (codeGroup === "68" && categories.size === 0) categories.add("safety");
 
-  if (codeGroup === "28") {
-    if (/keram/.test(name)) {
-      categories.add("design");
-      categories.add("practical");
-    } else {
-      categories.add("science");
-    }
-  }
-  if (codeGroup === "29") {
-    if (/analýza|technologie potravin/.test(name)) categories.add("science");
-    if (/kuchař|číšník|cukrář|pekař|řezník|gastronom/.test(name)) categories.add("hospitality");
-  }
-  if (codeGroup === "39") {
-    if (/požární ochrana|bezpečnost/.test(name)) categories.add("safety");
-    else if (/malíř|lakýr/.test(name)) categories.add("practical");
-    else categories.add("engineering");
-  }
-  if (codeGroup === "41" && /opravář|mechanizátor|strojů/.test(name)) categories.add("engineering");
-  if (codeGroup === "65" && /hotelnictví|cestovní ruch/.test(name)) categories.add("business");
-  if (codeGroup === "66") categories.add(/aranžér|propagace/.test(name) ? "design" : "business");
-  if (codeGroup === "68" && /veřejnospráv|sociální/.test(name)) categories.add("people");
-  if (codeGroup === "69") {
-    if (/kadeřník|kosmetik|vlasov/.test(name)) categories.add("design");
-    if (/masér/.test(name)) categories.add("health");
-  }
-  if (codeGroup === "78") {
-    const lyceum: Partial<Record<string, Category[]>> = {
-      "78-42-M/01": ["engineering", "science"],
-      "78-42-M/02": ["business"],
-      "78-42-M/03": ["people"],
-      "78-42-M/04": ["health"],
-      "78-42-M/05": ["science", "nature"],
-      "78-42-M/06": ["general", "people"],
-    };
-    (lyceum[program.code] ?? ["general"]).forEach((category) => categories.add(category));
-  }
-
-  if (/-[EH]\//.test(program.code) && codeGroup !== "78") categories.add("practical");
+  if (/-[EH]\//.test(program.code)) categories.add("practical");
   return [...categories];
 };
 
@@ -177,6 +212,9 @@ const GYMNASIUM_PROFILES: Array<[RegExp, Category[]]> = [
   [/sportovní\s+gymn|gymnázium\s+se\s+sportovní/iu, ["sport"]],
   [/přírodovědn\p{L}*\s+gymn/iu, ["science", "nature"]],
   [/lékařsk\p{L}*(?:\s+a\s+\p{L}+)?\s+gymn/iu, ["health"]],
+  // Language gymnázia and international/bilingual ones. "… a jazyková škola s právem státní jazykové zkoušky" is a
+  // separate language school for adults in the same organisation, not the gymnázium's focus.
+  [/jazykov\p{L}*\s+gymn|anglick\p{L}*\s+gymn|anglicko-česk|\bInternational\b|mezinárodní\s+gymn|mezinárodních\s+a\s+veřejných|English\s+College|Německá\s+škola/iu, ["languages"]],
 ];
 
 const profileCache = new Map<string, Category[]>();

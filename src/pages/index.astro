@@ -81,7 +81,7 @@ const remainingQuestions = QUESTIONS.length - 1;
 
   {firstQuestion && (
     <section class="px-4 py-12 sm:px-6" aria-labelledby="quiz-start-heading">
-      <div class="track-card relative mx-auto max-w-3xl px-5 pb-6 pt-8 sm:px-8 sm:pb-8">
+      <div class="track-card relative mx-auto max-w-4xl px-4 pb-6 pt-8 sm:px-8 sm:pb-8">
         <span class="absolute -top-3 left-8 h-6 w-24 -rotate-3 bg-sun/80" aria-hidden="true"></span>
         <span class="absolute -top-3 right-10 h-6 w-20 rotate-3 bg-pink/70" aria-hidden="true"></span>
         <p class="text-sm font-bold text-muted-foreground">Test podle zájmů · otázka 1 z {QUESTIONS.length}</p>
@@ -90,15 +90,14 @@ const remainingQuestions = QUESTIONS.length - 1;
         </div>
         <h2 id="quiz-start-heading" class="mt-5 text-2xl font-extrabold sm:text-3xl">{firstQuestion.prompt}</h2>
         <p class="mt-1 text-sm text-muted-foreground">Klikni na odpověď a test pokračuje. Zbývá {remainingQuestions} krátkých otázek.</p>
-        <div class="mt-5 grid gap-3 sm:grid-cols-2">
+        <div class="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
           {firstQuestion.options.map((option) => (
             <a
               href={`${withBase("/test/")}?zajem=${encodeURIComponent(option.value)}`}
-              class="flex min-h-14 items-center gap-3 rounded-[4px] border border-border bg-card p-4 font-semibold text-ink shadow-paper transition hover:-translate-y-0.5 hover:bg-sun hover:shadow-paper-lift"
+              class="flex min-h-14 items-center gap-2 rounded-[4px] border border-border bg-card p-3 text-sm font-semibold leading-snug text-ink sm:gap-3 sm:p-4 sm:text-base shadow-paper transition hover:-translate-y-0.5 hover:bg-sun hover:shadow-paper-lift"
             >
-              <span class="text-2xl" aria-hidden="true">{option.icon}</span>
-              <span>{option.label}</span>
-              <span class="ml-auto text-primary" aria-hidden="true">→</span>
+              <span class="shrink-0 text-xl sm:text-2xl" aria-hidden="true">{option.icon}</span>
+              <span class="min-w-0">{option.label}</span>
             </a>
           ))}
         </div>

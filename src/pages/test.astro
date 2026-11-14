@@ -59,16 +59,16 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           <section class="quiz-step" data-question={question.id} hidden={index !== 0}>
             <h2 class="text-2xl font-bold" tabindex="-1">{question.prompt}</h2>
             {question.hint && <p class="mt-1 text-sm text-muted-foreground">{question.hint}</p>}
-            <div class="mt-5 grid gap-3 sm:grid-cols-2">
+            <div class:list={["mt-5 grid gap-2 sm:gap-3", question.options.length > 8 ? "grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2"]}>
               {question.options.map((option) => (
                 <button
                   type="button"
-                  class="quiz-option flex items-center gap-3 rounded-[4px] border border-border bg-card p-4 text-left shadow-paper transition hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-lilac hover:shadow-paper-lift aria-pressed:bg-sun"
+                  class="quiz-option flex items-center gap-2 rounded-[4px] border border-border bg-card p-3 text-left text-sm sm:gap-3 sm:p-4 sm:text-base shadow-paper transition hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-lilac hover:shadow-paper-lift aria-pressed:bg-sun"
                   data-value={option.value}
                   aria-pressed="false"
                 >
-                  <span class="text-2xl" aria-hidden="true">{option.icon}</span>
-                  <span class="font-semibold text-ink">{option.label}</span>
+                  <span class="shrink-0 text-xl sm:text-2xl" aria-hidden="true">{option.icon}</span>
+                  <span class="min-w-0 font-semibold leading-snug text-ink">{option.label}</span>
                 </button>
               ))}
             </div>

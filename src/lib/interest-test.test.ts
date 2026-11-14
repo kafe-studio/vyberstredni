@@ -248,6 +248,39 @@ describe("special-needs schools are recognised", () => {
   );
 });
 
+describe("detailed interests lead to the matching programs", () => {
+  const firstPrograms = (answers: QuizAnswers) =>
+    recommend({ track: "any", support: "none", ...answers }).schools.slice(0, 5).map((school) => school.programs[0]?.name ?? "");
+
+  it.each([
+    ["beauty", "vyucni", /kadeřník|kosmeti/i],
+    ["beauty", "maturita", /kosmeti|kadeř/i],
+    ["wood", "vyucni", /truhlář|tesař|dřev|čalouník/i],
+    ["cars", "vyucni", /motorových vozidel|karosář|autolak|autoelektr|autotronik/i],
+    ["cars", "maturita", /dopravní prostředky|autotronik|doprav/i],
+    ["electro", "vyucni", /elektr/i],
+    ["building", "vyucni", /zedník|instalatér|tesař|pokrývač|stav|malíř|klempíř|kominík|podlah/i],
+    ["fashion", "vyucni", /krejčí|šití|oděv|textil|obuv|kožeděl/i],
+    ["music", "maturita", /hudb|zpěv|tanec|dramat/i],
+    ["languages", "maturita", /cestovní ruch|hotelnictví|obchodní akademie/i],
+    ["safety", "maturita", /bezpečnost|požární|pořádek/i],
+  ] as const)("%s on the %s track", (interest, track, expected) => {
+    const programs = firstPrograms({ interest, subject: interest === "languages" ? "languages" : "practical", workplace: interest, activity: interest, track });
+    expect(programs.length).toBeGreaterThan(0);
+    for (const name of programs) expect(name).toMatch(expected);
+  });
+
+  it("offers a language gymnázium to a language fan on the gymnázium track", () => {
+    const [first] = recommend({ interest: "languages", subject: "languages", workplace: "languages", activity: "languages", track: "general", support: "none" }).schools;
+    expect(first?.name).toMatch(/jazykov|anglick|international|mezinárodní|English|Německá/i);
+  });
+
+  it("does not treat an adult language school in the same organisation as the gymnázium's focus", () => {
+    expect(gymnasiumProfile("Gymnázium a jazyková škola s právem státní jazykové zkoušky Břeclav")).not.toContain("languages");
+    expect(gymnasiumProfile("Jazykové gymnázium Pavla Tigrida, Ostrava-Poruba")).toContain("languages");
+  });
+});
+
 describe("sampled sets of answers", () => {
   const answerSets = allAnswerSets();
 
@@ -258,8 +291,8 @@ describe("sampled sets of answers", () => {
   // A regular sample of all combinations; the strides are coprime with every question's option count,
   // so each track, support and main interest appears many times.
   it.each([
-    ["without home", null, 13],
-    ["from Brno", brno, 31],
+    ["without home", null, 97],
+    ["from Brno", brno, 211],
   ] as const)("holds the recommendation rules %s", (_label, home, stride) => {
     const failures: string[] = [];
     for (const answers of answerSets.filter((_, index) => index % stride === 0)) {
