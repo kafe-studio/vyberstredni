@@ -3,92 +3,13 @@ export const prerender = true;
 
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Character, { type CharacterName } from "../components/Character.astro";
+import { QUESTIONS as questions } from "../lib/quiz-questions";
+import { withBase } from "../lib/urls";
 
 const metadata = {
   title: "Test zájmů",
   description: "Pět krátkých otázek o tom, co tě baví. Na konci uvidíš obory a školy v Praze a Středočeském kraji, které ti sedí.",
 };
-
-type Option = { value: string; label: string; icon: string };
-type Question = { id: string; prompt: string; hint?: string; weight: number; options: Option[] };
-
-/** Option values are interest categories (see src/lib/interest-test.ts), except the study track question. */
-const questions: Question[] = [
-  {
-    id: "interest",
-    prompt: "Co tě baví nejvíc?",
-    hint: "Vyber jednu věc, která tě láká nejvíc.",
-    weight: 2,
-    options: [
-      { value: "digital", label: "Počítače a programování", icon: "💻" },
-      { value: "engineering", label: "Technika, stroje a auta", icon: "⚙️" },
-      { value: "nature", label: "Příroda a zvířata", icon: "🌿" },
-      { value: "health", label: "Péče o zdraví lidí", icon: "🩺" },
-      { value: "design", label: "Kreslení, foto a video", icon: "🎨" },
-      { value: "business", label: "Obchod a peníze", icon: "💼" },
-      { value: "hospitality", label: "Vaření a cestování", icon: "🍳" },
-      { value: "people", label: "Práce s dětmi a lidmi", icon: "🤝" },
-    ],
-  },
-  {
-    id: "subject",
-    prompt: "Který předmět ve škole máš nejradši?",
-    weight: 1,
-    options: [
-      { value: "science", label: "Matematika, fyzika, chemie", icon: "🧪" },
-      { value: "nature", label: "Přírodopis", icon: "🐞" },
-      { value: "digital", label: "Informatika", icon: "🖱️" },
-      { value: "design", label: "Výtvarka nebo hudebka", icon: "🎵" },
-      { value: "general", label: "Jazyky, dějepis, společenské vědy", icon: "📚" },
-      { value: "practical", label: "Pracovní činnosti a dílny", icon: "🔨" },
-      { value: "sport", label: "Tělocvik a sport", icon: "🏃" },
-    ],
-  },
-  {
-    id: "workplace",
-    prompt: "Kde by sis představil/a svou práci?",
-    weight: 1,
-    options: [
-      { value: "digital", label: "U počítače", icon: "🖥️" },
-      { value: "engineering", label: "V dílně nebo na stavbě", icon: "🏗️" },
-      { value: "science", label: "V laboratoři", icon: "🔬" },
-      { value: "health", label: "V nemocnici", icon: "🏥" },
-      { value: "design", label: "V ateliéru nebo studiu", icon: "📸" },
-      { value: "business", label: "V kanceláři nebo obchodě", icon: "🏢" },
-      { value: "hospitality", label: "V hotelu nebo restauraci", icon: "🏨" },
-      { value: "safety", label: "U hasičů nebo policie", icon: "🚒" },
-      { value: "people", label: "Ve škole nebo školce", icon: "🏫" },
-      { value: "nature", label: "Venku v přírodě", icon: "🌳" },
-    ],
-  },
-  {
-    id: "activity",
-    prompt: "Co bys dělal/a nejraději?",
-    weight: 1,
-    options: [
-      { value: "practical", label: "Vyrobit něco vlastníma rukama", icon: "🪚" },
-      { value: "design", label: "Vymyslet, jak něco bude vypadat", icon: "✏️" },
-      { value: "science", label: "Spočítat a vyřešit úlohu", icon: "🧮" },
-      { value: "business", label: "Zorganizovat akci", icon: "📋" },
-      { value: "people", label: "Pomoct někomu, kdo to potřebuje", icon: "💬" },
-      { value: "nature", label: "Postarat se o zvíře", icon: "🐕" },
-      { value: "engineering", label: "Opravit rozbitý stroj", icon: "🔧" },
-      { value: "digital", label: "Naprogramovat hru nebo aplikaci", icon: "🎮" },
-    ],
-  },
-  {
-    id: "track",
-    prompt: "Jakou školu chceš?",
-    hint: "Nevadí, když ještě nevíš.",
-    weight: 0,
-    options: [
-      { value: "general", label: "Gymnázium – široký základ, pak vysoká škola", icon: "🎓" },
-      { value: "maturita", label: "Odborná škola s maturitou", icon: "📘" },
-      { value: "vyucni", label: "Učební obor s výučním listem", icon: "🛠️" },
-      { value: "any", label: "Ještě nevím", icon: "🤔" },
-    ],
-  },
-];
 
 const towns = [
   {
@@ -164,7 +85,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         </div>
 
         {questions.map((question, index) => (
-          <section class="quiz-step" data-question={question.id} data-weight={question.weight} hidden={index !== 0}>
+          <section class="quiz-step" data-question={question.id} hidden={index !== 0}>
             <h2 class="text-2xl font-bold" tabindex="-1">{question.prompt}</h2>
             {question.hint && <p class="mt-1 text-sm text-muted-foreground">{question.hint}</p>}
             <div class="mt-5 grid gap-3 sm:grid-cols-2">
@@ -239,6 +160,8 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         <p class="mt-8 text-xs leading-5 text-muted-foreground">
           Orientační doporučení podle oborů zapsaných v rejstříku MŠMT, nejde o psychologický test ani odhad šance na přijetí.
           Vzdálenost je vzdušnou čarou. Otevření oboru a přijímací podmínky si ověř na webu školy.
+          Školy určené žákům se zdravotním postižením, praktické školy a obory pro žáky se speciálními vzdělávacími potřebami
+          (kategorie E a C) v doporučení neukazujeme – najdeš je v <a class="underline" href={withBase("/skoly/")}>katalogu škol</a>.
         </p>
       </div>
     </div>
@@ -247,15 +170,8 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
   <script>
     import { withBase } from "../lib/urls";
     import { escapeHtml, formatDistance, loadSchoolPrograms, loadSchools } from "../lib/school-data";
-    import {
-      categoryLabels,
-      emptyTotals,
-      isCategory,
-      isStudyTrack,
-      rankSchools,
-      type HomeLocation,
-      type Recommendation,
-    } from "../lib/interest-test";
+    import { categoryLabels, rankInterests, rankSchools, type Category, type HomeLocation, type Recommendation } from "../lib/interest-test";
+    import { computeTotals, primaryInterest, studyTrack } from "../lib/quiz-questions";
 
     const PAGE_SIZE = 6;
     const ADVANCE_DELAY_MS = 220;
@@ -406,7 +322,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
       const pluralPrograms = (count: number) => count === 1 ? "další obor" : count < 5 ? "další obory" : "dalších oborů";
       const pluralSchools = (count: number) => count === 1 ? "škola" : count > 1 && count < 5 ? "školy" : "škol";
 
-      const renderCard = (school: Recommendation) => {
+      const renderCard = (school: Recommendation, mainLabel: string | null) => {
         const programs = school.programs.slice(0, 2);
         const more = school.programs.length - programs.length;
         const href = withBase(`/skoly/${encodeURIComponent(school.id)}/`);
@@ -418,6 +334,9 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           <article class="school-card p-5">
             <a class="text-lg font-semibold text-foreground hover:text-primary" href="${href}">${escapeHtml(school.name)}</a>
             <p class="mt-1 text-sm text-muted-foreground">${meta}</p>
+            ${school.matchesMain && mainLabel
+              ? `<p class="mt-3 inline-block rounded-full bg-lime/40 px-3 py-1 text-xs font-bold text-ink">🎯 Sedí k hlavnímu zájmu: ${escapeHtml(mainLabel)}</p>`
+              : `<p class="mt-3 inline-block rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">Souvisí s dalšími zájmy</p>`}
             <ul class="mt-3 space-y-1 text-sm">
               ${programs.map((program) => `<li class="flex gap-2"><span class="text-primary" aria-hidden="true">✓</span><span>${escapeHtml(program.name)}</span></li>`).join("")}
             </ul>
@@ -426,10 +345,12 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           </article>`;
       };
 
+      let mainLabel: string | null = null;
+
       const renderMore = () => {
         if (!recommendationsList) return;
         const next = ranked.slice(shown, shown + PAGE_SIZE);
-        recommendationsList.insertAdjacentHTML("beforeend", next.map(renderCard).join(""));
+        recommendationsList.insertAdjacentHTML("beforeend", next.map((school) => renderCard(school, mainLabel)).join(""));
         shown += next.length;
         if (moreButton) {
           const remaining = ranked.length - shown;
@@ -444,17 +365,15 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           showResultsButton.textContent = "Hledám školy…";
         }
 
-        const totals = emptyTotals();
-        steps.forEach((step) => {
-          const questionId = step.dataset.question;
-          const value = questionId ? answers.get(questionId) : undefined;
-          if (value && isCategory(value)) totals[value] += Number(step.dataset.weight) || 0;
-        });
-        const trackAnswer = answers.get("track") ?? "any";
-        const track = isStudyTrack(trackAnswer) ? trackAnswer : "any";
+        // Same scoring as the unit tests: weights and questions come from src/lib/quiz-questions.ts.
+        const answerRecord = Object.fromEntries(answers);
+        const totals = computeTotals(answerRecord);
+        const primary = primaryInterest(answerRecord);
+        const track = studyTrack(answerRecord);
         const maxDistance = home && maxDistanceSelect?.value ? Number(maxDistanceSelect.value) : null;
         const requestedVersion = answersVersion;
         let withoutLocation: number;
+        let mainInterest: Category | null;
 
         try {
           const [schools, programsById] = await loadData();
@@ -462,33 +381,45 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
             resetResultsButton();
             return;
           }
-          const result = rankSchools(schools, programsById, totals, track, home, maxDistance);
+          const result = rankSchools(schools, programsById, totals, track, home, maxDistance, primary);
           ranked = result.schools;
           withoutLocation = result.withoutLocation;
+          mainInterest = result.mainInterest;
         } catch {
           if (homeStatus) homeStatus.textContent = "Data škol se nepodařilo načíst. Zkontroluj připojení a zkus to znovu.";
           resetResultsButton();
           return;
         }
 
-        const top = Object.entries(totals)
-          .filter(([, count]) => count > 0)
-          .sort((left, right) => right[1] - left[1])
-          .slice(0, 3)
-          .map(([category]) => (isCategory(category) ? categoryLabels[category] : category));
+        // The badge and note describe rankSchools' own main interest, so they cannot drift from matchesMain.
+        mainLabel = mainInterest ? categoryLabels[mainInterest] : null;
+        const top = rankInterests(totals, primary).slice(0, 3).map((category) => categoryLabels[category]);
         if (topInterests) {
           topInterests.innerHTML = (top.length ? top : ["Zatím bez jasného směru"])
             .map((label, index) => `<span class="rounded-full border-2 border-ink px-4 py-2 text-sm font-bold shadow-[2px_2px_0_var(--ink)] ${["bg-primary text-white", "bg-sun text-ink", "bg-mint text-ink"][index] ?? "bg-white text-ink"}">${escapeHtml(label)}</span>`)
             .join("");
         }
         if (resultsNote) {
+          // With no results at all the empty-state message in the list explains it; no note about interests.
+          const mainFirst = ranked.length === 0
+            ? ""
+            : mainLabel && ranked.some((school) => school.matchesMain)
+            ? `Nahoře jsou školy s obory pro tvůj hlavní zájem (${mainLabel}), pak další.`
+            : mainLabel
+              ? `Pro tvůj hlavní zájem (${mainLabel}) jsme v tomto výběru nenašli vhodný obor, ukazujeme školy podle dalších zájmů.`
+              : "";
+          const gymnasiumNote = track === "general"
+            ? " Gymnázium je všeobecné, proto ti k němu ukazujeme i lycea: maturitní obory se širokým základem a zaměřením podle tvého zájmu."
+            : "";
           const order = home
-            ? `Seřazeno podle shody, pak podle vzdálenosti od: ${home.label}${maxDistance ? ` (do ${maxDistance} km)` : ""}.`
-            : "Seřazeno podle toho, jak obory odpovídají tvým odpovědím.";
+            ? ` Při stejné shodě rozhoduje vzdálenost od: ${home.label}${maxDistance ? ` (do ${maxDistance} km)` : ""}.`
+            : " Když vyplníš bydliště, seřadíme ti školy i podle vzdálenosti.";
           const skipped = withoutLocation > 0
             ? ` ${withoutLocation} ${pluralSchools(withoutLocation)} bez známé polohy jsme v limitu vzdálenosti nemohli započítat.`
             : "";
-          resultsNote.textContent = `${ranked.length} ${pluralSchools(ranked.length)} s vhodným oborem. ${order}${skipped}`;
+          resultsNote.textContent = ranked.length === 0
+            ? `Žádná škola s vhodným oborem.${skipped}`
+            : `${ranked.length} ${pluralSchools(ranked.length)} s vhodným oborem. ${mainFirst}${gymnasiumNote}${order}${skipped}`;
         }
         if (recommendationsList) {
           recommendationsList.innerHTML = ranked.length

@@ -70,8 +70,19 @@ const categoryByCodeGroup: Partial<Record<string, Category[]>> = {
   "82": ["design"],
 };
 
-/** Maps an official program (code group + name) to interest categories. */
+const programCategoryCache = new Map<string, Category[]>();
+
+/** Maps an official program (code group + name) to interest categories. Results are cached per code + name. */
 export const programCategories = (program: CatalogProgram): Category[] => {
+  const key = `${program.code}|${program.name}`;
+  const cached = programCategoryCache.get(key);
+  if (cached) return cached;
+  const categories = computeProgramCategories(program);
+  programCategoryCache.set(key, categories);
+  return categories;
+};
+
+const computeProgramCategories = (program: CatalogProgram): Category[] => {
   const codeGroup = program.code.slice(0, 2);
   const name = program.name.toLocaleLowerCase("cs");
   if (codeGroup === "79") return program.code.startsWith("79-42") ? ["general", "sport"] : ["general"];
@@ -131,7 +142,10 @@ export const programLevel = (code: string) => /^\d{2}-\d{2}-([A-Z])/.exec(code)?
  */
 export const isNotForNinthGraders = (code: string) => /-L\/5\d$/.test(code) || /-K\/[68]\d$/.test(code);
 
-/** Shared by the quiz and the catalog filter so both agree on what each study track contains. */
+/**
+ * Study track of a program as the catalog filter understands it ("Gymnázium" = gymnázia only).
+ * The quiz builds on it in eligibleForQuiz: its gymnázium track also offers lycea and it hides E/J levels.
+ */
 export const matchesTrack = (code: string, track: StudyTrack) => {
   const level = programLevel(code);
   // C = praktická škola for pupils with special educational needs; not a general recommendation.
@@ -142,10 +156,65 @@ export const matchesTrack = (code: string, track: StudyTrack) => {
   return true;
 };
 
-/** Bonus for gymnázium programs when the gymnázium track is chosen, so they rank even without a "general" answer. */
-const GYMNASIUM_TRACK_BONUS = 3;
+/**
+ * Levels the quiz never recommends (they stay in the catalog):
+ * C = praktická škola, E = programs designed for pupils with special educational needs,
+ * J = short "střední vzdělání" without maturita or výuční list.
+ */
+const NOT_RECOMMENDED_LEVELS = new Set(["C", "E", "J"]);
 
-/** Keeps the best-scoring program per name; cards show names only, so names must not repeat. */
+/** Schools serving pupils with disabilities or special educational needs, recognised by their official name. */
+const SPECIAL_NEEDS_SCHOOL =
+  /pro\s+(?:zrakově|sluchově|tělesně)|postižen|s\s+více\s+vadami|speciální|speciálně\s+pedagog|praktická\s+škola/i;
+
+export const isSpecialNeedsSchool = (name: string) => SPECIAL_NEEDS_SCHOOL.test(name);
+
+const isLyceum = (code: string) => code.startsWith("78-42-M");
+
+/**
+ * A gymnázium focus only counts when the adjective belongs to the gymnázium itself
+ * ("1. IT Gymnázium", "Sportovní gymnázium", "Lékařské a přírodovědné gymnázium"),
+ * not when the name lists other programs of the same school ("Obchodní akademie a Gymnázium").
+ */
+const GYMNASIUM_PROFILES: Array<[RegExp, Category[]]> = [
+  [/\bIT\s+gymn/iu, ["digital"]],
+  [/sportovní\s+gymn|gymnázium\s+se\s+sportovní/iu, ["sport"]],
+  [/přírodovědn\p{L}*\s+gymn/iu, ["science", "nature"]],
+  [/lékařsk\p{L}*(?:\s+a\s+\p{L}+)?\s+gymn/iu, ["health"]],
+];
+
+const profileCache = new Map<string, Category[]>();
+
+export const gymnasiumProfile = (schoolName: string): Category[] => {
+  const cached = profileCache.get(schoolName);
+  if (cached) return cached;
+  const profile = [...new Set(GYMNASIUM_PROFILES.flatMap(([pattern, categories]) => (pattern.test(schoolName) ? categories : [])))];
+  profileCache.set(schoolName, profile);
+  return profile;
+};
+
+/**
+ * Programs the quiz may recommend for a study track. The gymnázium track also includes lycea:
+ * they combine a general base with a focus, which is what "široký základ, pak vysoká" looks for.
+ */
+const eligibleForQuiz = (code: string, track: StudyTrack) => {
+  const level = programLevel(code);
+  if (NOT_RECOMMENDED_LEVELS.has(level) || isNotForNinthGraders(code)) return false;
+  if (track === "general") return level === "K" || isLyceum(code);
+  return matchesTrack(code, track);
+};
+
+/** Small bonus so every gymnázium/lyceum qualifies on the gymnázium track even without a matching interest. */
+const GENERAL_TRACK_BONUS = 1;
+
+/** Interest categories sorted by strength; ties go to the answer of the first question, then to the fixed order. */
+export const rankInterests = (totals: Record<Category, number>, primary: Category | null): Category[] =>
+  CATEGORIES.filter((category) => totals[category] > 0).sort((left, right) =>
+    totals[right] - totals[left] ||
+    Number(right === primary) - Number(left === primary) ||
+    CATEGORIES.indexOf(left) - CATEGORIES.indexOf(right));
+
+/** Keeps the first program per name; cards show names only, so names must not repeat. */
 const uniqueByName = <T extends { name: string }>(programs: readonly T[]) => {
   const seen = new Set<string>();
   return programs.filter((program) => {
@@ -157,10 +226,23 @@ const uniqueByName = <T extends { name: string }>(programs: readonly T[]) => {
 };
 
 export type HomeLocation = { label: string; latitude: number; longitude: number };
-export type MatchedProgram = CatalogProgram & { score: number };
-export type Recommendation = SchoolSummary & { score: number; distanceKm: number | null; programs: MatchedProgram[] };
-export type RankingResult = { schools: Recommendation[]; withoutLocation: number };
+export type MatchedProgram = CatalogProgram & { score: number; categories: Category[]; matchesMain: boolean };
+export type Recommendation = SchoolSummary & {
+  score: number;
+  /** The best program serves the student's main interest. */
+  matchesMain: boolean;
+  /** The school teaches the main interest in some program (used to order otherwise equal gymnázia). */
+  mainAffinity: boolean;
+  distanceKm: number | null;
+  programs: MatchedProgram[];
+};
+export type RankingResult = { schools: Recommendation[]; withoutLocation: number; mainInterest: Category | null };
 
+/**
+ * Orders schools for the quiz result:
+ * 1. schools whose best program serves the main interest, 2. program score, 3. the school also teaches the main
+ * interest, 4. distance (when a home is set), 5. number of fitting programs, 6. name.
+ */
 export const rankSchools = (
   schools: readonly SchoolSummary[],
   programsById: SchoolProgramsById,
@@ -168,24 +250,55 @@ export const rankSchools = (
   track: StudyTrack,
   home: HomeLocation | null,
   maxDistanceKm: number | null,
+  primaryInterest: Category | null = null,
 ): RankingResult => {
+  const mainInterest = rankInterests(totals, primaryInterest)[0] ?? null;
+
   const matching = schools
+    .filter((school) => !isSpecialNeedsSchool(school.name))
     .map((school): Recommendation => {
-      const programs = uniqueByName((programsById[school.id] ?? [])
-        .filter((program) => !program.isPhasingOut && !isNotForNinthGraders(program.code) && matchesTrack(program.code, track))
-        .map((program) => ({
-          ...program,
-          score: programCategories(program).reduce(
-            (sum, category) => sum + totals[category] + (track === "general" && category === "general" ? GYMNASIUM_TRACK_BONUS : 0),
-            0,
-          ),
-        }))
+      const profile = gymnasiumProfile(school.name);
+      const categoriesOf = (program: CatalogProgram): Category[] => {
+        const base = programCategories(program);
+        return programLevel(program.code) === "K" ? [...new Set([...base, ...profile])] : base;
+      };
+      const current = (programsById[school.id] ?? []).filter((program) => !program.isPhasingOut);
+
+      const programs = uniqueByName(current
+        .filter((program) => eligibleForQuiz(program.code, track))
+        .map((program): MatchedProgram => {
+          const categories = categoriesOf(program);
+          const bonus = track === "general" ? GENERAL_TRACK_BONUS : 0;
+          return {
+            ...program,
+            categories,
+            score: categories.reduce((sum, category) => sum + totals[category], 0) + bonus,
+            matchesMain: mainInterest !== null && categories.includes(mainInterest),
+          };
+        })
         .filter((program) => program.score > 0)
-        .sort((left, right) => right.score - left.score || left.name.localeCompare(right.name, "cs")));
+        .sort((left, right) =>
+          Number(right.matchesMain) - Number(left.matchesMain) ||
+          right.score - left.score ||
+          left.name.localeCompare(right.name, "cs")));
+
+      // Only programs a 9th grader can actually enter count towards the school's affinity.
+      const mainAffinity = mainInterest !== null && current.some((program) =>
+        !NOT_RECOMMENDED_LEVELS.has(programLevel(program.code)) &&
+        !isNotForNinthGraders(program.code) &&
+        categoriesOf(program).includes(mainInterest));
       const distance = home && school.latitude !== null && school.longitude !== null
         ? distanceKm(home.latitude, home.longitude, school.latitude, school.longitude)
         : null;
-      return { ...school, score: programs[0]?.score ?? 0, distanceKm: distance, programs };
+      const best = programs[0];
+      return {
+        ...school,
+        score: best?.score ?? 0,
+        matchesMain: best?.matchesMain ?? false,
+        mainAffinity,
+        distanceKm: distance,
+        programs,
+      };
     })
     .filter((school) => school.programs.length > 0);
 
@@ -194,8 +307,11 @@ export const rankSchools = (
   const ranked = matching
     .filter((school) => maxDistanceKm === null || (school.distanceKm !== null && school.distanceKm <= maxDistanceKm))
     .sort((left, right) =>
+      Number(right.matchesMain) - Number(left.matchesMain) ||
       right.score - left.score ||
+      Number(right.mainAffinity) - Number(left.mainAffinity) ||
       (left.distanceKm ?? Number.POSITIVE_INFINITY) - (right.distanceKm ?? Number.POSITIVE_INFINITY) ||
+      right.programs.length - left.programs.length ||
       left.name.localeCompare(right.name, "cs"));
-  return { schools: ranked, withoutLocation };
+  return { schools: ranked, withoutLocation, mainInterest };
 };
