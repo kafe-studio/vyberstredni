@@ -2,7 +2,7 @@
 export const prerender = true;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { inspectionSource, schoolProgramSources, schoolProgramsSnapshotDate, schoolSnapshotDate, schoolSource, schools, uniqueSchoolPrograms } from "../../data/schools";
+import { dormitoryLabel, inspectionSource, schoolProgramSources, schoolProgramsSnapshotDate, schoolSnapshotDate, schoolSource, schools, uniqueSchoolPrograms } from "../../data/schools";
 import towns from "../../data/towns.json";
 import { cermatFor, cermatInfo } from "../../data/cermat";
 import { REGIONS } from "../../lib/regions";
@@ -72,6 +72,9 @@ const metadata = {
             {school.support && (
               <span class="inline-flex rounded-full bg-sky/25 px-3 py-1.5 text-sm font-medium text-ink">Škola {supportLabels[school.support]}</span>
             )}
+            {school.dormitory && (
+              <span class="inline-flex rounded-full bg-mint/40 px-3 py-1.5 text-sm font-medium text-ink">🛏️ Má internát</span>
+            )}
             <button id="favorite-school-btn" type="button" class="favorite-toggle inline-flex items-center gap-2 rounded-[3px] border border-border bg-card px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-primary/50 hover:text-primary" data-school-id={school.id} aria-pressed="false">
               <span class="favorite-icon text-sm">♡</span><span>Oblíbené</span>
             </button>
@@ -110,6 +113,13 @@ const metadata = {
             <p class="text-sm text-muted-foreground">Tematická oblast*</p>
             <p class="mt-2 text-lg font-semibold text-foreground">{school.focus}</p>
           </div>
+          {school.dormitory && (
+            <div class="rounded-[3px] border border-border bg-card p-4 sm:col-span-2">
+              <p class="text-sm text-muted-foreground">Ubytování</p>
+              <p class="mt-2 text-lg font-semibold text-foreground">🛏️ {dormitoryLabel(school.dormitory, school.town)}</p>
+              <p class="mt-1 text-sm text-muted-foreground">Škola provozuje vlastní {school.dormitory.kind} pro žáky, kteří dojíždějí z dálky. Volná místa a cenu ubytování ověř u školy.</p>
+            </div>
+          )}
         </div>
 
         <div class="mt-8 rounded-[3px] border border-border bg-card p-5">
@@ -494,6 +504,7 @@ const metadata = {
             ["Zřizovatel", item.founder],
             ["Adresa", item.address],
             ["Kapacita celé školy", item.capacity || "V rejstříku neuvedena"],
+            ["Internát / domov mládeže", item.dormitory || "Vlastní v rejstříku nemá"],
             ["IZO", item.izo],
             ["RED-IZO", item.redIzo],
             ["IČO", item.ico],

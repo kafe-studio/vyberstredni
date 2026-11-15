@@ -32,6 +32,21 @@ export const uniqueSchoolPrograms = <T extends Pick<SchoolProgram, "code" | "nam
   return [...unique.values()];
 };
 
+/** The school's own domov mládeže or internát, run by the same legal entity (Rejstřík škol MŠMT). */
+export type SchoolDormitory = { kind: string; beds: number | null; towns: string[] };
+
+const pluralBeds = (count: number) => (count === 1 ? "lůžko" : count >= 2 && count <= 4 ? "lůžka" : "lůžek");
+
+/** "Domov mládeže, 135 lůžek" plus the town when it is not the school's own; "" without one. */
+export const dormitoryLabel = (dormitory: SchoolDormitory | null, schoolTown: string): string => {
+  if (!dormitory) return "";
+  const kind = `${dormitory.kind.charAt(0).toLocaleUpperCase("cs")}${dormitory.kind.slice(1)}`;
+  const beds = dormitory.beds ? `, ${dormitory.beds.toLocaleString("cs-CZ")} ${pluralBeds(dormitory.beds)}` : "";
+  const elsewhere = dormitory.towns.filter((town) => town !== schoolTown);
+  const where = elsewhere.length && elsewhere.length === dormitory.towns.length ? ` (${elsewhere.join(", ")})` : "";
+  return `${kind}${beds}${where}`;
+};
+
 /** Latest Czech School Inspectorate (ČŠI) report for the school. */
 export type SchoolInspection = { date: string; reportUrl: string; portalUrl: string; count: number };
 
@@ -44,6 +59,7 @@ export type School = {
   /** Set for schools meant for pupils with disabilities or special educational needs. */
   support: SupportType | null;
   inspection: SchoolInspection | null;
+  dormitory: SchoolDormitory | null;
   type: SchoolType;
   focus: FocusArea;
   description: string;
@@ -111,6 +127,7 @@ export const schools: School[] = officialSchools.schools.map((record) => {
     town: record.town ?? "",
     support: classifySupport(record.name, currentCodes),
     inspection: record.inspection ?? null,
+    dormitory: record.dormitory ?? null,
     type,
     focus,
     description: `Oficiální záznam MŠMT. Typ zařízení: ${officialTypeLabel(record.officialTypeCode)}. Evidované obory jsou převzaty z exportu Rejstříku škol MŠMT.`,
@@ -171,6 +188,7 @@ export const toSchoolSummary = (school: School): SchoolSummary => ({
   region: school.region,
   town: school.town,
   support: school.support,
+  dormitory: dormitoryLabel(school.dormitory, school.town),
   type: school.type,
   focus: school.focus,
   founder: school.founder,

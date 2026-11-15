@@ -4,7 +4,7 @@ export const prerender = true;
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Character from "../components/Character.astro";
 import { withBase } from "../lib/urls";
-import { schoolSnapshotDate, schoolSource, schools, schoolsByName, uniqueSchoolPrograms } from "../data/schools";
+import { dormitoryLabel, schoolSnapshotDate, schoolSource, schools, schoolsByName, uniqueSchoolPrograms } from "../data/schools";
 import { REGIONS } from "../lib/regions";
 import { SUPPORT_TYPES, supportLabels } from "../lib/special-needs";
 import { SORT_KEYS, sortLabels } from "../lib/school-sort";
@@ -121,6 +121,7 @@ const metadata = {
                 <span class="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">{school.region}</span>
                 {school.badge && <span class="rounded-full bg-primary/10 px-2.5 py-1 text-primary">{school.badge}</span>}
                 {school.support && <span class="rounded-full bg-sky/25 px-2.5 py-1 text-ink">{supportLabels[school.support]}</span>}
+                {school.dormitory && <span class="rounded-full bg-mint/40 px-2.5 py-1 text-ink" title={dormitoryLabel(school.dormitory, school.town)}>🛏️ internát</span>}
               </div>
               <button type="button" class="favorite-toggle -m-1 p-1 text-xl leading-none text-muted-foreground transition hover:text-primary" data-school-id={school.id} aria-pressed="false" aria-label={`Přidat do oblíbených: ${school.name}`}>
                 <span class="favorite-icon" aria-hidden="true">♡</span>
@@ -272,6 +273,7 @@ const metadata = {
                 <span class="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">${escapeHtml(school.region)}</span>
                 ${badge ? `<span class="rounded-full bg-primary/10 px-2.5 py-1 text-primary">${badge}</span>` : ""}
                 ${school.support ? `<span class="rounded-full bg-sky/25 px-2.5 py-1 text-ink">${escapeHtml(supportLabels[school.support])}</span>` : ""}
+                ${school.dormitory ? `<span class="rounded-full bg-mint/40 px-2.5 py-1 text-ink" title="${escapeHtml(school.dormitory)}">🛏️ internát</span>` : ""}
               </div>
               <button type="button" class="favorite-toggle -m-1 p-1 text-xl leading-none text-muted-foreground transition hover:text-primary" data-school-id="${escapeHtml(school.id)}" aria-pressed="false" aria-label="Přidat do oblíbených: ${escapeHtml(school.name)}">
                 <span class="favorite-icon" aria-hidden="true">♡</span>

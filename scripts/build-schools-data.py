@@ -46,6 +46,8 @@ ADMISSION_PAGE = "https://data.cermat.gov.cz/data-a-analyticke-vystupy-jednotna-
 MATURITA_PAGE = "https://data.cermat.gov.cz/maturitni-zkouska/agregovana-data.html"
 
 SCHOOL_KINDS = {"C00": "střední škola", "D00": "konzervatoř"}
+# Register kinds of school accommodation, in label priority order.
+DORMITORY_KINDS = {"H22": "domov mládeže", "H21": "internát"}
 FOUNDERS = {
     "1": "státní",
     "2": "obecní",
@@ -374,6 +376,28 @@ def main() -> None:
             return places[0]
         return seat
 
+    def dormitory_of(entity: dict) -> dict | None:
+        """
+        The school's own accommodation: a domov mládeže (H22) or internát (H21, schools for pupils with disabilities)
+        run by the same legal entity. Separate dormitories serving many schools are other entities and not linked.
+        """
+        units = [component for component in entity.get("skolyAZarizeni") or [] if component.get("druh") in DORMITORY_KINDS]
+        if not units:
+            return None
+        beds = sum(
+            item.get("nejvyssiPovolenyPocet") or 0
+            for unit in units
+            for item in unit.get("kapacity") or []
+            if item.get("mernaJednotka") == "02"
+        )
+        towns = sorted({town_of(place.get("adresa")) for unit in units for place in unit.get("mistaVyuky") or []} - {""})
+        return {
+            # Domov mládeže wins the label when an entity has both.
+            "kind": next((DORMITORY_KINDS[code] for code in DORMITORY_KINDS if any(u["druh"] == code for u in units))),
+            "beds": beds or None,
+            "towns": towns,
+        }
+
     codes = [location_address(e, c).get("kodRUIAN") for e, c in raw]
     coordinates = load_coordinates([code for code in codes if code], cache / "ruian-coordinates.json", args.refresh)
 
@@ -432,6 +456,7 @@ def main() -> None:
             "latitude": lat_lon[0] if lat_lon else None,
             "longitude": lat_lon[1] if lat_lon else None,
             "inspection": inspections.get(red_izo),
+            "dormitory": dormitory_of(entity),
             "programs": programs,
         })
 
@@ -464,6 +489,7 @@ def main() -> None:
         "coordinateCount": sum(school["latitude"] is not None for school in schools),
         "inspectionSource": INSPECTION_URL,
         "inspectionCount": sum(school["inspection"] is not None for school in schools),
+        "dormitoryCount": sum(school["dormitory"] is not None for school in schools),
         "programSource": [REGISTER_URL],
         "programsExportedAt": export_date,
         "programCount": program_count,

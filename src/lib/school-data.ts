@@ -8,6 +8,8 @@ export type SchoolSummary = {
   region: string;
   town: string;
   support: SupportType | null;
+  /** The school's own domov mládeže or internát ("Domov mládeže, 135 lůžek"), "" without one. */
+  dormitory: string;
   type: string;
   focus: string;
   founder: string;
