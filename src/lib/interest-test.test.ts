@@ -4,6 +4,7 @@ import {
   emptyTotals,
   gymnasiumProfile,
   isNotForNinthGraders,
+  programCategories,
   programLevel,
   rankInterests,
   rankSchools,
@@ -193,8 +194,12 @@ describe("gymnázium track uses real gymnázium profiles", () => {
     const totals = { ...emptyTotals(), business: 5 };
     const result = rankSchools({ schools: summaries, programsById, totals, track: "general", primaryInterest: "business" });
     const obchodniAkademie = result.schools.find((school) => school.name.startsWith("Obchodní akademie a Gymnázium Bubeneč"));
-    const gymnazium = obchodniAkademie?.programs.find((program) => program.code.startsWith("79-41-K"));
-    expect(gymnazium?.categories).not.toContain("business");
+    expect(obchodniAkademie).toBeDefined();
+    expect(gymnasiumProfile(obchodniAkademie?.name ?? "")).not.toContain("business");
+    // The gymnázium is not a business program, so the card lists only the business ones.
+    for (const program of obchodniAkademie?.programs ?? []) {
+      if (program.code.startsWith("79-41-K")) expect(program.categories).not.toContain("business");
+    }
   });
 });
 
@@ -268,6 +273,28 @@ describe("detailed interests lead to the matching programs", () => {
     const programs = firstPrograms({ interest, subject: interest === "languages" ? "languages" : "practical", workplace: interest, activity: interest, track });
     expect(programs.length).toBeGreaterThan(0);
     for (const name of programs) expect(name).toMatch(expected);
+  });
+
+  it("lists only programs that really fit on a school's card", () => {
+    const schoolsForElectrician = recommend({ interest: "electro", subject: "practical", workplace: "building", activity: "electro", track: "vyucni", support: "none" }).schools;
+    for (const school of schoolsForElectrician.slice(0, 20)) {
+      for (const program of school.programs) expect(program.name).not.toMatch(/krejčí|kuchař|cukrář|kadeřník/i);
+    }
+  });
+
+  it("offers preschool pedagogy to a future kindergarten teacher", () => {
+    const [first] = recommend({ interest: "people", subject: "general", workplace: "people", activity: "people", track: "maturita", support: "none" }).schools;
+    expect(first?.programs[0]?.name).toMatch(/pedagog|sociální/i);
+  });
+
+  it("maps programs to the right interests", () => {
+    const categoriesOf = (code: string, name: string) => programCategories({ code, name, isPhasingOut: false });
+    expect(categoriesOf("82-44-P/01", "Ladění klavírů a příbuzných nástrojů")).toContain("music");
+    expect(categoriesOf("41-55-H/01", "Opravář zemědělských strojů")).not.toContain("nature");
+    expect(categoriesOf("41-43-H/01", "Chovatel cizokrajných zvířat")).toContain("nature");
+    expect(categoriesOf("21-55-H/01", "Slévač")).not.toContain("science");
+    expect(categoriesOf("53-41-H/01", "Ošetřovatel")).toContain("people");
+    expect(categoriesOf("68-43-M/01", "Veřejnosprávní činnost")).not.toContain("safety");
   });
 
   it("offers a language gymnázium to a language fan on the gymnázium track", () => {

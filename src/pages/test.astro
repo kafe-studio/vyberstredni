@@ -121,6 +121,10 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           <h2 class="mt-3 text-3xl font-extrabold">Tohle tě nejvíc baví</h2>
           <div id="top-interests" class="mt-4 flex flex-wrap gap-2"></div>
           <p id="results-note" class="mt-4 text-sm text-muted-foreground"></p>
+          <div id="track-hint" class="mt-4 rounded-[3px] bg-sun/60 p-4 text-sm font-semibold text-ink" hidden>
+            <p id="track-hint-text"></p>
+            <button id="switch-track" type="button" class="btn-primary mt-3 px-4 py-2 text-sm">Ukázat všechny typy škol</button>
+          </div>
           <div class="mt-5 flex flex-wrap gap-3">
             <button id="edit-answers" type="button" class="btn-outline">Změnit odpovědi</button>
             <button id="restart" type="button" class="btn-outline">🔄 Začít úplně od nuly</button>
@@ -478,6 +482,18 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
             ? `Tady jsme nic nenašli.${skipped}`
             : `${foundSchools(ranked.length)} ${supportFirst}${mainFirst}${gymnasiumNote}${order}${skipped}`;
         }
+        // The chosen kind of school may not teach the main interest at all (music on an apprenticeship, cars at a
+        // gymnázium). Say so and offer the same answers with any kind of school.
+        const trackHint = document.getElementById("track-hint");
+        const trackHintText = document.getElementById("track-hint-text");
+        const mainMissing = ranked.length === 0 || (mainLabel !== null && !ranked.some((school) => school.matchesMain));
+        if (trackHint && trackHintText) {
+          trackHint.hidden = !(mainMissing && track !== "any");
+          const trackName = track === "general" ? "Gympl" : track === "vyucni" ? "Učňák" : "Obor s maturitou";
+          trackHintText.textContent = mainLabel
+            ? `${trackName} na tvůj hlavní zájem (${mainLabel}) nic nemá. Zkus to bez ohledu na typ školy, ať vidíš, kde se to dá studovat.`
+            : `${trackName} tady nic nenašel. Zkus to bez ohledu na typ školy.`;
+        }
         if (recommendationsList) {
           recommendationsList.innerHTML = ranked.length
             ? ""
@@ -505,6 +521,21 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
       };
 
       showResultsButton?.addEventListener("click", () => void showResults());
+      document.getElementById("switch-track")?.addEventListener("click", () => {
+        const trackStep = steps.find((step) => step.dataset.question === "track");
+        answers.set("track", "any");
+        answersVersion += 1;
+        completed = false;
+        trackStep?.querySelectorAll<HTMLElement>(".quiz-option").forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.value === "any"));
+        });
+        persist();
+        // showResults only runs from the last step of a visible quiz.
+        results.hidden = true;
+        quiz.hidden = false;
+        showStep(totalSteps - 1, false);
+        void showResults();
+      });
       moreButton?.addEventListener("click", renderMore);
       document.getElementById("edit-answers")?.addEventListener("click", backToQuiz);
       const resetQuiz = () => {

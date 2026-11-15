@@ -64,7 +64,7 @@ export const emptyTotals = (): Record<Category, number> =>
 const categoryByCodeGroup: Partial<Record<string, Category[]>> = {
   "16": ["nature", "science"],
   "18": ["digital"],
-  "21": ["engineering", "science"],
+  "21": ["engineering"],
   "23": ["engineering"],
   "26": ["electro"],
   "29": ["practical"],
@@ -93,6 +93,8 @@ const nameRules: Partial<Record<string, Array<[RegExp, Category[]]>>> = {
   "26": [[/autoelektr/, ["cars"]], [/telekomunikace|spojový/, ["digital"]]],
   "28": [[/keram|sklář|bižuter|silikát/, ["design", "practical"]], [/chemi/, ["science"]]],
   "29": [[/analýza|technologie potravin/, ["science"]], [/kuchař|číšník|cukrář|pekař|řezník|gastronom/, ["hospitality"]]],
+  "21": [[/geotechnik/, ["science"]]],
+  "53": [[/ošetřovatel|pečovat/, ["people"]]],
   "36": [[/tesař/, ["wood", "practical"]], [/geodézie/, ["science"]]],
   "39": [
     [/požární|bezpečnost/, ["safety"]],
@@ -113,7 +115,7 @@ const nameRules: Partial<Record<string, Array<[RegExp, Category[]]>>> = {
     [/autoservis/, ["cars"]],
   ],
   "82": [
-    [/zpěv|hudb|tanec|dramat|hudebních nástrojů|varhan|herectví/, ["music"]],
+    [/zpěv|hudb|tanec|dramat|nástroj|klavír|varhan|herectví/, ["music"]],
     [/oděv|textil|obuvi|módních/, ["fashion", "design"]],
     [/truhlář|dřev|řezb/, ["wood", "design"]],
     [/maskér|vlásenk/, ["beauty", "design"]],
@@ -128,7 +130,7 @@ const lyceumCategories: Partial<Record<string, Category[]>> = {
   "78-42-M/03": ["people"],
   "78-42-M/04": ["health"],
   "78-42-M/05": ["science", "nature"],
-  "78-42-M/06": ["general", "people"],
+  "78-42-M/06": ["general"],
 };
 
 const programCategoryCache = new Map<string, Category[]>();
@@ -161,6 +163,8 @@ const computeProgramCategories = (program: CatalogProgram): Category[] => {
   if (codeGroup === "39" && categories.size === 0) categories.add("engineering");
   if (codeGroup === "82" && categories.size === 0) categories.add("design");
   if (codeGroup === "68" && categories.size === 0) categories.add("safety");
+  // Farm and forestry machinery is mechanics, not caring for animals or plants.
+  if (codeGroup === "41" && /opravář|mechaniz|strojů|kovář/.test(name)) categories.delete("nature");
 
   if (/-[EH]\//.test(program.code)) categories.add("practical");
   return [...categories];
@@ -344,11 +348,15 @@ export const rankSchools = ({
         right.score - left.score ||
         left.name.localeCompare(right.name, "cs");
 
-      let programs = uniqueByName(current
+      const fitting = uniqueByName(current
         .filter((program) => eligibleForQuiz(program.code, track, allowSupportLevels))
         .map(toMatched)
         .filter((program) => program.score > 0)
         .sort(byFit));
+      // A card lists only programs that really fit: those for the main interest and those scoring more than half of
+      // the best one. Otherwise an electrician fan sees "Elektrikář, Krejčí, Kuchař" just for liking manual work.
+      const bestScore = fitting[0]?.score ?? 0;
+      let programs = fitting.filter((program) => program.matchesMain || program.score * 2 > bestScore);
 
       // A school for a visual, hearing or physical disability is always listed: there are only a few of them in the
       // whole country, so its programs are shown even when they match neither the interests nor the track.
