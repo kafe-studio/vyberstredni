@@ -46,6 +46,10 @@ const finalIgnoreTitleTemplate = metadata?.ignoreTitleTemplate || false;
       startAnalytics();
     </script>
     <script>
+      import { rememberSchoolClick } from "../lib/return-link";
+      document.addEventListener("click", rememberSchoolClick);
+    </script>
+    <script>
       function setupReveal() {
         const vh = window.innerHeight;
         document.querySelectorAll(".reveal:not(.active)").forEach(el => {

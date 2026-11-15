@@ -167,7 +167,8 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
     import { computeTotals, primaryInterest, studyTrack, supportNeed } from "../lib/quiz-questions";
     import { isInCzechRepublic } from "../lib/regions";
     import { supportLabels } from "../lib/special-needs";
-    import { clearQuiz, loadQuiz, saveQuiz, type SavedHome } from "../lib/quiz-storage";
+    import { clearQuiz, clearResultsView, loadQuiz, loadResultsView, saveQuiz, saveResultsView, type SavedHome } from "../lib/quiz-storage";
+    import { clickedSchoolLink } from "../lib/return-link";
     import { track as trackEvent } from "../lib/analytics";
     import towns from "../data/towns.json";
 
@@ -391,7 +392,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         const href = withBase(`/skoly/${encodeURIComponent(school.id)}/`);
         const facts = schoolFacts(sortable(school), currentSort());
         return `
-          <article class="school-card p-5">
+          <article class="school-card p-5" data-school-id="${escapeHtml(school.id)}">
             <a class="text-lg font-semibold text-foreground hover:text-primary" href="${href}">${escapeHtml(school.name)}</a>
             <p class="mt-1 text-sm text-muted-foreground">${escapeHtml(school.region)}</p>
             ${facts.length ? `<p class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold text-ink/80">${facts.map((fact) => `<span>${escapeHtml(fact)}</span>`).join("")}</p>` : ""}
@@ -407,7 +408,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
               ${programs.map((program) => `<li class="flex gap-2"><span class="text-primary" aria-hidden="true">✓</span><span>${escapeHtml(program.name)}</span></li>`).join("")}
             </ul>
             ${more > 0 ? `<p class="mt-1 text-xs text-muted-foreground">+ ${more} ${pluralPrograms(more)}</p>` : ""}
-            <a class="mt-3 inline-block text-sm font-medium text-primary hover:underline" href="${href}">Detail školy →</a>
+            <a class="btn-primary mt-4 w-full sm:w-auto" href="${href}">Detail školy →</a>
           </article>`;
       };
 
@@ -431,6 +432,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
       };
       resultsSort?.addEventListener("change", () => {
         applySort();
+        clearResultsView();
         if (recommendationsList && ranked.length) recommendationsList.innerHTML = "";
         shown = 0;
         renderMore();
@@ -463,11 +465,20 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         const support = supportNeed(answerRecord);
         const maxDistance = home && maxDistanceSelect?.value ? Number(maxDistanceSelect.value) : null;
         const requestedVersion = answersVersion;
+        // Back from a school detail (or a reload): reopen the same sort, the same number of cards and that school.
+        // The card count and the school only make sense in the order they were saved with.
+        const savedView = restoring ? loadResultsView() : null;
+        const view = savedView && resultsSort && isSortKey(savedView.sort) && !(savedView.sort === "distance" && !home) ? savedView : null;
+        if (!restoring) clearResultsView();
         let withoutLocation: number;
         let mainInterest: Category | null;
 
         try {
           const [schools, programsById] = await loadData();
+          // CERMAT sorts need the figures, which load separately; without them the saved order would differ.
+          if (view && view.sort !== "match" && view.sort !== "distance") {
+            statsById = await loadSchoolStats().catch(() => statsById);
+          }
           if (requestedVersion !== answersVersion || currentStep !== totalSteps - 1 || quiz.hidden) {
             resetResultsButton();
             return;
@@ -487,6 +498,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           const distanceOption = resultsSort?.querySelector<HTMLOptionElement>('option[value="distance"]');
           if (distanceOption) distanceOption.disabled = !home;
           if (resultsSort && !home && resultsSort.value === "distance") resultsSort.value = "match";
+          if (view && resultsSort) resultsSort.value = view.sort;
           applySort();
           if (!restoring) {
             trackEvent("quiz_complete", {
@@ -559,12 +571,20 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         }
         shown = 0;
         renderMore();
+        // Render at least as many cards as before, and far enough to include the opened school if it moved.
+        const needed = view ? Math.max(view.shown, ranked.findIndex((school) => school.id === view.schoolId) + 1) : 0;
+        while (shown < needed && shown < ranked.length) renderMore();
+        // Used once: a later reload should not jump back to this school again.
+        if (view) clearResultsView();
 
         quiz.hidden = true;
         // The companion sits outside the quiz card; hide it together with the quiz.
         document.getElementById("step-companions")?.setAttribute("hidden", "");
         results.hidden = false;
         if (!restoring) results.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (view?.schoolId) {
+          recommendationsList?.querySelector(`.school-card[data-school-id="${CSS.escape(view.schoolId)}"]`)?.scrollIntoView({ block: "center" });
+        }
         resetResultsButton();
         completed = true;
         persist();
@@ -606,6 +626,12 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         void showResults();
       });
       moreButton?.addEventListener("click", renderMore);
+      recommendationsList?.addEventListener("click", (event) => {
+        // Only a school opened in this tab: a new tab leaves this list where it is.
+        if (!clickedSchoolLink(event) || !(event.target instanceof Element)) return;
+        const schoolId = event.target.closest<HTMLElement>(".school-card")?.dataset.schoolId;
+        if (schoolId) saveResultsView({ sort: currentSort(), shown, schoolId });
+      });
       document.getElementById("edit-answers")?.addEventListener("click", backToQuiz);
       const resetQuiz = () => {
         trackEvent("quiz_reset");

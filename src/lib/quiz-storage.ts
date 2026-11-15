@@ -1,3 +1,4 @@
+import { readHistoryValue, writeHistoryValue } from "./history-state";
 import { QUESTIONS } from "./quiz-questions";
 
 /**
@@ -86,4 +87,28 @@ export const clearQuiz = () => {
   } catch {
     // Nothing to clear when storage is unavailable.
   }
+  clearResultsView();
+};
+
+/**
+ * How the results looked when a school was opened from them: sort, number of cards shown and the school.
+ * Kept on the results page's history entry, so it comes back only on Back (or a reload), never on a new visit.
+ */
+export type ResultsView = { sort: string; shown: number; schoolId: string };
+const VIEW_KEY = "vyberstredniResultsView";
+
+export const saveResultsView = (view: ResultsView) => {
+  writeHistoryValue(VIEW_KEY, view);
+};
+
+export const loadResultsView = (): ResultsView | null => {
+  const value = readHistoryValue(VIEW_KEY);
+  if (!isRecord(value)) return null;
+  const { sort, shown, schoolId } = value;
+  if (typeof sort !== "string" || typeof schoolId !== "string" || typeof shown !== "number" || !Number.isInteger(shown) || shown < 0) return null;
+  return { sort, shown, schoolId };
+};
+
+export const clearResultsView = () => {
+  writeHistoryValue(VIEW_KEY, undefined);
 };

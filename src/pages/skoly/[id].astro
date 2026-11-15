@@ -60,7 +60,7 @@ const metadata = {
 <BaseLayout {metadata}>
   <section class="px-6 pb-20 pt-28 md:pt-32">
     <div class="mx-auto max-w-4xl">
-      <a href={withBase("/skoly/")} class="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">← Zpět na katalog škol</a>
+      <a id="back-link" href={withBase("/skoly/")} class="btn-outline">← Zpět na katalog škol</a>
       <article class="track-card reveal mt-6 p-8 md:p-10">
         <div class="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div>
@@ -371,6 +371,7 @@ const metadata = {
     import towns from "../../data/towns.json";
     import { loadHome, saveHome, type SavedHome } from "../../lib/quiz-storage";
     import { track } from "../../lib/analytics";
+    import { isPlainClick, returnTarget } from "../../lib/return-link";
 
     type GeolocatedSchool = SchoolSummary & { latitude: number; longitude: number };
     /* eslint-disable no-unused-vars */
@@ -397,7 +398,36 @@ const metadata = {
     type WindowWithLeaflet = Window & { L?: LeafletApi };
 
 
+    /** Back-link labels for the pages that list schools; any other site page gets a plain "Zpět". */
+    const backLabels: Array<[string, string]> = [
+      ["/test/", "Zpět na doporučené školy"],
+      ["/skoly/", "Zpět na katalog škol"],
+      ["/oblibene/", "Zpět na oblíbené školy"],
+      ["/obory/", "Zpět na obory"],
+    ];
+
+    const withSlash = (path: string) => (path.endsWith("/") ? path : `${path}/`);
+
+    /** Returns to the list this school was opened from (keeping its state and scroll), else links to the catalog. */
+    const setupBackLink = () => {
+      const backLink = document.getElementById("back-link");
+      const target = returnTarget();
+      if (!(backLink instanceof HTMLAnchorElement) || !target) return;
+      const originUrl = new URL(target.from, window.location.origin);
+      const label = backLabels.find(([path]) => withSlash(originUrl.pathname) === withBase(path))?.[1] ?? "Zpět";
+      backLink.textContent = `← ${label}`;
+      // A homepage answer in the URL would restart the quiz if this link were opened in a new tab.
+      originUrl.searchParams.delete("zajem");
+      backLink.href = `${originUrl.pathname}${originUrl.search}`;
+      backLink.addEventListener("click", (event) => {
+        if (!isPlainClick(event)) return;
+        event.preventDefault();
+        target.goBack();
+      });
+    };
+
     document.addEventListener("astro:page-load", () => {
+      setupBackLink();
       const positionElement = document.getElementById("school-position-data") as HTMLElement | null;
       if (!positionElement) return;
 
