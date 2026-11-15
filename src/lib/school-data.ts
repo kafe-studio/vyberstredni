@@ -30,6 +30,18 @@ export type SchoolProgramsById = Record<string, CatalogProgram[]>;
 
 export const SCHOOLS_DATA_PATH = "/data/schools.json";
 export const SCHOOL_PROGRAMS_DATA_PATH = "/data/school-programs.json";
+export const SCHOOL_STATS_DATA_PATH = "/data/school-stats.json";
+
+/** CERMAT figures per school (missing schools have no published data). */
+export type SchoolStats = {
+  /** Share of registered students who passed the common part of the maturita, in %. */
+  maturita: number | null;
+  /** Applications per place in the 1st admission round (day study). */
+  applicationsPerPlace: number | null;
+  /** Admitted students' average percentile in the unified entrance exam. */
+  percentile: number | null;
+};
+export type SchoolStatsById = Record<string, SchoolStats>;
 export const FAVORITES_KEY = "vyberstredni-favorites";
 
 // Module-level cache survives ClientRouter navigations, so each file is fetched once per visit.
@@ -49,6 +61,7 @@ const loadJson = (path: string): Promise<unknown> => {
 
 export const loadSchools = () => loadJson(SCHOOLS_DATA_PATH) as Promise<SchoolSummary[]>;
 export const loadSchoolPrograms = () => loadJson(SCHOOL_PROGRAMS_DATA_PATH) as Promise<SchoolProgramsById>;
+export const loadSchoolStats = () => loadJson(SCHOOL_STATS_DATA_PATH) as Promise<SchoolStatsById>;
 
 export const escapeHtml = (value: string) =>
   value.replace(/[&<>"']/g, (character) => ({

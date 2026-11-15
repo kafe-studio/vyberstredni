@@ -239,6 +239,22 @@ const recommendable = (code: string, allowSupportLevels: boolean) => {
 };
 
 /**
+ * How well a school fits the quiz answers: the best score among programs a 9th grader can enter.
+ * Used to sort the catalog; the quiz itself uses rankSchools with its track and support rules.
+ */
+export const schoolInterestScore = (schoolName: string, programs: readonly CatalogProgram[], totals: Record<Category, number>) => {
+  const profile = gymnasiumProfile(schoolName);
+  let best = 0;
+  for (const program of programs) {
+    if (program.isPhasingOut || !recommendable(program.code, false)) continue;
+    const base = programCategories(program);
+    const categories = programLevel(program.code) === "K" ? [...new Set([...base, ...profile])] : base;
+    best = Math.max(best, categories.reduce((sum, category) => sum + totals[category], 0));
+  }
+  return best;
+};
+
+/**
  * Programs the quiz may recommend for a study track. The gymnázium track also includes lycea:
  * they combine a general base with a focus, which is what "široký základ, pak vysoká" looks for.
  * With special support, praktická škola (C) counts like an apprenticeship.
