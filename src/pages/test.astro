@@ -25,9 +25,9 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
   <section class="px-6 pb-20 pt-28 md:pt-32">
     <div class="mx-auto max-w-2xl">
       <header class="mb-8 text-center">
-        <span class="sticker-note -rotate-2 bg-lime">6 otázek, asi 2 minuty</span>
+        <span class="sticker-note -rotate-2 bg-lime">6 otázek, zabere to asi 2 minuty</span>
         <h1 class="mt-4 text-4xl font-extrabold md:text-5xl">Test zájmů</h1>
-        <p class="mt-3 text-muted-foreground">{questions.length} krátkých otázek. Klikni na to, co tě nejvíc láká.</p>
+        <p class="mt-3 text-muted-foreground">Žádné šprtání, žádné špatné odpovědi. Prostě klikej, co tě láká.</p>
       </header>
 
       <div class="relative">
@@ -76,8 +76,8 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         ))}
 
         <section class="quiz-step" hidden>
-          <h2 class="text-2xl font-bold" tabindex="-1">Kde bydlíš?</h2>
-          <p class="mt-1 text-sm text-muted-foreground">Nepovinné. Pomůže seřadit školy podle vzdálenosti.</p>
+          <h2 class="text-2xl font-bold" tabindex="-1">Odkud budeš dojíždět?</h2>
+          <p class="mt-1 text-sm text-muted-foreground">Nepovinné. Školy ti pak seřadíme podle toho, jak daleko to máš.</p>
           <div class="mt-5 space-y-4">
             <div class="grid gap-3 sm:grid-cols-2">
               <label class="block">
@@ -97,7 +97,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
             <button id="geolocation-button" type="button" class="btn-outline w-full">📍 Použít moji polohu</button>
             <p id="home-status" class="text-sm text-muted-foreground" aria-live="polite"></p>
             <label id="distance-field" class="block" hidden>
-              <span class="mb-2 block text-sm font-medium">Jak daleko můžeš dojíždět?</span>
+              <span class="mb-2 block text-sm font-medium">Kolik max chceš dojíždět?</span>
               <select id="max-distance" class="w-full rounded-[6px] border-2 border-ink/60 bg-card px-3 py-3 text-ink">
                 <option value="">Nezáleží</option>
                 <option value="10">Do 10 km</option>
@@ -107,7 +107,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
               </select>
             </label>
           </div>
-          <button id="show-results" type="button" class="btn-primary mt-6 w-full">Zobrazit výsledky</button>
+          <button id="show-results" type="button" class="btn-primary mt-6 w-full">Ukaž moje školy</button>
         </section>
       </div>
       </div>
@@ -117,18 +117,18 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           <div class="pointer-events-none absolute -bottom-6 -right-6 hidden w-56 md:block" aria-hidden="true">
             <Character name="duo-hoodie-bun" class="w-full" />
           </div>
-          <span class="sticker-note -rotate-2 bg-sun">Výsledek testu</span>
-          <h2 class="mt-3 text-3xl font-extrabold">Tvoje hlavní zájmy</h2>
+          <span class="sticker-note -rotate-2 bg-sun">Hotovo!</span>
+          <h2 class="mt-3 text-3xl font-extrabold">Tohle tě nejvíc baví</h2>
           <div id="top-interests" class="mt-4 flex flex-wrap gap-2"></div>
           <p id="results-note" class="mt-4 text-sm text-muted-foreground"></p>
           <div class="mt-5 flex flex-wrap gap-3">
-            <button id="edit-answers" type="button" class="btn-outline">Upravit odpovědi</button>
-            <button id="restart" type="button" class="btn-outline">🔄 Resetovat test a bydliště</button>
+            <button id="edit-answers" type="button" class="btn-outline">Změnit odpovědi</button>
+            <button id="restart" type="button" class="btn-outline">🔄 Začít úplně od nuly</button>
           </div>
-          <p class="mt-3 text-xs text-muted-foreground">Odpovědi i bydliště si pamatujeme jen v tomto prohlížeči, dokud je neresetuješ.</p>
+          <p class="mt-3 text-xs text-muted-foreground">Odpovědi i bydliště si pamatuje jen tvůj prohlížeč, dokud je nesmažeš.</p>
         </div>
 
-        <h2 class="mb-4 mt-10 text-2xl font-extrabold">Doporučené školy</h2>
+        <h2 class="mb-4 mt-10 text-2xl font-extrabold">Školy, které by ti mohly sednout</h2>
         <div id="recommendations" class="space-y-4"></div>
         <button id="more-results" type="button" class="btn-outline mt-6 w-full" hidden>Zobrazit další školy</button>
         <p class="mt-8 text-xs leading-5 text-muted-foreground">
@@ -206,7 +206,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         steps.forEach((step, stepIndex) => { step.hidden = stepIndex !== currentStep; });
         if (stepLabel) {
           stepLabel.textContent = currentStep >= questionCount
-            ? "Poslední krok: bydliště"
+            ? "Poslední krok: odkud dojíždíš"
             : `Otázka ${currentStep + 1} z ${questionCount}`;
         }
         if (progressBar) progressBar.style.width = `${((currentStep + 1) / totalSteps) * 100}%`;
@@ -247,7 +247,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
       const resetResultsButton = () => {
         if (!showResultsButton) return;
         showResultsButton.disabled = false;
-        showResultsButton.textContent = "Zobrazit výsledky";
+        showResultsButton.textContent = "Ukaž moje školy";
       };
 
       quiz.addEventListener("click", (event) => {
@@ -314,7 +314,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
 
       geolocationButton?.addEventListener("click", () => {
         if (!navigator.geolocation) {
-          if (homeStatus) homeStatus.textContent = "Tento prohlížeč polohu nepodporuje. Vyber místo ze seznamu.";
+          if (homeStatus) homeStatus.textContent = "Tenhle prohlížeč polohu neumí. Vyber místo ze seznamu.";
           return;
         }
         if (homeStatus) homeStatus.textContent = "Zjišťuji polohu…";
@@ -324,26 +324,30 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           ({ coords }) => {
             if (request !== locationRequest) return;
             if (!isInCzechRepublic(coords.latitude, coords.longitude)) {
-              if (homeStatus) homeStatus.textContent = "Tvoje poloha je mimo Česko. Vyber kraj a obec ze seznamu.";
+              if (homeStatus) homeStatus.textContent = "Podle polohy nejsi v Česku. Vyber kraj a obec ze seznamu.";
               return;
             }
             if (homeRegionSelect) homeRegionSelect.value = "";
             fillTowns("");
             setHome(
               { label: "tvoje poloha", latitude: coords.latitude, longitude: coords.longitude, region: "", town: "" },
-              "✓ Použijeme tvoji aktuální polohu.",
+              "✓ Bereme tvoji aktuální polohu.",
             );
           },
           () => {
             // Keep whatever location was chosen before; only explain what happened.
             if (request !== locationRequest || !homeStatus) return;
-            homeStatus.textContent = "Polohu se nepodařilo zjistit. Vyber místo ze seznamu.";
+            homeStatus.textContent = "Polohu se nepovedlo zjistit. Vyber místo ze seznamu.";
           },
           { timeout: 10000, maximumAge: 300000 },
         );
       });
 
       const pluralPrograms = (count: number) => count === 1 ? "další obor" : count < 5 ? "další obory" : "dalších oborů";
+      /** "Našli jsme 1 školu, která…", "3 školy, které…", "12 škol, které…". */
+      const foundSchools = (count: number) => count === 1
+        ? "Našli jsme 1 školu, která ti může sednout."
+        : `Našli jsme ${count} ${count < 5 ? "školy" : "škol"}, které ti můžou sednout.`;
       const pluralSchools = (count: number) => count === 1 ? "škola" : count > 1 && count < 5 ? "školy" : "škol";
 
       const renderCard = (school: Recommendation, mainLabel: string | null) => {
@@ -365,7 +369,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
               ? `<p class="mt-3 inline-block rounded-full bg-lime/40 px-3 py-1 text-xs font-bold text-ink">🎯 Sedí k hlavnímu zájmu: ${escapeHtml(mainLabel)}</p>`
               : school.supportMatch
                 ? ""
-                : `<p class="mt-3 inline-block rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">Souvisí s dalšími zájmy</p>`}
+                : `<p class="mt-3 inline-block rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">Sedí k dalším zájmům</p>`}
             <ul class="mt-3 space-y-1 text-sm">
               ${programs.map((program) => `<li class="flex gap-2"><span class="text-primary" aria-hidden="true">✓</span><span>${escapeHtml(program.name)}</span></li>`).join("")}
             </ul>
@@ -391,7 +395,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
       const showResults = async (restoring = false) => {
         if (showResultsButton) {
           showResultsButton.disabled = true;
-          showResultsButton.textContent = "Hledám školy…";
+          showResultsButton.textContent = "Hledám ti školy…";
         }
 
         // Same scoring as the unit tests: weights and questions come from src/lib/quiz-questions.ts.
@@ -436,7 +440,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           withoutLocation = result.withoutLocation;
           mainInterest = result.mainInterest;
         } catch {
-          if (homeStatus) homeStatus.textContent = "Data škol se nepodařilo načíst. Zkontroluj připojení a zkus to znovu.";
+          if (homeStatus) homeStatus.textContent = "Školy se nepovedlo načíst. Mrkni na připojení a zkus to znovu.";
           resetResultsButton();
           return;
         }
@@ -445,7 +449,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         mainLabel = mainInterest ? categoryLabels[mainInterest] : null;
         const top = rankInterests(totals, primary).slice(0, 3).map((category) => categoryLabels[category]);
         if (topInterests) {
-          topInterests.innerHTML = (top.length ? top : ["Zatím bez jasného směru"])
+          topInterests.innerHTML = (top.length ? top : ["Zatím nic jasného, a to je v pohodě"])
             .map((label, index) => `<span class="font-hand rounded-[2px] px-3 py-0.5 text-2xl font-bold odd:-rotate-1 even:rotate-1 ${["bg-primary text-white", "bg-sun text-ink", "bg-mint text-ink"][index] ?? "bg-white text-ink"}">${escapeHtml(label)}</span>`)
             .join("");
         }
@@ -457,27 +461,27 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           const mainFirst = ranked.length === 0
             ? ""
             : mainLabel && ranked.some((school) => school.matchesMain)
-            ? `Nahoře jsou školy s obory pro tvůj hlavní zájem (${mainLabel}), pak další.`
+            ? `Nahoře jsou školy, kde se učí to, co tě baví nejvíc (${mainLabel}). Pod nimi další.`
             : mainLabel
-              ? `Pro tvůj hlavní zájem (${mainLabel}) jsme v tomto výběru nenašli vhodný obor, ukazujeme školy podle dalších zájmů.`
+              ? `Na tvůj hlavní zájem (${mainLabel}) jsme tady nic nenašli, tak ukazujeme školy podle dalších zájmů.`
               : "";
           const gymnasiumNote = track === "general"
-            ? " Gymnázium je všeobecné, proto ti k němu ukazujeme i lycea: maturitní obory se širokým základem a zaměřením podle tvého zájmu."
+            ? " Gympl je všeobecný, proto ukazujeme i lycea: taky dají široký základ, ale k tomu zaměření podle toho, co tě baví."
             : "";
           const order = home
-            ? ` Při stejné shodě rozhoduje vzdálenost od: ${home.label}${maxDistance ? ` (do ${maxDistance} km)` : ""}.`
-            : " Když vyplníš bydliště, seřadíme ti školy i podle vzdálenosti.";
+            ? ` Když školy sedí stejně, vyhrává ta blíž k: ${home.label}${maxDistance ? ` (max ${maxDistance} km)` : ""}.`
+            : " Když vyplníš, odkud dojíždíš, seřadíme školy i podle vzdálenosti.";
           const skipped = withoutLocation > 0
             ? ` ${withoutLocation} ${pluralSchools(withoutLocation)} bez známé polohy jsme v limitu vzdálenosti nemohli započítat.`
             : "";
           resultsNote.textContent = ranked.length === 0
-            ? `Žádná škola s vhodným oborem.${skipped}`
-            : `${ranked.length} ${pluralSchools(ranked.length)} s vhodným oborem. ${supportFirst}${mainFirst}${gymnasiumNote}${order}${skipped}`;
+            ? `Tady jsme nic nenašli.${skipped}`
+            : `${foundSchools(ranked.length)} ${supportFirst}${mainFirst}${gymnasiumNote}${order}${skipped}`;
         }
         if (recommendationsList) {
           recommendationsList.innerHTML = ranked.length
             ? ""
-            : `<p class="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">${maxDistance ? "V této vzdálenosti jsme nenašli školu s vhodným oborem. Zkus delší dojezd." : "Nenašli jsme školu s vhodným oborem. Zkus upravit odpovědi."}</p>`;
+            : `<p class="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">${maxDistance ? "Takhle blízko nic není. Zkus delší dojíždění." : "Nic jsme nenašli. Zkus změnit odpovědi."}</p>`;
         }
         shown = 0;
         renderMore();
@@ -541,7 +545,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           // The town list can change between data updates; drop a home that no longer exists.
           setHome(homeSelect.value && homeSelect.value === savedHome.town ? savedHome : null, "");
         } else if (savedHome && !savedHome.region) {
-          setHome(savedHome, "✓ Použijeme tvoji uloženou polohu.");
+          setHome(savedHome, "✓ Bereme tvoji uloženou polohu.");
         } else {
           setHome(null, "");
         }

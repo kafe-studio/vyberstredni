@@ -89,7 +89,7 @@ const remainingQuestions = QUESTIONS.length - 1;
           <div class="h-full rounded-full" style={`width: ${100 / (QUESTIONS.length + 1)}%; background: repeating-linear-gradient(-45deg, var(--primary) 0 10px, #d9493f 10px 20px)`}></div>
         </div>
         <h2 id="quiz-start-heading" class="mt-5 text-2xl font-extrabold sm:text-3xl">{firstQuestion.prompt}</h2>
-        <p class="mt-1 text-sm text-muted-foreground">Klikni na odpověď a test pokračuje. Zbývá {remainingQuestions} krátkých otázek.</p>
+        <p class="mt-1 text-sm text-muted-foreground">Klikni a jedeš dál. Zbývá už jen {remainingQuestions} otázek.</p>
         <div class="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
           {firstQuestion.options.map((option) => (
             <a
