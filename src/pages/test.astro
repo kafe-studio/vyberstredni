@@ -81,6 +81,9 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         <section class="quiz-step" hidden>
           <h2 class="text-2xl font-bold" tabindex="-1">Odkud budeš dojíždět?</h2>
           <p class="mt-1 text-sm text-muted-foreground">Nepovinné. Školy ti pak seřadíme podle toho, jak daleko to máš.</p>
+          <p id="home-missing-note" class="mt-3 rounded-[3px] bg-sun/50 px-3 py-2 text-sm font-semibold text-ink">
+            ⚠️ Když nevybereš, kde bydlíš, školy nebudou seřazené podle vzdálenosti.
+          </p>
           <div class="mt-5 space-y-4">
             <div class="grid gap-3 sm:grid-cols-2">
               <label class="block">
@@ -91,7 +94,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
                 </select>
               </label>
               <label class="block">
-                <span class="mb-2 block text-sm font-medium">Obec</span>
+                <span id="home-town-label" class="mb-2 block text-sm font-medium">Obec</span>
                 <select id="home-select" class="w-full rounded-[6px] border-2 border-ink/60 bg-card px-3 py-3 text-ink disabled:opacity-60" disabled>
                   <option value="">Nejdřív vyber kraj</option>
                 </select>
@@ -258,12 +261,22 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         if (resetQuizButton) resetQuizButton.hidden = answers.size === 0 && !home;
       };
 
+      const homeMissingNote = document.getElementById("home-missing-note");
+      const homeTownLabel = document.getElementById("home-town-label");
+      /** Prague is picked by district, other regions by municipality. */
+      const townWord = (region: string) => region === "Praha" ? "obvod" : "obec";
+
       const setHome = (location: SavedHome | null, message: string) => {
         home = location;
         if (homeStatus) homeStatus.textContent = message;
         if (distanceField) distanceField.hidden = location === null;
+        if (homeMissingNote) homeMissingNote.hidden = location !== null;
+        homeSelect?.classList.remove("border-error!");
         persist();
       };
+
+      /** A chosen region without a municipality (or Prague district) is not a home; ask for the rest. */
+      const homeIncomplete = () => Boolean(homeRegionSelect?.value) && home === null;
 
       const resetResultsButton = () => {
         if (!showResultsButton) return;
@@ -301,8 +314,9 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         const regionTowns = towns
           .filter((town) => town.region === region)
           .sort((left, right) => left.name.localeCompare(right.name, "cs", { numeric: true }));
+        if (homeTownLabel) homeTownLabel.textContent = region === "Praha" ? "Obvod" : "Obec";
         homeSelect.replaceChildren(
-          new Option(region ? "Vyber obec…" : "Nejdřív vyber kraj", ""),
+          new Option(region ? `Vyber ${townWord(region)}…` : "Nejdřív vyber kraj", ""),
           ...regionTowns.map((town) => {
             const option = new Option(town.name, `${town.region}|${town.name}`);
             option.dataset.latitude = String(town.latitude);
@@ -564,7 +578,18 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         quiz.scrollIntoView({ behavior: "smooth", block: "start" });
       };
 
-      showResultsButton?.addEventListener("click", () => void showResults());
+      showResultsButton?.addEventListener("click", () => {
+        if (homeIncomplete()) {
+          const region = homeRegionSelect?.value ?? "";
+          if (homeStatus) {
+            homeStatus.textContent = `Vyber ještě ${townWord(region)}${region === "Praha" ? "" : " v kraji"}, jinak nepoznáme, jak daleko to máš. Nebo kraj zruš a pokračuj bez bydliště.`;
+          }
+          homeSelect?.classList.add("border-error!");
+          homeSelect?.focus();
+          return;
+        }
+        void showResults();
+      });
       document.getElementById("switch-track")?.addEventListener("click", () => {
         const trackStep = steps.find((step) => step.dataset.question === "track");
         answers.set("track", "any");
