@@ -74,8 +74,8 @@ const metadata = {
             {school.support && (
               <span class="inline-flex rounded-full bg-sky/25 px-3 py-1.5 text-sm font-medium text-ink">Škola {supportLabels[school.support]}</span>
             )}
-            {tuition === "may-charge" && (
-              <span class="inline-flex rounded-full bg-sun/60 px-3 py-1.5 text-sm font-medium text-ink">💰 Může mít školné</span>
+            {tuition === "private" && (
+              <span class="inline-flex rounded-full bg-sun/60 px-3 py-1.5 text-sm font-medium text-ink">💰 {tuitionLabels.private}</span>
             )}
             {school.dormitory && (
               <span class="inline-flex rounded-full bg-mint/40 px-3 py-1.5 text-sm font-medium text-ink">🛏️ Má internát</span>
@@ -119,9 +119,9 @@ const metadata = {
             <p class="mt-2 text-lg font-semibold text-foreground">{school.focus}</p>
           </div>
           {tuition && (
-            <div class:list={["rounded-[3px] border p-4 sm:col-span-2", tuition === "free" ? "border-border bg-card" : "border-ink/40 bg-sun/30"]}>
+            <div class:list={["rounded-[3px] border p-4 sm:col-span-2", tuition === "private" ? "border-ink/40 bg-sun/30" : "border-border bg-card"]}>
               <p class="text-sm text-muted-foreground">Školné</p>
-              <p class="mt-2 text-lg font-semibold text-foreground">{tuition === "free" ? "✓" : "💰"} {tuitionLabels[tuition]}</p>
+              <p class="mt-2 text-lg font-semibold text-foreground">{tuition === "free" ? "✓ " : tuition === "private" ? "💰 " : ""}{tuitionLabels[tuition]}</p>
               <p class="mt-1 text-sm text-muted-foreground">
                 {tuitionNotes[tuition]} <a class="underline" href={TUITION_LAW_URL} target="_blank" rel="noopener">Znění zákona</a>
               </p>
