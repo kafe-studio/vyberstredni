@@ -2,6 +2,12 @@ import officialSchools from "./official-schools.json";
 import type { CatalogProgram, SchoolSummary } from "../lib/school-data";
 import { REGIONS, regionFromRegister, type Region } from "../lib/regions";
 import { classifySupport, type SupportType } from "../lib/special-needs";
+import { tuitionNotes, tuitionOf } from "../lib/tuition";
+
+const tuitionNote = (founderCode: string) => {
+  const tuition = tuitionOf(founderCode);
+  return tuition ? tuitionNotes[tuition] : "Školné ověř přímo u školy.";
+};
 
 export const SCHOOL_REGIONS = REGIONS;
 export const SCHOOL_TYPES = ["gymnázium", "střední škola", "odborné lyceum", "učiliště", "konzervatoř"] as const;
@@ -136,7 +142,7 @@ export const schools: School[] = officialSchools.schools.map((record) => {
       ? `${record.capacity} míst (celková kapacita školy v rejstříku)`
       : "V rejstříku neuvedena",
     commute: "Dojezd závisí na místě bydliště a spojení.",
-    fee: "Školné ověř přímo u školy.",
+    fee: tuitionNote(record.founderCode),
     tags: [type, founder, focus],
     audience: [],
     idealStudent: "Oficiální rejstřík tento údaj neuvádí.",

@@ -8,6 +8,7 @@ import { cermatFor, cermatInfo } from "../../data/cermat";
 import { REGIONS } from "../../lib/regions";
 import { supportLabels } from "../../lib/special-needs";
 import { withBase } from "../../lib/urls";
+import { TUITION_LAW_URL, tuitionLabels, tuitionNotes, tuitionOf } from "../../lib/tuition";
 
 const typeLabels = {
   gymnázium: "Gymnázium",
@@ -35,6 +36,7 @@ const regionTowns = towns
   .sort((left, right) => left.name.localeCompare(right.name, "cs", { numeric: true }));
 const defaultTown = regionTowns.find((town) => town.name === school.town) ?? regionTowns[0];
 const inspection = school.inspection;
+const tuition = tuitionOf(school.founderCode);
 const cermat = cermatFor(school.id);
 const maturita = cermat?.maturita ?? null;
 const admissionOf = (code: string) => cermat?.admission[code] ?? null;
@@ -71,6 +73,9 @@ const metadata = {
             <span class="inline-flex rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-muted-foreground">{school.region}</span>
             {school.support && (
               <span class="inline-flex rounded-full bg-sky/25 px-3 py-1.5 text-sm font-medium text-ink">Škola {supportLabels[school.support]}</span>
+            )}
+            {tuition === "may-charge" && (
+              <span class="inline-flex rounded-full bg-sun/60 px-3 py-1.5 text-sm font-medium text-ink">💰 Může mít školné</span>
             )}
             {school.dormitory && (
               <span class="inline-flex rounded-full bg-mint/40 px-3 py-1.5 text-sm font-medium text-ink">🛏️ Má internát</span>
@@ -113,6 +118,15 @@ const metadata = {
             <p class="text-sm text-muted-foreground">Tematická oblast*</p>
             <p class="mt-2 text-lg font-semibold text-foreground">{school.focus}</p>
           </div>
+          {tuition && (
+            <div class:list={["rounded-[3px] border p-4 sm:col-span-2", tuition === "free" ? "border-border bg-card" : "border-ink/40 bg-sun/30"]}>
+              <p class="text-sm text-muted-foreground">Školné</p>
+              <p class="mt-2 text-lg font-semibold text-foreground">{tuition === "free" ? "✓" : "💰"} {tuitionLabels[tuition]}</p>
+              <p class="mt-1 text-sm text-muted-foreground">
+                {tuitionNotes[tuition]} <a class="underline" href={TUITION_LAW_URL} target="_blank" rel="noopener">Znění zákona</a>
+              </p>
+            </div>
+          )}
           {school.dormitory && (
             <div class="rounded-[3px] border border-border bg-card p-4 sm:col-span-2">
               <p class="text-sm text-muted-foreground">Ubytování</p>
@@ -382,6 +396,7 @@ const metadata = {
     import { loadHome, saveHome, type SavedHome } from "../../lib/quiz-storage";
     import { track } from "../../lib/analytics";
     import { isPlainClick, returnTarget } from "../../lib/return-link";
+    import { tuitionBadge } from "../../lib/tuition";
 
     type GeolocatedSchool = SchoolSummary & { latitude: number; longitude: number };
     /* eslint-disable no-unused-vars */
@@ -504,6 +519,7 @@ const metadata = {
             ["Zřizovatel", item.founder],
             ["Adresa", item.address],
             ["Kapacita celé školy", item.capacity || "V rejstříku neuvedena"],
+            ["Školné", tuitionBadge(item.founderCode) ?? "Ověř u školy"],
             ["Internát / domov mládeže", item.dormitory || "Vlastní v rejstříku nemá"],
             ["IZO", item.izo],
             ["RED-IZO", item.redIzo],
