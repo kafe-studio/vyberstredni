@@ -33,6 +33,21 @@ const { showQuizBanner = true } = Astro.props;
       <div>
         <p class="font-hand text-4xl font-bold leading-none">vyber<span class="text-[#ff8f86]">střední</span></p>
         <p class="mt-3 max-w-sm text-sm leading-relaxed text-white/70">{siteConfig.description}</p>
+        <section class="mt-6 flex items-center gap-4" aria-labelledby="footer-support-heading">
+          <img
+            src={withBase(siteConfig.support.qrImage)}
+            alt={`QR kód pro platbu příspěvku na účet ${siteConfig.support.account}`}
+            width="600"
+            height="600"
+            loading="lazy"
+            class="w-28 shrink-0 rounded-lg bg-white"
+          />
+          <div class="text-sm">
+            <h2 id="footer-support-heading" class="text-xs font-bold uppercase tracking-widest text-white/50">Podpořte projekt</h2>
+            <p class="mt-2 leading-relaxed text-white/70">Nekomerční projekt, příspěvek libovolnou částkou pomůže dalšímu rozvoji.</p>
+            <p class="mt-2 text-white/70">Účet: <span class="select-all font-bold text-white">{siteConfig.support.account}</span></p>
+          </div>
+        </section>
       </div>
       <address class="not-italic" aria-labelledby="footer-contact-heading">
         <h2 id="footer-contact-heading" class="text-xs font-bold uppercase tracking-widest text-white/50">Kontakt</h2>
@@ -43,9 +58,6 @@ const { showQuizBanner = true } = Astro.props;
           </li>
           <li><a href={`mailto:${siteConfig.email}`} class="text-white/80 hover:text-white hover:underline">✉️ {siteConfig.email}</a></li>
           <li><a href={`tel:${siteConfig.phone.replace(/\s+/g, "")}`} class="text-white/80 hover:text-white hover:underline">📞 {siteConfig.phone}</a></li>
-          <li>
-            <button type="button" data-support-open class="font-semibold text-sun hover:underline">💛 Podpořit projekt</button>
-          </li>
           <li class="flex gap-4 pt-1">
             <a href={siteConfig.socialLinks.instagram} target="_blank" rel="noopener" class="text-white/80 hover:text-white hover:underline">Instagram</a>
             <a href={siteConfig.socialLinks.facebook} target="_blank" rel="noopener" class="text-white/80 hover:text-white hover:underline">Facebook</a>

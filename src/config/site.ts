@@ -13,6 +13,12 @@ export const siteConfig = {
   phone: "+420 739 238 874",
   email: "kacirek.jiri@gmail.com",
   address: "",
+  /** Donation account; the QR image (QR Platba) encodes the same IBAN. */
+  support: {
+    account: "2877598001/5500",
+    iban: "CZ40 5500 0000 0028 7759 8001",
+    qrImage: "/images/support-qr.jpg",
+  },
   socialLinks: {
     instagram: "https://instagram.com/georgeduckling",
     facebook: "https://www.facebook.com/jirikacirekzhostomic",
