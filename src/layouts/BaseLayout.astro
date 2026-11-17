@@ -9,6 +9,7 @@ import Seo from "../components/seo/Seo.astro";
 import Schema from "../components/seo/Schema.astro";
 import Navbar from "../components/layout/Navbar.astro";
 import Footer from "../components/layout/Footer.astro";
+import SupportPanel from "../components/layout/SupportPanel.astro";
 import { ClientRouter } from "astro:transitions";
 import { Font } from "astro:assets";
 import "../styles/global.css";
@@ -41,6 +42,7 @@ const finalIgnoreTitleTemplate = metadata?.ignoreTitleTemplate || false;
       <main id="main-content" class="relative grow"><slot /></main>
       <Footer showQuizBanner={showQuizBanner} />
     </div>
+    <SupportPanel />
     <script>
       import { startAnalytics } from "../lib/analytics";
       startAnalytics();

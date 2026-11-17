@@ -43,6 +43,9 @@ const { showQuizBanner = true } = Astro.props;
           </li>
           <li><a href={`mailto:${siteConfig.email}`} class="text-white/80 hover:text-white hover:underline">✉️ {siteConfig.email}</a></li>
           <li><a href={`tel:${siteConfig.phone.replace(/\s+/g, "")}`} class="text-white/80 hover:text-white hover:underline">📞 {siteConfig.phone}</a></li>
+          <li>
+            <button type="button" data-support-open class="font-semibold text-sun hover:underline">💛 Podpořit projekt</button>
+          </li>
           <li class="flex gap-4 pt-1">
             <a href={siteConfig.socialLinks.instagram} target="_blank" rel="noopener" class="text-white/80 hover:text-white hover:underline">Instagram</a>
             <a href={siteConfig.socialLinks.facebook} target="_blank" rel="noopener" class="text-white/80 hover:text-white hover:underline">Facebook</a>
