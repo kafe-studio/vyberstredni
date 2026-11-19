@@ -1,5 +1,6 @@
 import { withBase } from "./urls";
 import type { SupportType } from "./special-needs";
+import { PROGRAM_OUTLOOK_DATA_PATH, type ProgramOutlookData } from "./program-outlook";
 
 /** Compact school record shared by the catalog, detail, favorites, programs and quiz pages. */
 export type SchoolSummary = {
@@ -64,6 +65,7 @@ const loadJson = (path: string): Promise<unknown> => {
 export const loadSchools = () => loadJson(SCHOOLS_DATA_PATH) as Promise<SchoolSummary[]>;
 export const loadSchoolPrograms = () => loadJson(SCHOOL_PROGRAMS_DATA_PATH) as Promise<SchoolProgramsById>;
 export const loadSchoolStats = () => loadJson(SCHOOL_STATS_DATA_PATH) as Promise<SchoolStatsById>;
+export const loadProgramOutlook = () => loadJson(PROGRAM_OUTLOOK_DATA_PATH) as Promise<ProgramOutlookData>;
 
 export const escapeHtml = (value: string) =>
   value.replace(/[&<>"']/g, (character) => ({

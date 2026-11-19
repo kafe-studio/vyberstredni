@@ -87,6 +87,24 @@ const metadata = {
           <div id="program-results" hidden>
             <h2 id="selected-program-name" class="text-2xl font-bold" tabindex="-1"></h2>
             <p id="selected-program-count" class="mt-1 text-muted-foreground"></p>
+            <div id="program-outlook" class="mt-5 grid gap-4 md:grid-cols-2" aria-live="polite" hidden>
+              <section class="rounded-[3px] border border-border bg-card p-4">
+                <h3 class="font-display text-lg font-extrabold">💼 Uplatnění v praxi</h3>
+                <p id="outlook-employment" class="mt-2 text-sm leading-6 text-foreground"></p>
+                <p id="outlook-occupations-title" class="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Navazující povolání</p>
+                <ul id="outlook-occupations" class="mt-1.5 flex flex-wrap gap-1.5"></ul>
+              </section>
+              <section class="rounded-[3px] border border-border bg-card p-4">
+                <h3 class="font-display text-lg font-extrabold">📈 Poptávka na trhu práce</h3>
+                <p id="outlook-demand-label" class="mt-2"></p>
+                <p id="outlook-demand-summary" class="mt-2 text-sm leading-6 text-foreground"></p>
+                <p class="mt-3 text-xs leading-5 text-muted-foreground">
+                  Hodnocení vychází z nezaměstnanosti čerstvých absolventů evidovaných na úřadech práce v porovnání s průměrem stejného typu vzdělání.
+                </p>
+              </section>
+              <p id="outlook-sources" class="text-xs leading-5 text-muted-foreground md:col-span-2"></p>
+            </div>
+            <p id="outlook-status" class="mt-3 text-xs text-muted-foreground" aria-live="polite"></p>
             <ul id="program-school-list" class="mt-5 divide-y divide-border overflow-hidden rounded-[3px] border border-border bg-card"></ul>
             <div id="program-map" class="mt-5 h-80 w-full overflow-hidden rounded-[3px] border border-border shadow-paper"></div>
             <p id="program-map-status" class="mt-2 text-xs text-muted-foreground" aria-live="polite"></p>
@@ -106,7 +124,8 @@ const metadata = {
   <div id="program-data" data-programs={JSON.stringify(programCatalog)} hidden></div>
   <script>
     import { withBase } from "../lib/urls";
-    import { escapeHtml, loadSchools, type SchoolSummary } from "../lib/school-data";
+    import { escapeHtml, loadProgramOutlook, loadSchools, type SchoolSummary } from "../lib/school-data";
+    import type { DemandLevel, ProgramOutlookData } from "../lib/program-outlook";
     import { track } from "../lib/analytics";
 
     type Program = { code: string; name: string; kind: string; schoolIds: string[] };
@@ -130,6 +149,18 @@ const metadata = {
 
     const pluralSchools = (count: number) => count === 1 ? "1 škola" : count > 1 && count < 5 ? `${count} školy` : `${count} škol`;
     const pluralPrograms = (count: number) => count === 1 ? "1 obor" : count > 1 && count < 5 ? `${count} obory` : `${count} oborů`;
+    const pluralOccupations = (count: number) => count === 1 ? "1 další" : count > 1 && count < 5 ? `${count} další` : `${count} dalších`;
+    const demandClasses: Record<DemandLevel, string> = {
+      high: "bg-mint/50",
+      average: "bg-sun/60",
+      low: "bg-peach/70",
+    };
+    const czechDate = (isoDate: string) => {
+      const [year, month, day] = isoDate.split("-").map(Number);
+      return year && month && day ? `${day}. ${month}. ${year}` : isoDate;
+    };
+    const externalLink = (url: string, text: string) =>
+      `<a class="underline" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(text)}</a>`;
 
     document.addEventListener("astro:page-load", () => {
       const payload = document.getElementById("program-data");
@@ -150,6 +181,14 @@ const metadata = {
       const mapStatus = document.getElementById("program-map-status");
       const mapElement = document.getElementById("program-map");
       const leaflet = (window as WindowWithLeaflet).L;
+      const outlookBox = document.getElementById("program-outlook");
+      const outlookStatus = document.getElementById("outlook-status");
+      const outlookEmployment = document.getElementById("outlook-employment");
+      const outlookOccupationsTitle = document.getElementById("outlook-occupations-title");
+      const outlookOccupations = document.getElementById("outlook-occupations");
+      const outlookDemandLabel = document.getElementById("outlook-demand-label");
+      const outlookDemandSummary = document.getElementById("outlook-demand-summary");
+      const outlookSources = document.getElementById("outlook-sources");
 
       let schoolsById = new Map<string, SchoolSummary>();
       let schoolsLoaded = false;
@@ -220,6 +259,56 @@ const metadata = {
         if (points.length) map.fitBounds(points, { padding: [24, 24], maxZoom: 12 });
       };
 
+      const renderOutlook = (program: Program, data: ProgramOutlookData) => {
+        if (!outlookBox || !outlookEmployment || !outlookOccupationsTitle || !outlookOccupations || !outlookDemandLabel ||
+          !outlookDemandSummary || !outlookSources) return;
+        const outlook = data.programs[program.code];
+        if (!outlook) {
+          outlookBox.hidden = true;
+          if (outlookStatus) outlookStatus.textContent = "";
+          return;
+        }
+        outlookEmployment.textContent = outlook.employment ||
+          "Popis uplatnění absolventů pro tento obor zatím Národní pedagogický institut nezveřejnil.";
+        outlookOccupationsTitle.hidden = outlook.occupations.length === 0;
+        outlookOccupations.innerHTML = [
+          ...outlook.occupations.map((name) => `<li class="rounded-full bg-lilac/50 px-2.5 py-1 text-xs text-ink">${escapeHtml(name)}</li>`),
+          ...(outlook.moreOccupations > 0
+            ? [`<li class="px-1 py-1 text-xs text-muted-foreground">a ${pluralOccupations(outlook.moreOccupations)}</li>`]
+            : []),
+        ].join("");
+        if (outlook.demand) {
+          outlookDemandLabel.innerHTML =
+            `<span class="inline-flex rounded-full ${demandClasses[outlook.demand.level]} px-3 py-1.5 text-sm font-semibold text-ink">${escapeHtml(outlook.demand.label)}</span>`;
+          outlookDemandSummary.textContent = outlook.demand.summary;
+        } else {
+          outlookDemandLabel.innerHTML =
+            `<span class="inline-flex rounded-full bg-muted px-3 py-1.5 text-sm font-semibold text-muted-foreground">Bez hodnocení</span>`;
+          outlookDemandSummary.textContent = outlook.demandNote;
+        }
+        const links = [
+          outlook.cardUrl ? externalLink(outlook.cardUrl, "karta oboru") : "",
+          outlook.statsUrl ? externalLink(outlook.statsUrl, "nezaměstnanost absolventů") : "",
+        ].filter(Boolean);
+        outlookSources.innerHTML = `Zdroj: ${externalLink(data.sourceUrl, data.source)}${links.length ? ` – ${links.join(", ")}` : ""}, staženo ${escapeHtml(czechDate(data.fetchedAt))}.`;
+        outlookBox.hidden = false;
+        if (outlookStatus) outlookStatus.textContent = "";
+      };
+
+      const showOutlook = (program: Program) => {
+        if (outlookBox) outlookBox.hidden = true;
+        if (outlookStatus) outlookStatus.textContent = "Načítám uplatnění absolventů…";
+        loadProgramOutlook()
+          .then((data) => {
+            // A slower response must not overwrite a program picked in the meantime.
+            if (selectedIndex === null || programs[selectedIndex] !== program) return;
+            renderOutlook(program, data);
+          })
+          .catch(() => {
+            if (outlookStatus) outlookStatus.textContent = "Údaje o uplatnění se nepodařilo načíst.";
+          });
+      };
+
       const selectProgram = (index: number, scroll: boolean) => {
         if (!schoolsLoaded) {
           pendingIndex = index;
@@ -243,6 +332,8 @@ const metadata = {
           </li>`).join("");
         placeholder.hidden = true;
         results.hidden = false;
+        // Region changes keep the program, so only a new pick reloads its outlook.
+        if (scroll) showOutlook(program);
         renderList();
         window.setTimeout(() => renderMap(matching), 0);
         // Only move focus/scroll for an explicit pick, not when the region select changes.
