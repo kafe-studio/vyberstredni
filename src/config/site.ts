@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "Vyber střední",
   description:
     "Neoficiální katalog středních škol a konzervatoří z celého Česka, včetně soukromých, církevních a speciálních škol.",
-  url: "https://georgeduckling.com/vyberstredni/",
+  url: "https://jaknaskolu.cz/vyberstredni/",
   lang: "cs",
   locale: "cs_CZ",
   author: "Jiří Kačírek",

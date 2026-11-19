@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "vyberstredni",
-  "main": "@astrojs/cloudflare/entrypoints/server",
+  "main": "./src/worker.ts",
   "compatibility_date": "2026-03-05",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "observability": {
@@ -10,6 +10,8 @@
   "workers_dev": false,
   "preview_urls": false,
   "routes": [
+    { "pattern": "jaknaskolu.cz", "custom_domain": true },
+    { "pattern": "www.jaknaskolu.cz", "custom_domain": true },
     {
       "pattern": "georgeduckling.com/vyberstredni*",
       "zone_name": "georgeduckling.com"

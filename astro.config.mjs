@@ -7,7 +7,7 @@ import { unified } from "@astrojs/markdown-remark";
 import remarkReadingTime from "remark-reading-time";
 
 export default defineConfig({
-  site: "https://georgeduckling.com",
+  site: "https://jaknaskolu.cz",
   base: "/vyberstredni",
   output: "server",
   trailingSlash: "always",
