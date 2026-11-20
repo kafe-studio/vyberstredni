@@ -11,7 +11,10 @@ import { REGIONS } from "../lib/regions";
 const programKind = (code: string) => {
   const level = programLevel(code);
   if (level === "K") return `gymnázium ${/\/(\d)/.exec(code)?.[1] ?? "4"}leté`;
-  if (level === "M" || level === "L") return "s maturitou";
+  // L/5x is a two-year follow-on course after a vocational certificate; other L programs add practical training.
+  if (level === "L") return /\/5/.test(code) ? "nástavba po výučním listu" : "s maturitou a odborným výcvikem";
+  if (level === "M") return "s maturitou";
+  if (level === "J") return "bez maturity a výučního listu";
   if (level === "P") return "konzervatoř";
   if (level === "H" || level === "E") return "výuční list";
   if (level === "C") return "praktická škola";
@@ -63,7 +66,7 @@ const metadata = {
                 >
                   <span>
                     <span class="block font-medium text-foreground">{program.name}</span>
-                    {program.kind && <span class="text-xs text-muted-foreground">{program.kind}</span>}
+                    <span class="text-xs text-muted-foreground">{program.kind ? `${program.kind} · ` : ""}{program.code}</span>
                   </span>
                   <span class="program-school-count shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{program.schoolIds.length}</span>
                 </button>
@@ -375,7 +378,7 @@ const metadata = {
         // Only a click counts as interest; region changes re-render the same program.
         if (scroll) track("program_view", { program: program.name, code: program.code, schools: matching.length });
         selectedName.textContent = program.name;
-        selectedCount.textContent = `${program.kind ? `${program.kind[0]?.toLocaleUpperCase("cs")}${program.kind.slice(1)} · ` : ""}nabízí ${pluralSchools(matching.length)}`;
+        selectedCount.textContent = `${program.kind ? `${program.kind[0]?.toLocaleUpperCase("cs")}${program.kind.slice(1)} · ` : ""}${program.code} · nabízí ${pluralSchools(matching.length)}`;
         schoolList.innerHTML = matching.map((school) => `
           <li>
             <a class="flex flex-col gap-0.5 px-4 py-3 hover:bg-muted" href="${withBase(`/skoly/${encodeURIComponent(school.id)}/`)}">
