@@ -593,6 +593,8 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         resetResultsButton();
         completed = true;
         persist();
+        // The support panel asks for a donation only after the quiz has helped (SupportPanel.astro).
+        if (!restoring) document.dispatchEvent(new CustomEvent("support:offer"));
       };
 
       const backToQuiz = () => {

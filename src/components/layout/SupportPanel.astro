@@ -18,17 +18,21 @@ import { withBase } from "../../lib/urls";
     aria-labelledby="support-panel-heading"
     aria-hidden="true"
     inert
-    class="fixed right-0 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[min(22rem,calc(100vw-1.5rem))] -translate-y-1/2 translate-x-full overflow-y-auto rounded-l-2xl border-2 border-r-0 border-ink bg-background p-6 shadow-2xl transition-transform duration-500 ease-out motion-reduce:transition-none group-data-[open]:translate-x-0"
+    class="fixed right-0 top-1/2 z-50 w-[min(22rem,calc(100vw-1.5rem))] -translate-y-1/2 translate-x-full overflow-y-auto rounded-l-2xl border-2 border-r-0 border-ink bg-background px-6 pb-6 shadow-2xl transition-transform duration-500 ease-out motion-reduce:transition-none group-data-[open]:translate-x-0"
+    style="max-height: calc(100vh - 2rem); max-height: calc(100dvh - 2rem);"
   >
-    <button
-      type="button"
-      data-support-close
-      class="absolute right-3 top-3 grid size-9 place-items-center rounded-full text-xl font-bold text-ink hover:bg-muted"
-      aria-label="Zavřít"
-    >
-      ✕
-    </button>
-    <h2 id="support-panel-heading" class="pr-8 text-xl font-extrabold text-ink">Podpořte můj projekt</h2>
+    <!-- Sticky, so the close button stays on screen even when the panel scrolls (in-app browsers, small phones). -->
+    <div class="sticky top-0 z-10 -mr-3 flex h-0 justify-end overflow-visible pt-3">
+      <button
+        type="button"
+        data-support-close
+        class="grid size-11 place-items-center rounded-full border-2 border-ink bg-background text-xl font-bold text-ink hover:bg-muted"
+        aria-label="Zavřít"
+      >
+        ✕
+      </button>
+    </div>
+    <h2 id="support-panel-heading" class="mt-6 pr-12 text-xl font-extrabold text-ink">Podpořte můj projekt</h2>
     <p class="mt-3 text-sm leading-relaxed text-muted-foreground">
       Jmenuji se {siteConfig.author} a web jaknaskolu.cz vytvářím a provozuji ze svých prostředků jako nekomerční projekt. Pokud vám
       pomohl a chcete podpořit jeho další rozvoj, budu rád za příspěvek v libovolné výši pomocí QR kódu nebo převodem na účet.
@@ -50,18 +54,36 @@ import { withBase } from "../../lib/urls";
 </div>
 
 <script>
-  const SHOW_DELAY_MS = 3000;
-  let showTimer: number | undefined;
+  /** After the quiz results appear, give the visitor time to read them before asking for support. */
+  const OFFER_DELAY_MS = 8000;
+  const OFFERED_KEY = "vyberstredni-support-offered";
+  let offerTimer: number | undefined;
 
   const setOpen = (open: boolean) => {
     const root = document.getElementById("support");
     const panel = document.getElementById("support-panel");
     if (!root || !panel) return;
-    window.clearTimeout(showTimer);
+    window.clearTimeout(offerTimer);
     root.toggleAttribute("data-open", open);
     panel.toggleAttribute("inert", !open);
     panel.setAttribute("aria-hidden", String(!open));
     root.querySelector("[data-support-open]")?.setAttribute("aria-expanded", String(open));
+  };
+
+  const offeredThisVisit = () => {
+    try {
+      return sessionStorage.getItem(OFFERED_KEY) === "1";
+    } catch {
+      return false;
+    }
+  };
+
+  const markOffered = () => {
+    try {
+      sessionStorage.setItem(OFFERED_KEY, "1");
+    } catch {
+      // Without storage the panel may be offered again after another finished quiz; that is acceptable.
+    }
   };
 
   document.addEventListener("click", (event) => {
@@ -69,10 +91,18 @@ import { withBase } from "../../lib/urls";
     if (event.target.closest("[data-support-close]")) setOpen(false);
     else if (event.target.closest("[data-support-open]")) setOpen(true);
   });
-
-  // Slides out on every page, including client-side navigations; the tab stays once it is closed.
-  document.addEventListener("astro:page-load", () => {
-    window.clearTimeout(showTimer);
-    showTimer = window.setTimeout(() => setOpen(true), SHOW_DELAY_MS);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && document.getElementById("support")?.hasAttribute("data-open")) setOpen(false);
   });
+
+  // Never opens by itself on page load (it covered the page for visitors from ads); the quiz page asks for it
+  // once its results are shown, at most once per visit. The "Podpora" tab is always there.
+  document.addEventListener("support:offer", () => {
+    if (offeredThisVisit()) return;
+    markOffered();
+    window.clearTimeout(offerTimer);
+    offerTimer = window.setTimeout(() => setOpen(true), OFFER_DELAY_MS);
+  });
+  // A pending offer must not open the panel over the next page.
+  document.addEventListener("astro:before-swap", () => window.clearTimeout(offerTimer));
 </script>
