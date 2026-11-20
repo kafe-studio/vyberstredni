@@ -18,24 +18,24 @@ import { withBase } from "../../lib/urls";
     aria-labelledby="support-panel-heading"
     aria-hidden="true"
     inert
-    class="fixed right-0 top-1/2 z-50 w-[min(22rem,calc(100vw-1.5rem))] -translate-y-1/2 translate-x-full overflow-y-auto rounded-l-2xl border-2 border-r-0 border-ink bg-background px-6 pb-6 shadow-2xl transition-transform duration-500 ease-out motion-reduce:transition-none group-data-[open]:translate-x-0"
+    class="fixed right-0 top-1/2 z-50 w-[min(17rem,calc(100vw-1.5rem))] -translate-y-1/2 translate-x-full overflow-y-auto rounded-l-2xl border-2 border-r-0 border-ink bg-background px-4 pb-4 shadow-2xl transition-transform duration-500 ease-out motion-reduce:transition-none group-data-[open]:translate-x-0"
     style="max-height: calc(100vh - 2rem); max-height: calc(100dvh - 2rem);"
   >
     <!-- Sticky, so the close button stays on screen even when the panel scrolls (in-app browsers, small phones). -->
-    <div class="sticky top-0 z-10 -mr-3 flex h-0 justify-end overflow-visible pt-3">
+    <div class="sticky top-0 z-10 -mr-2 flex h-0 justify-end overflow-visible pt-2">
       <button
         type="button"
         data-support-close
-        class="grid size-11 place-items-center rounded-full border-2 border-ink bg-background text-xl font-bold text-ink hover:bg-muted"
+        class="grid size-10 place-items-center rounded-full border-2 border-ink bg-background text-lg font-bold text-ink hover:bg-muted"
         aria-label="Zavřít"
       >
         ✕
       </button>
     </div>
-    <h2 id="support-panel-heading" class="mt-6 pr-12 text-xl font-extrabold text-ink">Podpořte můj projekt</h2>
-    <p class="mt-3 text-sm leading-relaxed text-muted-foreground">
-      Jmenuji se {siteConfig.author} a web jaknaskolu.cz vytvářím a provozuji ze svých prostředků jako nekomerční projekt. Pokud vám
-      pomohl a chcete podpořit jeho další rozvoj, budu rád za příspěvek v libovolné výši pomocí QR kódu nebo převodem na účet.
+    <h2 id="support-panel-heading" class="mt-4 pr-11 text-lg font-extrabold text-ink">Podpořte můj projekt</h2>
+    <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
+      Web jaknaskolu.cz vytvářím a provozuji ze svých prostředků jako nekomerční projekt. Pokud vám pomohl a chcete podpořit
+      jeho další rozvoj, budu rád za příspěvek v libovolné výši pomocí QR kódu nebo převodem na účet.
     </p>
     <img
       src={withBase(siteConfig.support.qrImage)}
@@ -43,13 +43,14 @@ import { withBase } from "../../lib/urls";
       width="600"
       height="600"
       loading="lazy"
-      class="mx-auto mt-4 w-44 rounded-lg border border-ink/20 bg-white"
+      class="mx-auto mt-3 w-32 rounded-lg border border-ink/20 bg-white"
     />
-    <p class="mt-3 text-center text-sm text-muted-foreground">
+    <p class="mt-2 text-center text-xs text-muted-foreground">
       Číslo účtu<br />
-      <span class="select-all text-lg font-bold text-ink">{siteConfig.support.account}</span>
+      <span class="select-all text-base font-bold text-ink">{siteConfig.support.account}</span>
     </p>
-    <p class="mt-3 text-center text-sm font-semibold text-ink">Děkuji za každou podporu.</p>
+    <p class="mt-2 text-center text-sm font-semibold text-ink">Děkuji za každou podporu.</p>
+    <p class="font-hand mt-1 text-center text-xl text-ink">{siteConfig.author}</p>
   </aside>
 </div>
 
