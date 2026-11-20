@@ -16,14 +16,14 @@ export const tuitionOf = (founderCode: string): Tuition | null =>
 /** Detail and comparison wording. */
 export const tuitionLabels: Record<Tuition, string> = {
   free: "Bez školného",
-  private: "Většinou se platí školné",
+  private: "Je možné, že se platí školné",
   church: "Školné spíš ne, ověř",
 };
 
 /** Card chip wording. */
 export const tuitionBadges: Record<Tuition, string> = {
   free: "Bez školného",
-  private: "Soukromá: většinou se platí školné",
+  private: "Soukromá: je možné, že se platí školné",
   church: "Církevní: školné spíš ne, ověř",
 };
 
