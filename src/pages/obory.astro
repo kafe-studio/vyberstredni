@@ -85,7 +85,12 @@ const metadata = {
             <p class="max-w-xs text-sm text-muted-foreground">Ukážu ti, které školy ho nabízejí a kde je najdeš na mapě.</p>
           </div>
           <div id="program-results" hidden>
-            <h2 id="selected-program-name" class="text-2xl font-bold" tabindex="-1"></h2>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <h2 id="selected-program-name" class="text-2xl font-bold" tabindex="-1"></h2>
+              <button id="favorite-program-btn" type="button" class="favorite-toggle inline-flex shrink-0 items-center gap-2 rounded-[3px] border border-border bg-card px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground transition hover:border-primary/50 hover:text-primary" aria-pressed="false">
+                <span class="favorite-icon text-sm" aria-hidden="true">♡</span><span>Oblíbené</span>
+              </button>
+            </div>
             <p id="selected-program-count" class="mt-1 text-muted-foreground"></p>
             <div id="program-outlook" class="mt-5 grid gap-4 md:grid-cols-2" aria-live="polite" hidden>
               <section class="rounded-[3px] border border-border bg-card p-4">
@@ -101,6 +106,15 @@ const metadata = {
                 <p class="mt-3 text-xs leading-5 text-muted-foreground">
                   Hodnocení vychází z nezaměstnanosti čerstvých absolventů evidovaných na úřadech práce v porovnání s průměrem stejného typu vzdělání.
                 </p>
+              </section>
+              <section id="outlook-wages" class="rounded-[3px] border border-border bg-card p-4 md:col-span-2" hidden>
+                <h3 class="font-display text-lg font-extrabold">💰 Mzda v typickém povolání</h3>
+                <p id="outlook-wages-occupation" class="mt-1 text-sm text-muted-foreground"></p>
+                <p id="outlook-wages-current" class="mt-2 text-sm leading-6 text-foreground"></p>
+                <div id="outlook-wages-chart"></div>
+                <p id="outlook-wages-forecast" class="mt-3 text-sm leading-6 text-foreground"></p>
+                <p id="outlook-wages-caveats" class="mt-2 text-xs leading-5 text-muted-foreground"></p>
+                <p id="outlook-wages-sources" class="mt-2 text-xs leading-5 text-muted-foreground"></p>
               </section>
               <p id="outlook-sources" class="text-xs leading-5 text-muted-foreground md:col-span-2"></p>
             </div>
@@ -124,8 +138,19 @@ const metadata = {
   <div id="program-data" data-programs={JSON.stringify(programCatalog)} hidden></div>
   <script>
     import { withBase } from "../lib/urls";
-    import { escapeHtml, loadProgramOutlook, loadSchools, type SchoolSummary } from "../lib/school-data";
+    import {
+      escapeHtml,
+      getFavoritePrograms,
+      loadProgramOutlook,
+      loadSchools,
+      paintFavoriteButton,
+      toggleFavoriteProgram,
+      type SchoolSummary,
+    } from "../lib/school-data";
     import type { DemandLevel, ProgramOutlookData } from "../lib/program-outlook";
+    import { sphereLabels, wageSummary, type ProgramWages } from "../lib/program-wages";
+    import { wageChartHtml } from "../lib/wage-chart";
+    import { enableWageChartHover } from "../lib/wage-chart-hover";
     import { track } from "../lib/analytics";
 
     type Program = { code: string; name: string; kind: string; schoolIds: string[] };
@@ -189,6 +214,33 @@ const metadata = {
       const outlookDemandLabel = document.getElementById("outlook-demand-label");
       const outlookDemandSummary = document.getElementById("outlook-demand-summary");
       const outlookSources = document.getElementById("outlook-sources");
+      const wagesBox = document.getElementById("outlook-wages");
+      const favoriteProgramButton = document.getElementById("favorite-program-btn");
+      const paintProgramFavorite = () => {
+        const program = selectedIndex === null ? undefined : programs[selectedIndex];
+        if (favoriteProgramButton && program) paintFavoriteButton(favoriteProgramButton, getFavoritePrograms().includes(program.code));
+      };
+      enableWageChartHover();
+
+      const renderWages = (program: Program, wages: ProgramWages | null) => {
+        if (!wagesBox) return;
+        wagesBox.hidden = wages === null;
+        if (!wages) return;
+        const summary = wageSummary(wages);
+        const set = (id: string, html: string) => {
+          const element = document.getElementById(id);
+          if (element) element.innerHTML = html;
+        };
+        set("outlook-wages-occupation", `${escapeHtml(wages.occupation)} (CZ-ISCO ${escapeHtml(wages.isco)}), ${escapeHtml(sphereLabels[wages.sphere])}`);
+        set("outlook-wages-current", escapeHtml(summary.current));
+        set("outlook-wages-chart", wageChartHtml(wages, `Vývoj a prognóza mediánu mzdy: ${wages.occupation}`, "wide"));
+        set("outlook-wages-forecast", escapeHtml(summary.forecast));
+        set("outlook-wages-caveats", escapeHtml(summary.caveats));
+        const units = wages.units.map((unit) => externalLink(unit.url, unit.title)).join(", ");
+        set("outlook-wages-sources",
+          `Zdroj: ${externalLink(wages.sources.ispv.url, wages.sources.ispv.label)}, ${externalLink(wages.sources.mf.url, wages.sources.mf.label)}. ` +
+          `Povolání pro obor ${escapeHtml(program.code)} (${externalLink(wages.sources.nsp.url, wages.sources.nsp.label)}): ${units}.`);
+      };
 
       let schoolsById = new Map<string, SchoolSummary>();
       let schoolsLoaded = false;
@@ -290,8 +342,9 @@ const metadata = {
           outlook.cardUrl ? externalLink(outlook.cardUrl, "karta oboru") : "",
           outlook.statsUrl ? externalLink(outlook.statsUrl, "nezaměstnanost absolventů") : "",
         ].filter(Boolean);
-        outlookSources.innerHTML = `Zdroj: ${externalLink(data.sourceUrl, data.source)}${links.length ? ` – ${links.join(", ")}` : ""}, staženo ${escapeHtml(czechDate(data.fetchedAt))}.`;
+        outlookSources.innerHTML = `Zdroj uplatnění a poptávky: ${externalLink(data.sourceUrl, data.source)}${links.length ? ` – ${links.join(", ")}` : ""}, staženo ${escapeHtml(czechDate(data.fetchedAt))}.`;
         outlookBox.hidden = false;
+        renderWages(program, outlook.wages);
         if (outlookStatus) outlookStatus.textContent = "";
       };
 
@@ -332,6 +385,7 @@ const metadata = {
           </li>`).join("");
         placeholder.hidden = true;
         results.hidden = false;
+        paintProgramFavorite();
         // Region changes keep the program, so only a new pick reloads its outlook.
         if (scroll) showOutlook(program);
         renderList();
@@ -349,6 +403,16 @@ const metadata = {
         const button = target instanceof Element ? target.closest<HTMLButtonElement>(".program-option") : null;
         if (button) selectProgram(Number(button.dataset.programIndex), true);
       });
+      favoriteProgramButton?.addEventListener("click", () => {
+        const program = selectedIndex === null ? undefined : programs[selectedIndex];
+        if (!program) return;
+        toggleFavoriteProgram(program.code);
+        paintProgramFavorite();
+      });
+      // /obory/?obor=65-51-H/01 (links from favorites and school pages) opens that program.
+      const linkedCode = new URLSearchParams(window.location.search).get("obor");
+      const linkedIndex = linkedCode ? programs.findIndex((program) => program.code === linkedCode) : -1;
+      if (linkedIndex >= 0) selectProgram(linkedIndex, true);
       let searchTimer: number | null = null;
       searchInput?.addEventListener("input", () => {
         renderList();

@@ -1,3 +1,5 @@
+import type { ProgramWages } from "./program-wages";
+
 /** Unemployment of fresh graduates registered at labour offices (Infoabsolvent.cz, NPI ČR). */
 export type UnemploymentRow = { label: string; graduates: number | null; rate: number; previousRate: number | null };
 
@@ -48,7 +50,7 @@ export type ProgramOutlookData = {
   source: string;
   sourceUrl: string;
   fetchedAt: string;
-  programs: Record<string, ProgramOutlook>;
+  programs: Record<string, ProgramOutlook & { wages: ProgramWages | null }>;
 };
 
 export const PROGRAM_OUTLOOK_DATA_PATH = "/data/program-outlook.json";

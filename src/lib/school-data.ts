@@ -46,6 +46,7 @@ export type SchoolStats = {
 };
 export type SchoolStatsById = Record<string, SchoolStats>;
 export const FAVORITES_KEY = "vyberstredni-favorites";
+export const FAVORITE_PROGRAMS_KEY = "vyberstredni-favorite-programs";
 
 // Module-level cache survives ClientRouter navigations, so each file is fetched once per visit.
 const jsonCache = new Map<string, Promise<unknown>>();
@@ -95,26 +96,49 @@ export const formatDistance = (km: number) => {
   return `${Math.round(km)} km`;
 };
 
-export const getFavorites = (): string[] => {
+const readList = (key: string): string[] => {
   try {
-    const value: unknown = JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? "[]");
+    const value: unknown = JSON.parse(localStorage.getItem(key) ?? "[]");
     return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
   } catch {
     return [];
   }
 };
 
-export const setFavorites = (favorites: string[]) => {
+const writeList = (key: string, items: string[]) => {
   try {
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+    localStorage.setItem(key, JSON.stringify(items));
   } catch {
     // Storage can be unavailable (private mode, blocked site data); favorites then last only for this page.
   }
 };
 
-export const toggleFavorite = (id: string) => {
-  const favorites = getFavorites();
-  const next = favorites.includes(id) ? favorites.filter((item) => item !== id) : [...favorites, id];
-  setFavorites(next);
+const toggleInList = (key: string, id: string) => {
+  const items = readList(key);
+  const next = items.includes(id) ? items.filter((item) => item !== id) : [...items, id];
+  writeList(key, next);
   return next;
 };
+
+export const getFavorites = (): string[] => readList(FAVORITES_KEY);
+export const setFavorites = (favorites: string[]) => writeList(FAVORITES_KEY, favorites);
+export const toggleFavorite = (id: string) => toggleInList(FAVORITES_KEY, id);
+
+/** Saved programs, by program code ("65-51-H/01"). */
+export const getFavoritePrograms = (): string[] => readList(FAVORITE_PROGRAMS_KEY);
+export const setFavoritePrograms = (codes: string[]) => writeList(FAVORITE_PROGRAMS_KEY, codes);
+export const toggleFavoriteProgram = (code: string) => toggleInList(FAVORITE_PROGRAMS_KEY, code);
+
+/** Shows a ♡/♥ favorite button as saved or not (the outlined button style of the detail pages). */
+export const paintFavoriteButton = (button: HTMLElement, active: boolean) => {
+  button.classList.toggle("is-favorite", active);
+  button.setAttribute("aria-pressed", String(active));
+  button.classList.toggle("border-primary/50", active);
+  button.classList.toggle("bg-primary/10", active);
+  button.classList.toggle("text-primary", active);
+  const icon = button.querySelector(".favorite-icon");
+  if (icon) icon.textContent = active ? "♥" : "♡";
+};
+
+/** The Obory page with this program selected. */
+export const programPageUrl = (code: string) => withBase(`/obory/?obor=${encodeURIComponent(code)}`);

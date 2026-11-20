@@ -6,8 +6,8 @@ import Character from "../components/Character.astro";
 import { withBase } from "../lib/urls";
 
 const metadata = {
-  title: "Oblíbené školy",
-  description: "Školy, které sis uložil/a srdíčkem. Na jednom místě a připravené k porovnání.",
+  title: "Oblíbené školy a obory",
+  description: "Školy a obory, které sis uložil/a srdíčkem. Na jednom místě, u oborů i se školami, kde se dají studovat.",
 };
 ---
 
@@ -18,7 +18,7 @@ const metadata = {
         <div>
           <span class="sticker-note -rotate-2 bg-pink text-ink">♥ <span id="favorite-total">0</span> uložených</span>
           <h1 class="mt-4 text-4xl font-extrabold md:text-6xl">Moje oblíbené</h1>
-          <p class="mt-3 text-lg text-muted-foreground">Školy, které sis uložil/a srdíčkem.</p>
+          <p class="mt-3 text-lg text-muted-foreground">Školy a obory, které sis uložil/a srdíčkem.</p>
         </div>
         <div class="relative isolate hidden w-36 shrink-0 sm:block md:w-44">
           <div class="blob inset-x-0 bottom-0 top-10 bg-pink/25"></div>
@@ -31,30 +31,62 @@ const metadata = {
       <div id="favorite-empty" class="track-card grid items-center gap-6 bg-peach p-8 md:grid-cols-[1fr_auto]" hidden>
         <div>
           <h2 class="text-2xl font-extrabold">Zatím tu nic není</h2>
-          <p class="mt-2 text-muted-foreground">U každé školy v katalogu klikni na srdíčko ♡ a objeví se tady.</p>
-          <a href={withBase("/skoly/")} class="btn-primary mt-5">Projít katalog škol</a>
+          <p class="mt-2 text-muted-foreground">U školy nebo oboru klikni na srdíčko ♡ a objeví se tady.</p>
+          <div class="mt-5 flex flex-wrap gap-3">
+            <a href={withBase("/skoly/")} class="btn-primary">Projít katalog škol</a>
+            <a href={withBase("/obory/")} class="btn-outline">Projít obory</a>
+          </div>
         </div>
         <Character name="bun" class="mx-auto h-44 w-auto md:h-52" />
       </div>
 
-      <div id="favorite-grid" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+      <section id="favorite-programs-section" aria-labelledby="favorite-programs-heading" hidden>
+        <h2 id="favorite-programs-heading" class="mb-4 text-2xl font-extrabold">Obory</h2>
+        <div id="favorite-program-grid" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+      </section>
+
+      <section id="favorite-schools-section" class="mt-10 first:mt-0" aria-labelledby="favorite-schools-heading" hidden>
+        <h2 id="favorite-schools-heading" class="mb-4 text-2xl font-extrabold">Školy</h2>
+        <div id="favorite-grid" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+      </section>
     </div>
   </section>
 
   <script>
     import { withBase } from "../lib/urls";
-    import { escapeHtml, getFavorites, loadSchools, setFavorites, type SchoolSummary } from "../lib/school-data";
+    import {
+      escapeHtml,
+      getFavoritePrograms,
+      getFavorites,
+      loadSchoolPrograms,
+      loadSchools,
+      programPageUrl,
+      setFavoritePrograms,
+      setFavorites,
+      type SchoolProgramsById,
+      type SchoolSummary,
+    } from "../lib/school-data";
+
+    /** Schools listed on a program card; the rest are on the Obory page. */
+    const SCHOOLS_PER_PROGRAM = 6;
+
+    const pluralMoreSchools = (count: number) =>
+      count === 1 ? "a 1 další škola" : count > 1 && count < 5 ? `a ${count} další školy` : `a ${count} dalších škol`;
 
     document.addEventListener("astro:page-load", () => {
       const favoriteGrid = document.getElementById("favorite-grid");
+      const programGrid = document.getElementById("favorite-program-grid");
       const emptyState = document.getElementById("favorite-empty");
-      if (!favoriteGrid || !emptyState) return;
+      if (!favoriteGrid || !programGrid || !emptyState) return;
 
+      const schoolsSection = document.getElementById("favorite-schools-section");
+      const programsSection = document.getElementById("favorite-programs-section");
       const favoriteTotal = document.getElementById("favorite-total");
       const status = document.getElementById("favorite-status");
       let schools: SchoolSummary[] = [];
+      let schoolPrograms: SchoolProgramsById = {};
       // Show the stored count immediately, even if the school data fails to load.
-      if (favoriteTotal) favoriteTotal.textContent = String(getFavorites().length);
+      if (favoriteTotal) favoriteTotal.textContent = String(getFavorites().length + getFavoritePrograms().length);
 
       const renderCard = (school: SchoolSummary) => {
         const badge = school.founderCode === "5" ? "soukromá" : school.founderCode === "6" ? "církevní" : "";
@@ -74,13 +106,55 @@ const metadata = {
           </article>`;
       };
 
+      /** Schools currently offering the program: saved schools first, then by name. */
+      const schoolsOffering = (code: string, saved: Set<string>) =>
+        schools
+          .filter((school) => (schoolPrograms[school.id] ?? []).some((program) => program.code === code && !program.isPhasingOut))
+          .sort((left, right) => Number(saved.has(right.id)) - Number(saved.has(left.id)) || left.name.localeCompare(right.name, "cs"));
+
+      const programName = (code: string) => {
+        for (const programs of Object.values(schoolPrograms)) {
+          const match = programs.find((program) => program.code === code);
+          if (match) return match.name;
+        }
+        return code;
+      };
+
+      const renderProgramCard = (code: string, saved: Set<string>) => {
+        const offering = schoolsOffering(code, saved);
+        const listed = offering.slice(0, SCHOOLS_PER_PROGRAM).map((school) => `
+          <li>
+            <a class="block rounded-[3px] px-2 py-1.5 hover:bg-muted" href="${withBase(`/skoly/${encodeURIComponent(school.id)}/`)}">
+              <span class="font-medium text-foreground">${saved.has(school.id) ? "♥ " : ""}${escapeHtml(school.name)}</span>
+              <span class="block text-xs text-muted-foreground">${escapeHtml(school.town || school.region)}</span>
+            </a>
+          </li>`).join("");
+        const more = offering.length - SCHOOLS_PER_PROGRAM;
+        return `
+          <article class="school-card flex flex-col p-5">
+            <span class="text-xs font-semibold tracking-wide text-primary">${escapeHtml(code)}</span>
+            <a href="${programPageUrl(code)}" class="mt-1 text-lg font-semibold leading-snug text-ink hover:text-primary">${escapeHtml(programName(code))}</a>
+            <p class="mt-1 text-sm text-muted-foreground">${offering.length ? `Školy, kde ho můžeš studovat: ${offering.length}` : "Žádná škola ho teď nenabízí."}</p>
+            ${listed ? `<ul class="mt-2 flex-1 space-y-0.5 text-sm">${listed}</ul>` : `<div class="flex-1"></div>`}
+            ${more > 0 ? `<p class="mt-1 px-2 text-xs text-muted-foreground">${pluralMoreSchools(more)}</p>` : ""}
+            <div class="mt-4 flex items-center justify-between gap-3">
+              <a href="${programPageUrl(code)}" class="text-sm font-semibold text-primary hover:underline">Všechny školy na mapě →</a>
+              <button type="button" data-remove-program="${escapeHtml(code)}" class="rounded-[3px] border border-border bg-card px-3 py-1 text-xs font-semibold hover:bg-pink">Odebrat</button>
+            </div>
+          </article>`;
+      };
+
       const render = () => {
-        const favorites = new Set(getFavorites());
-        const items = schools.filter((school) => favorites.has(school.id));
-        if (favoriteTotal) favoriteTotal.textContent = String(items.length);
+        const saved = new Set(getFavorites());
+        const items = schools.filter((school) => saved.has(school.id));
+        const programCodes = getFavoritePrograms();
+        if (favoriteTotal) favoriteTotal.textContent = String(items.length + programCodes.length);
         if (status) status.textContent = "";
-        emptyState.hidden = items.length > 0;
+        emptyState.hidden = items.length + programCodes.length > 0;
+        if (schoolsSection) schoolsSection.hidden = items.length === 0;
+        if (programsSection) programsSection.hidden = programCodes.length === 0;
         favoriteGrid.innerHTML = items.map(renderCard).join("");
+        programGrid.innerHTML = programCodes.map((code) => renderProgramCard(code, saved)).join("");
       };
 
       favoriteGrid.addEventListener("click", (event) => {
@@ -91,10 +165,19 @@ const metadata = {
         setFavorites(getFavorites().filter((favorite) => favorite !== id));
         render();
       });
+      programGrid.addEventListener("click", (event) => {
+        const target = event.target;
+        const button = target instanceof Element ? target.closest<HTMLElement>("[data-remove-program]") : null;
+        const code = button?.dataset.removeProgram;
+        if (!code) return;
+        setFavoritePrograms(getFavoritePrograms().filter((favorite) => favorite !== code));
+        render();
+      });
 
-      loadSchools()
-        .then((list) => {
+      Promise.all([loadSchools(), loadSchoolPrograms()])
+        .then(([list, programs]) => {
           schools = list;
+          schoolPrograms = programs;
           render();
         })
         .catch(() => {
