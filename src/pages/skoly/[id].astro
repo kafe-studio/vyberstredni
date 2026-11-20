@@ -9,6 +9,16 @@ import { REGIONS } from "../../lib/regions";
 import { supportLabels } from "../../lib/special-needs";
 import { withBase } from "../../lib/urls";
 import { TUITION_LAW_URL, tuitionLabels, tuitionNotes, tuitionOf } from "../../lib/tuition";
+import outlookData from "../../data/program-outlook.json";
+import { programOutlook, type DemandLevel, type ProgramOutlookRecord } from "../../lib/program-outlook";
+
+const outlookRecords: Record<string, ProgramOutlookRecord> = outlookData.programs;
+const demandClasses: Record<DemandLevel, string> = {
+  high: "bg-mint/50",
+  average: "bg-sun/60",
+  low: "bg-peach/70",
+};
+const fetchedAtLabel = new Date(`${outlookData.fetchedAt}T00:00:00`).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
 
 const typeLabels = {
   gymnázium: "Gymnázium",
@@ -42,7 +52,11 @@ const maturita = cermat?.maturita ?? null;
 const admissionOf = (code: string) => cermat?.admission[code] ?? null;
 /** Percentiles below 1 would read as "lepší než 0 %". */
 const percentileText = (value: number) => (value < 1 ? "méně než 1 %" : `${value} %`);
-const programRows = activePrograms.map((program) => ({ ...program, admission: admissionOf(program.code) }));
+const programRows = activePrograms.map((program) => ({
+  ...program,
+  admission: admissionOf(program.code),
+  outlook: programOutlook(program.code, outlookRecords[program.code]),
+}));
 const percent = (value: number | null | undefined, digits = 0) =>
   value === null || value === undefined
     ? "—"
@@ -193,6 +207,44 @@ const metadata = {
                       )}
                       {!program.admission.entranceExam && <p>Bez jednotné přijímací zkoušky.</p>}
                     </dl>
+                  )}
+                  {(program.outlook.employment || program.outlook.demand) && (
+                    <div class="mt-3 border-t border-border pt-3">
+                      <p class="text-xs text-muted-foreground">
+                        📈 Trh práce:{" "}
+                        {program.outlook.demand ? (
+                          <span class:list={["inline-flex rounded-full px-2 py-0.5 font-semibold text-ink", demandClasses[program.outlook.demand.level]]}>{program.outlook.demand.label}</span>
+                        ) : (
+                          <span class="inline-flex rounded-full bg-muted px-2 py-0.5 font-semibold">Bez hodnocení</span>
+                        )}
+                      </p>
+                      <details class="mt-2 text-sm">
+                        <summary class="cursor-pointer text-xs font-semibold text-primary">💼 Uplatnění v praxi a poptávka</summary>
+                        <div class="mt-2 space-y-2 leading-6">
+                          {program.outlook.employment && <p class="text-foreground">{program.outlook.employment}</p>}
+                          {program.outlook.occupations.length > 0 && (
+                            <div>
+                              <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Navazující povolání</p>
+                              <ul class="mt-1 flex flex-wrap gap-1.5">
+                                {program.outlook.occupations.map((name) => (
+                                  <li class="rounded-full bg-lilac/50 px-2.5 py-1 text-xs text-ink">{name}</li>
+                                ))}
+                                {program.outlook.moreOccupations > 0 && (
+                                  <li class="px-1 py-1 text-xs text-muted-foreground">a {program.outlook.moreOccupations} {program.outlook.moreOccupations < 5 ? "další" : "dalších"}</li>
+                                )}
+                              </ul>
+                            </div>
+                          )}
+                          <p class="text-foreground">{program.outlook.demand ? program.outlook.demand.summary : program.outlook.demandNote}</p>
+                          <p class="text-xs leading-5 text-muted-foreground">
+                            Poptávka vychází z nezaměstnanosti čerstvých absolventů v porovnání s průměrem stejného typu vzdělání.
+                            Zdroj: <a class="underline" href={outlookData.sourceUrl} target="_blank" rel="noreferrer">{outlookData.source}</a>
+                            {program.outlook.cardUrl && <> – <a class="underline" href={program.outlook.cardUrl} target="_blank" rel="noreferrer">karta oboru</a></>}
+                            {program.outlook.statsUrl && <>, <a class="underline" href={program.outlook.statsUrl} target="_blank" rel="noreferrer">nezaměstnanost absolventů</a></>}{`, staženo ${fetchedAtLabel}.`}
+                          </p>
+                        </div>
+                      </details>
+                    </div>
                   )}
                 </li>
               ))}
