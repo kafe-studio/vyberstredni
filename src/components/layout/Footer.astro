@@ -58,9 +58,19 @@ const { showQuizBanner = true } = Astro.props;
           </li>
           <li><a href={`mailto:${siteConfig.email}`} class="text-white/80 hover:text-white hover:underline">✉️ {siteConfig.email}</a></li>
           <li><a href={`tel:${siteConfig.phone.replace(/\s+/g, "")}`} class="text-white/80 hover:text-white hover:underline">📞 {siteConfig.phone}</a></li>
-          <li class="flex gap-4 pt-1">
-            <a href={siteConfig.socialLinks.instagram} target="_blank" rel="noopener" class="text-white/80 hover:text-white hover:underline">Instagram</a>
-            <a href={siteConfig.socialLinks.facebook} target="_blank" rel="noopener" class="text-white/80 hover:text-white hover:underline">Facebook</a>
+          <li class="pt-1">
+            <span class="block text-xs text-white/50">Jak na školu</span>
+            <span class="flex gap-4">
+              <a href={siteConfig.socialLinks.instagram} target="_blank" rel="noopener" class="text-white/80 hover:text-white hover:underline">Instagram @jaknaskolu</a>
+              <a href={siteConfig.socialLinks.facebook} target="_blank" rel="noopener" class="text-white/80 hover:text-white hover:underline">Facebook</a>
+            </span>
+          </li>
+          <li>
+            <span class="block text-xs text-white/50">{siteConfig.author} osobně</span>
+            <span class="flex gap-4">
+              <a href={siteConfig.authorSocialLinks.instagram} target="_blank" rel="noopener" class="text-white/80 hover:text-white hover:underline">Instagram</a>
+              <a href={siteConfig.authorSocialLinks.facebook} target="_blank" rel="noopener" class="text-white/80 hover:text-white hover:underline">Facebook</a>
+            </span>
           </li>
         </ul>
       </address>

@@ -19,7 +19,13 @@ export const siteConfig = {
     iban: "CZ40 5500 0000 0028 7759 8001",
     qrImage: "/images/support-qr.jpg",
   },
+  /** The project's own profiles (Jak na školu); also the schema.org sameAs links. */
   socialLinks: {
+    instagram: "https://www.instagram.com/jaknaskolu/",
+    facebook: "https://www.facebook.com/jaknaskolu",
+  },
+  /** The author's personal profiles, shown next to his name in the footer. */
+  authorSocialLinks: {
     instagram: "https://instagram.com/georgeduckling",
     facebook: "https://www.facebook.com/jirikacirekzhostomic",
   },
