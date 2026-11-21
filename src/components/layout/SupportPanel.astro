@@ -11,7 +11,7 @@ import { withBase } from "../../lib/urls";
     aria-expanded="false"
     class="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-xl border-2 border-r-0 border-ink bg-primary px-2 py-4 text-sm font-bold uppercase tracking-widest text-white shadow-lg transition-transform duration-300 [writing-mode:vertical-rl] hover:pr-3 motion-reduce:transition-none group-data-[open]:translate-x-full"
   >
-    <span class="inline-block rotate-180">Podpora</span>
+    <span class="inline-block rotate-180">Podpora projektu</span>
   </button>
   <aside
     id="support-panel"
@@ -97,7 +97,7 @@ import { withBase } from "../../lib/urls";
   });
 
   // Never opens by itself on page load (it covered the page for visitors from ads); the quiz page asks for it
-  // once its results are shown, at most once per visit. The "Podpora" tab is always there.
+  // once its results are shown, at most once per visit. The "Podpora projektu" tab is always there.
   document.addEventListener("support:offer", () => {
     if (offeredThisVisit()) return;
     markOffered();
