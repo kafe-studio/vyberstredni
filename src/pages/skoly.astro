@@ -158,6 +158,7 @@ const metadata = {
     import { compareSchools, isSortKey, schoolFacts, sortRequirement, type SortKey, type SortableSchool } from "../lib/school-sort";
     import { supportLabels } from "../lib/special-needs";
     import { tuitionChipHtml } from "../lib/tuition";
+    import { localToday, openDayChipHtml } from "../lib/school-extras";
     import { track } from "../lib/analytics";
     import { isNotForNinthGraders, isStudyTrack, matchesTrack, schoolInterestScore, type StudyTrack } from "../lib/interest-test";
 
@@ -255,6 +256,7 @@ const metadata = {
         sortHint.hidden = !hints[key];
       };
 
+      const today = localToday();
       const renderCard = (school: CatalogSchool) => {
         const names = school.programNames;
         const extra = names.length > programsOnCard ? `<span class="text-muted-foreground"> · +${names.length - programsOnCard}</span>` : "";
@@ -271,6 +273,7 @@ const metadata = {
                 ${tuitionChipHtml(school.founderCode)}
                 ${school.support ? `<span class="rounded-full bg-sky/25 px-2.5 py-1 text-ink">${escapeHtml(supportLabels[school.support])}</span>` : ""}
                 ${school.dormitory ? `<span class="rounded-full bg-mint/40 px-2.5 py-1 text-ink" title="${escapeHtml(school.dormitory)}">🛏️ internát</span>` : ""}
+                ${openDayChipHtml(school.openDays, today)}
               </div>
               <button type="button" class="favorite-toggle -m-1 p-1 text-xl leading-none text-muted-foreground transition hover:text-primary" data-school-id="${escapeHtml(school.id)}" aria-pressed="false" aria-label="Přidat do oblíbených: ${escapeHtml(school.name)}">
                 <span class="favorite-icon" aria-hidden="true">♡</span>

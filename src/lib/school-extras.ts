@@ -130,12 +130,24 @@ export const openDaysNote = (openDays: OpenDays | null): string | null => {
 export const upcomingOpenDays = (openDays: OpenDays | null, today: string) =>
   (openDays?.dates ?? []).filter((day) => day >= today);
 
-/** "2027-01-15" -> "pá 15. 1. 2027". */
-export const formatOpenDay = (isoDate: string) => {
+/** "2027-01-15" -> "pá 15. 1. 2027", or "pá 15. 1." without the year. */
+export const formatOpenDay = (isoDate: string, withYear = true) => {
   const [year, month, day] = isoDate.split("-").map(Number);
   if (!year || !month || !day) return isoDate;
   const weekday = new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("cs-CZ", { weekday: "short", timeZone: "UTC" });
-  return `${weekday} ${day}. ${month}. ${year}`;
+  return withYear ? `${weekday} ${day}. ${month}. ${year}` : `${weekday} ${day}. ${month}.`;
+};
+
+/** Today in the visitor's time zone as an ISO date, to compare with open days. */
+export const localToday = (now = new Date()) =>
+  `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+/** Card chip with the next open day, "" when none is announced from today on. */
+export const openDayChipHtml = (dates: readonly string[], today: string) => {
+  const next = dates.find((day) => day >= today);
+  return next
+    ? `<span class="rounded-full bg-sun/40 px-2.5 py-1 font-semibold text-ink">📅 Den otevřených dveří: ${formatOpenDay(next, false)}</span>`
+    : "";
 };
 
 /** Where the law says how report cards may count (school act § 60i, in force from 1. 9. 2026). */

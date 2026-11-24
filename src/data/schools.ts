@@ -1,4 +1,5 @@
 import officialSchools from "./official-schools.json";
+import schoolExtras from "./school-extras.json";
 import type { CatalogProgram, SchoolSummary } from "../lib/school-data";
 import { REGIONS, regionFromRegister, type Region } from "../lib/regions";
 import { classifySupport, type SupportType } from "../lib/special-needs";
@@ -188,6 +189,10 @@ export const catalogPrograms = (programs: readonly SchoolProgram[]): CatalogProg
     .map(({ code, name, isPhasingOut }) => ({ code, name, isPhasingOut }));
 };
 
+const openDaysById = new Map<string, string[]>(
+  Object.entries(schoolExtras.schools).map(([id, extras]) => [id, extras.openDays?.dates ?? []]),
+);
+
 export const toSchoolSummary = (school: School): SchoolSummary => ({
   id: school.id,
   name: school.name,
@@ -210,6 +215,7 @@ export const toSchoolSummary = (school: School): SchoolSummary => ({
   website: school.website,
   latitude: school.latitude,
   longitude: school.longitude,
+  openDays: openDaysById.get(school.id) ?? [],
 });
 
 export const schoolsByName = [...schools].sort((left, right) => left.name.localeCompare(right.name, "cs"));

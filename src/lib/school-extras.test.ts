@@ -6,6 +6,8 @@ import {
   extrasSourceFrom,
   formatOpenDay,
   gradesRule,
+  localToday,
+  openDayChipHtml,
   openDaysNote,
   upcomingOpenDays,
   type AdmissionInfo,
@@ -63,6 +65,18 @@ describe("open days", () => {
 
   it("formats a day in Czech with the weekday", () => {
     expect(formatOpenDay("2027-01-15")).toBe("pá 15. 1. 2027");
+    expect(formatOpenDay("2027-01-15", false)).toBe("pá 15. 1.");
+  });
+
+  it("puts the next open day on a card chip, nothing when none is left", () => {
+    const dates = ["2026-11-20", "2027-01-15", "2027-02-01"];
+    expect(openDayChipHtml(dates, "2026-11-24")).toContain("pá 15. 1.");
+    expect(openDayChipHtml(dates, "2027-02-02")).toBe("");
+    expect(openDayChipHtml([], "2026-11-24")).toBe("");
+  });
+
+  it("gives today's local date as an ISO date", () => {
+    expect(localToday(new Date(2027, 0, 5, 23, 30))).toBe("2027-01-05");
   });
 });
 

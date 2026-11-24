@@ -26,6 +26,8 @@ export type SchoolSummary = {
   website: string;
   latitude: number | null;
   longitude: number | null;
+  /** Announced open days as ISO dates, sorted; past ones are filtered out in the browser. */
+  openDays: string[];
 };
 
 export type CatalogProgram = { code: string; name: string; isPhasingOut: boolean };

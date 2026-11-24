@@ -567,6 +567,7 @@ const metadata = {
     import { isPlainClick, returnTarget } from "../../lib/return-link";
     import { tuitionBadge } from "../../lib/tuition";
     import { enableWageChartHover } from "../../lib/wage-chart-hover";
+    import { localToday } from "../../lib/school-extras";
 
     enableWageChartHover();
 
@@ -816,8 +817,7 @@ const metadata = {
       // The page is built ahead of time; hide open days that have passed since and highlight the next one.
       const openDays = [...document.querySelectorAll<HTMLElement>("[data-open-day]")];
       if (openDays.length > 0) {
-        const now = new Date();
-        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        const today = localToday();
         const upcoming = openDays.filter((item) => (item.dataset.openDay ?? "") >= today);
         openDays.forEach((item) => { item.hidden = !upcoming.includes(item); });
         upcoming[0]?.classList.replace("bg-card", "bg-sun");
