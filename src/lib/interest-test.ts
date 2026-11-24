@@ -314,6 +314,53 @@ export type Recommendation = SchoolSummary & {
 };
 export type RankingResult = { schools: Recommendation[]; withoutLocation: number; mainInterest: Category | null };
 
+export type RecommendedProgram = {
+  code: string;
+  name: string;
+  categories: Category[];
+  score: number;
+  matchesMain: boolean;
+  /** How many of the recommended schools list it. */
+  schools: number;
+};
+
+/**
+ * The programs behind the recommended schools, one per program code: main-interest programs first, then by fit,
+ * then by how many recommended schools offer them.
+ */
+export const recommendedPrograms = (schools: readonly Recommendation[], limit = 8): RecommendedProgram[] => {
+  const byCode = new Map<string, RecommendedProgram>();
+  for (const school of schools) {
+    for (const program of school.programs) {
+      const known = byCode.get(program.code);
+      if (!known) {
+        byCode.set(program.code, {
+          code: program.code,
+          name: program.name,
+          categories: program.categories,
+          score: program.score,
+          matchesMain: program.matchesMain,
+          schools: 1,
+        });
+        continue;
+      }
+      known.schools += 1;
+      known.matchesMain ||= program.matchesMain;
+      if (program.score > known.score) {
+        known.score = program.score;
+        known.categories = program.categories;
+      }
+    }
+  }
+  return [...byCode.values()]
+    .sort((left, right) =>
+      Number(right.matchesMain) - Number(left.matchesMain) ||
+      right.score - left.score ||
+      right.schools - left.schools ||
+      left.name.localeCompare(right.name, "cs"))
+    .slice(0, limit);
+};
+
 export type RankingInput = {
   schools: readonly SchoolSummary[];
   programsById: SchoolProgramsById;

@@ -95,6 +95,7 @@ const metadata = {
               </button>
             </div>
             <p id="selected-program-count" class="mt-1 text-muted-foreground"></p>
+            <a href="#program-schools" class="mt-2 inline-block text-sm font-semibold text-primary underline underline-offset-2">↓ Školy s tímto oborem od nejbližší</a>
             <div id="program-outlook" class="mt-5 grid gap-4 md:grid-cols-2" aria-live="polite" hidden>
               <section class="rounded-[3px] border border-border bg-card p-4">
                 <h3 class="font-display text-lg font-extrabold">💼 Uplatnění v praxi</h3>
@@ -122,7 +123,21 @@ const metadata = {
               <p id="outlook-sources" class="text-xs leading-5 text-muted-foreground md:col-span-2"></p>
             </div>
             <p id="outlook-status" class="mt-3 text-xs text-muted-foreground" aria-live="polite"></p>
-            <ul id="program-school-list" class="mt-5 divide-y divide-border overflow-hidden rounded-[3px] border border-border bg-card"></ul>
+            <div id="program-schools" class="mt-5 scroll-mt-24 rounded-[3px] border border-border bg-card p-4">
+              <p class="text-sm font-semibold text-foreground">📍 Odkud dojíždíš? Školy seřadím od nejbližší.</p>
+              <div class="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                <select id="obory-home-region" class="rounded-[6px] border-2 border-ink/60 bg-card px-3 py-2 text-sm text-foreground" aria-label="Kraj, kde bydlíš">
+                  <option value="">Vyber kraj…</option>
+                  {REGIONS.map((region) => <option value={region}>{region}</option>)}
+                </select>
+                <select id="obory-home-town" class="rounded-[6px] border-2 border-ink/60 bg-card px-3 py-2 text-sm text-foreground disabled:opacity-60" aria-label="Obec, kde bydlíš" disabled>
+                  <option value="">Nejdřív vyber kraj</option>
+                </select>
+                <button id="obory-geolocation" type="button" class="btn-outline px-3 py-2 text-sm">Moje poloha</button>
+              </div>
+              <p id="obory-home-status" class="mt-2 text-xs text-muted-foreground" aria-live="polite"></p>
+            </div>
+            <ul id="program-school-list" class="mt-3 divide-y divide-border overflow-hidden rounded-[3px] border border-border bg-card"></ul>
             <div id="program-map" class="mt-5 h-80 w-full overflow-hidden rounded-[3px] border border-border shadow-paper"></div>
             <p id="program-map-status" class="mt-2 text-xs text-muted-foreground" aria-live="polite"></p>
           </div>
@@ -141,8 +156,13 @@ const metadata = {
   <div id="program-data" data-programs={JSON.stringify(programCatalog)} hidden></div>
   <script>
     import { withBase } from "../lib/urls";
+    import { loadHome, saveHome, type SavedHome } from "../lib/quiz-storage";
+    import { isInCzechRepublic } from "../lib/regions";
+    import towns from "../data/towns.json";
     import {
+      distanceKm,
       escapeHtml,
+      formatDistance,
       getFavoritePrograms,
       loadProgramOutlook,
       loadSchools,
@@ -253,13 +273,106 @@ const metadata = {
       let map: LeafletMap | null = null;
       let markers: Marker[] = [];
 
+      // The home saved by the quiz or a school page; with one, schools are listed nearest first.
+      let home: SavedHome | null = loadHome();
+      const homeRegionSelect = document.getElementById("obory-home-region") as HTMLSelectElement | null;
+      const homeTownSelect = document.getElementById("obory-home-town") as HTMLSelectElement | null;
+      const homeStatus = document.getElementById("obory-home-status");
+      const geolocationButton = document.getElementById("obory-geolocation") as HTMLButtonElement | null;
+      let locationRequest = 0;
+
+      const distanceTo = (school: SchoolSummary) =>
+        home && school.latitude !== null && school.longitude !== null
+          ? distanceKm(home.latitude, home.longitude, school.latitude, school.longitude)
+          : null;
+
       const schoolsFor = (program: Program) => {
         const region = regionSelect?.value ?? "";
         return program.schoolIds
           .map((id) => schoolsById.get(id))
           .filter((school): school is SchoolSummary => school !== undefined && (!region || school.region === region))
-          .sort((left, right) => left.name.localeCompare(right.name, "cs"));
+          .map((school) => ({ school, distance: distanceTo(school) }))
+          // Nearest first; schools without a known position go last, then by name.
+          .sort((left, right) => (left.distance ?? Infinity) - (right.distance ?? Infinity) ||
+            left.school.name.localeCompare(right.school.name, "cs"));
       };
+
+      const fillTowns = (region: string) => {
+        if (!homeTownSelect) return;
+        const regionTowns = towns
+          .filter((town) => town.region === region)
+          .sort((left, right) => left.name.localeCompare(right.name, "cs", { numeric: true }));
+        homeTownSelect.replaceChildren(
+          new Option(region ? (region === "Praha" ? "Vyber obvod…" : "Vyber obec…") : "Nejdřív vyber kraj", ""),
+          ...regionTowns.map((town) => {
+            const option = new Option(town.name, `${town.region}|${town.name}`);
+            option.dataset.latitude = String(town.latitude);
+            option.dataset.longitude = String(town.longitude);
+            return option;
+          }),
+        );
+        homeTownSelect.disabled = regionTowns.length === 0;
+      };
+
+      const paintHomeStatus = () => {
+        if (!homeStatus) return;
+        homeStatus.textContent = home
+          ? `Školy jsou seřazené podle vzdálenosti (vzdušnou čarou) od: ${home.label}. Bydliště si pamatuje jen tvůj prohlížeč.`
+          : "Bez bydliště jsou školy seřazené podle abecedy.";
+      };
+
+      const setHome = (next: SavedHome) => {
+        home = next;
+        saveHome(next);
+        paintHomeStatus();
+        if (selectedIndex !== null) selectProgram(selectedIndex, false);
+      };
+
+      if (home?.region) {
+        if (homeRegionSelect) homeRegionSelect.value = home.region;
+        fillTowns(home.region);
+        if (homeTownSelect) homeTownSelect.value = home.town;
+      }
+      paintHomeStatus();
+
+      homeRegionSelect?.addEventListener("change", () => {
+        locationRequest += 1;
+        fillTowns(homeRegionSelect.value);
+      });
+      homeTownSelect?.addEventListener("change", () => {
+        locationRequest += 1;
+        const option = homeTownSelect.selectedOptions[0];
+        const latitude = Number(option?.dataset.latitude);
+        const longitude = Number(option?.dataset.longitude);
+        if (!option?.value || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+        setHome({ label: option.textContent ?? "", latitude, longitude, region: homeRegionSelect?.value ?? "", town: option.value });
+      });
+      geolocationButton?.addEventListener("click", () => {
+        if (!navigator.geolocation) {
+          if (homeStatus) homeStatus.textContent = "Tenhle prohlížeč polohu neumí. Vyber kraj a obec.";
+          return;
+        }
+        if (homeStatus) homeStatus.textContent = "Zjišťuji polohu…";
+        locationRequest += 1;
+        const request = locationRequest;
+        navigator.geolocation.getCurrentPosition(
+          ({ coords }) => {
+            if (request !== locationRequest) return;
+            if (!isInCzechRepublic(coords.latitude, coords.longitude)) {
+              if (homeStatus) homeStatus.textContent = "Podle polohy nejsi v Česku. Vyber kraj a obec.";
+              return;
+            }
+            if (homeRegionSelect) homeRegionSelect.value = "";
+            fillTowns("");
+            setHome({ label: "tvoje poloha", latitude: coords.latitude, longitude: coords.longitude, region: "", town: "" });
+          },
+          () => {
+            if (request !== locationRequest || !homeStatus) return;
+            homeStatus.textContent = "Polohu se nepovedlo zjistit. Vyber kraj a obec.";
+          },
+          { timeout: 10000, maximumAge: 300000 },
+        );
+      });
 
       const updateCounts = () => {
         const region = regionSelect?.value ?? "";
@@ -379,11 +492,14 @@ const metadata = {
         if (scroll) track("program_view", { program: program.name, code: program.code, schools: matching.length });
         selectedName.textContent = program.name;
         selectedCount.textContent = `${program.kind ? `${program.kind[0]?.toLocaleUpperCase("cs")}${program.kind.slice(1)} · ` : ""}${program.code} · nabízí ${pluralSchools(matching.length)}`;
-        schoolList.innerHTML = matching.map((school) => `
+        schoolList.innerHTML = matching.map(({ school, distance }) => `
           <li>
-            <a class="flex flex-col gap-0.5 px-4 py-3 hover:bg-muted" href="${withBase(`/skoly/${encodeURIComponent(school.id)}/`)}">
-              <span class="font-medium text-foreground">${escapeHtml(school.name)}</span>
-              <span class="text-sm text-muted-foreground">${escapeHtml(school.address)}</span>
+            <a class="flex items-start justify-between gap-3 px-4 py-3 hover:bg-muted" href="${withBase(`/skoly/${encodeURIComponent(school.id)}/`)}">
+              <span class="flex min-w-0 flex-col gap-0.5">
+                <span class="font-medium text-foreground">${escapeHtml(school.name)}</span>
+                <span class="text-sm text-muted-foreground">${escapeHtml(school.address)}</span>
+              </span>
+              ${distance !== null ? `<span class="shrink-0 rounded-full bg-sun/50 px-2.5 py-1 text-xs font-bold text-ink">${escapeHtml(formatDistance(distance))}</span>` : ""}
             </a>
           </li>`).join("");
         placeholder.hidden = true;
@@ -392,7 +508,7 @@ const metadata = {
         // Region changes keep the program, so only a new pick reloads its outlook.
         if (scroll) showOutlook(program);
         renderList();
-        window.setTimeout(() => renderMap(matching), 0);
+        window.setTimeout(() => renderMap(matching.map(({ school }) => school)), 0);
         // Only move focus/scroll for an explicit pick, not when the region select changes.
         if (!scroll) return;
         if (selection && window.matchMedia("(max-width: 1023px)").matches) {

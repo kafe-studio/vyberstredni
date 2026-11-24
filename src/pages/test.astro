@@ -141,6 +141,12 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
           <p class="mt-3 text-xs text-muted-foreground">Odpovědi i bydliště si pamatuje jen tvůj prohlížeč, dokud je nesmažeš.</p>
         </div>
 
+        <section id="recommended-programs" class="mt-10" hidden>
+          <h2 class="text-2xl font-extrabold">Obory, které ti doporučuju</h2>
+          <p class="mt-1 text-sm text-muted-foreground">Klikni na obor a uvidíš všechny školy, které ho nabízejí, seřazené od nejbližší.</p>
+          <ul id="recommended-programs-list" class="mt-4 grid gap-2 sm:grid-cols-2"></ul>
+        </section>
+
         <div class="mb-4 mt-10 flex flex-wrap items-end justify-between gap-3">
           <h2 class="text-2xl font-extrabold">Školy, které by ti mohly sednout</h2>
           <label class="flex items-center gap-2 text-sm">
@@ -164,13 +170,14 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
 
   <script>
     import { withBase } from "../lib/urls";
-    import { escapeHtml, loadSchoolPrograms, loadSchoolStats, loadSchools, type SchoolStatsById } from "../lib/school-data";
+    import { escapeHtml, loadSchoolPrograms, loadSchoolStats, loadSchools, programPageUrl, type SchoolStatsById } from "../lib/school-data";
     import { compareSchools, isSortKey, schoolFacts, type SortKey } from "../lib/school-sort";
     import {
       categoryLabels,
       matchedInterests,
       rankInterests,
       rankSchools,
+      recommendedPrograms,
       withoutInterests,
       type Category,
       type Recommendation,
@@ -462,7 +469,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
                 const matched = matchedInterests(program.categories, activeInterests);
                 // Tags only where a program differs from the school's combination above; repeating it adds noise.
                 const tags = matched.join() === bestMatch.join() ? [] : matched;
-                return `<li class="flex gap-2"><span class="text-primary" aria-hidden="true">✓</span><span>${escapeHtml(program.name)}${tags.length
+                return `<li class="flex gap-2"><span class="text-primary" aria-hidden="true">✓</span><span><a class="underline decoration-primary/40 underline-offset-2 hover:text-primary" href="${programPageUrl(program.code)}" title="Všechny školy s tímto oborem">${escapeHtml(program.name)}</a>${tags.length
                   ? ` <span class="ml-1 inline-flex flex-wrap gap-1 align-middle">${tags.map((category) => interestTag(category, "program")).join("")}</span>`
                   : ""}</span></li>`;
               }).join("")}
@@ -473,6 +480,33 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
       };
 
       let mainLabel: string | null = null;
+
+      const programsSection = document.getElementById("recommended-programs");
+      const programsList = document.getElementById("recommended-programs-list");
+      /** The programs behind the recommendations, each linking to all schools that offer it. */
+      const renderPrograms = () => {
+        if (!programsSection || !programsList) return;
+        // Gymnázium-track results also list lyceums that only fit the track; recommend those tied to an interest.
+        const fitting = rankedByFit.map((school) => ({
+          ...school,
+          programs: school.programs.filter((program) => matchedInterests(program.categories, activeInterests).length > 0),
+        }));
+        const programs = recommendedPrograms(fitting);
+        programsSection.hidden = programs.length === 0;
+        // Same name, different program (4- and 8-year gymnázium): tell them apart by the code.
+        const names = programs.map((program) => program.name);
+        programsList.innerHTML = programs.map((program) => {
+          const duplicate = names.filter((name) => name === program.name).length > 1;
+          const matched = matchedInterests(program.categories, activeInterests);
+          return `<li>
+            <a class="flex h-full flex-col gap-1.5 rounded-[3px] border border-border bg-card p-3 shadow-paper transition hover:-translate-y-0.5 hover:shadow-paper-lift" href="${programPageUrl(program.code)}">
+              <span class="font-semibold text-foreground">${escapeHtml(program.name)}${duplicate ? ` <span class="text-xs font-normal text-muted-foreground">${escapeHtml(program.code)}</span>` : ""}</span>
+              ${matched.length ? `<span class="flex flex-wrap gap-1">${matched.map((category) => interestTag(category, "program")).join("")}</span>` : ""}
+              <span class="text-xs font-semibold text-primary">Školy s tímto oborem →</span>
+            </a>
+          </li>`;
+        }).join("");
+      };
 
       const interestHint = document.getElementById("interest-hint");
       /** The student's interests as switches: on ones in their colour, off ones faded and struck through. */
@@ -634,6 +668,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         allInterests = interests;
         activeInterests = interests.filter((category) => !offInterests.has(category));
         renderInterestSwitches();
+        renderPrograms();
         if (resultsNote) {
           // With no results at all the empty-state message in the list explains it; no note about interests.
           const supportFirst = support && ranked.some((school) => school.supportMatch)

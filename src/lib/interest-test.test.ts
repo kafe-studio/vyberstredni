@@ -9,6 +9,7 @@ import {
   programLevel,
   rankInterests,
   rankSchools,
+  recommendedPrograms,
   withoutInterests,
   type Category,
   type HomeLocation,
@@ -407,5 +408,21 @@ describe("switching interests on the results page", () => {
     const listed = musicOnly.schools.flatMap((school) => school.programs);
     expect(listed.length).toBeGreaterThan(0);
     expect(listed.every((program) => program.categories.includes("music"))).toBe(true);
+  });
+});
+
+describe("recommended programs", () => {
+  it("lists each program once, main-interest programs first, with the number of schools", () => {
+    const totals = { ...emptyTotals(), cars: 6, music: 2 };
+    const ranked = rankSchools({ schools: summaries, programsById, totals, track: "any", primaryInterest: "cars" }).schools;
+    const programs = recommendedPrograms(ranked);
+    expect(programs.length).toBeGreaterThan(0);
+    expect(programs.length).toBeLessThanOrEqual(8);
+    expect(new Set(programs.map((program) => program.code)).size).toBe(programs.length);
+    expect(programs[0]?.matchesMain).toBe(true);
+    expect(programs[0]?.categories).toContain("cars");
+    const first = programs[0];
+    const offering = ranked.filter((school) => school.programs.some((program) => program.code === first?.code)).length;
+    expect(first?.schools).toBe(offering);
   });
 });
