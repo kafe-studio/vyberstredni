@@ -14,9 +14,28 @@ import wagesData from "../../data/program-wages.json";
 import { programOutlook, type DemandLevel, type ProgramOutlookRecord } from "../../lib/program-outlook";
 import { formatCzk, programWages, sphereLabels, wageSummary, wagesSourceFrom } from "../../lib/program-wages";
 import { wageChartHtml } from "../../lib/wage-chart";
+import extrasData from "../../data/school-extras.json";
+import {
+  ADMISSION_LAW_URL,
+  SOCIAL_NETWORKS,
+  admissionLines,
+  extrasSourceFrom,
+  formatOpenDay,
+  openDaysNote,
+  gradesLabels,
+  gradesRule,
+  socialLabels,
+  type GradesRule,
+} from "../../lib/school-extras";
 
 const outlookRecords: Record<string, ProgramOutlookRecord> = outlookData.programs;
 const wageSource = wagesSourceFrom(wagesData);
+const extrasSource = extrasSourceFrom(extrasData);
+const gradesClasses: Record<GradesRule, string> = {
+  counted: "bg-sun/60 text-ink",
+  "not-counted": "bg-mint/50 text-ink",
+  unknown: "bg-muted text-muted-foreground",
+};
 const demandClasses: Record<DemandLevel, string> = {
   high: "bg-mint/50",
   average: "bg-sun/60",
@@ -50,6 +69,13 @@ const regionTowns = towns
   .sort((left, right) => left.name.localeCompare(right.name, "cs", { numeric: true }));
 const defaultTown = regionTowns.find((town) => town.name === school.town) ?? regionTowns[0];
 const inspection = school.inspection;
+const extras = extrasSource.schools[school.id];
+const infoabsolventCardUrl = extrasSource.sources.infoabsolvent.cardUrl.replace("{red_izo}", school.redIzo);
+const extrasFetchedLabel = new Date(`${extrasSource.fetchedAt}T00:00:00`).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
+const socialLinks = SOCIAL_NETWORKS.flatMap((network) => {
+  const url = extras?.social[network];
+  return url ? [{ network, url }] : [];
+});
 const tuition = tuitionOf(school.founderCode);
 const cermat = cermatFor(school.id);
 const maturita = cermat?.maturita ?? null;
@@ -61,6 +87,7 @@ const programRows = activePrograms.map((program) => ({
   admission: admissionOf(program.code),
   outlook: programOutlook(program.code, outlookRecords[program.code]),
   wages: programWages(program.code, wageSource),
+  entrance: extras?.admissions[program.code],
 })).map((program) => ({
   ...program,
   wageSummary: program.wages ? wageSummary(program.wages) : null,
@@ -159,6 +186,29 @@ const metadata = {
           )}
         </div>
 
+        {extras?.openDays && (
+          <section id="open-days" class="mt-8 rounded-[3px] border-2 border-ink/70 bg-sun/20 p-5" aria-labelledby="open-days-heading">
+            <h2 id="open-days-heading" class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">📅 Dny otevřených dveří</h2>
+            {extras.openDays.dates.length > 0 ? (
+              <ul class="mt-3 flex flex-wrap gap-2">
+                {extras.openDays.dates.map((day) => (
+                  <li data-open-day={day} class="rounded-full border border-ink/30 bg-card px-3 py-1 text-sm font-semibold text-foreground">{formatOpenDay(day)}</li>
+                ))}
+              </ul>
+            ) : null}
+            {openDaysNote(extras.openDays) && (
+              <p class="mt-2 text-sm text-foreground">{extras.openDays.dates.length > 0 ? "Škola k tomu uvádí: " : ""}{openDaysNote(extras.openDays)}</p>
+            )}
+            <p id="open-days-past" class="mt-2 text-sm text-muted-foreground" hidden>
+              Ohlášené dny otevřených dveří už proběhly. Další termíny najdeš na webu školy.
+            </p>
+            <p class="mt-3 text-xs leading-5 text-muted-foreground">
+              Údaje nahlásila škola na <a class="underline" href={infoabsolventCardUrl} target="_blank" rel="noreferrer">Infoabsolvent.cz (NPI ČR)</a>, staženo {extrasFetchedLabel}.
+              Čas a případnou registraci ověř na webu školy.
+            </p>
+          </section>
+        )}
+
         <div class="mt-8 rounded-[3px] border border-border bg-card p-5">
           <h2 class="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Kontaktní údaje</h2>
           <dl class="mt-4 grid gap-4 sm:grid-cols-2">
@@ -170,7 +220,17 @@ const metadata = {
             <div><dt class="text-xs text-muted-foreground">Web školy</dt><dd class="mt-1 text-sm font-medium">
               {school.website ? <a class="text-primary underline" href={school.website.startsWith("http") ? school.website : `https://${school.website}`} target="_blank" rel="noreferrer">{school.website}</a> : "V rejstříku neuveden"}
             </dd></div>
+            {socialLinks.length > 0 && (
+              <div class="sm:col-span-2"><dt class="text-xs text-muted-foreground">Sociální sítě</dt><dd class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium">
+                {socialLinks.map((link) => (
+                  <a class="text-primary underline" href={link.url} target="_blank" rel="noreferrer">{socialLabels[link.network]}</a>
+                ))}
+              </dd></div>
+            )}
           </dl>
+          {socialLinks.length > 0 && (
+            <p class="mt-3 text-xs text-muted-foreground">Sociální sítě jsou odkazy z webu školy.</p>
+          )}
         </div>
 
         <section class="mt-8 rounded-[3px] border border-border bg-card p-5" aria-labelledby="programs-heading">
@@ -195,6 +255,14 @@ const metadata = {
                     </button>
                   </div>
                   <a class="mt-1 inline-block text-xs text-primary hover:underline" href={withBase(`/obory/?obor=${encodeURIComponent(program.code)}`)}>Další školy s tímto oborem →</a>
+                  {program.entrance && (
+                    <div class="mt-3 border-t border-border pt-3 text-xs">
+                      <p><span class:list={["inline-flex rounded-full px-2 py-0.5 font-semibold", gradesClasses[gradesRule(program.entrance)]]}>📄 {gradesLabels[gradesRule(program.entrance)]}</span></p>
+                      <ul class="mt-1.5 space-y-0.5 text-muted-foreground">
+                        {admissionLines(program.entrance).map((line) => <li>{line}</li>)}
+                      </ul>
+                    </div>
+                  )}
                   {program.admission && program.admission.capacity > 0 && (
                     <dl class="mt-3 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
                       <div class="flex justify-between gap-2">
@@ -310,6 +378,12 @@ const metadata = {
             Přijímačky: <a class="text-primary underline" href={cermatInfo.admissionSource} target="_blank" rel="noopener">CERMAT</a>, jednotná přijímací zkouška
             z češtiny a matematiky v 1. kole. „Lepší než X % uchazečů“ znamená, že horší nebo stejný výsledek mělo X % všech uchazečů v ČR.
             Školní část přijímaček (pohovory, talentovky, známky) v datech není, proto to není přesná hranice pro přijetí.
+            <span class="mt-2 block">
+              Vysvědčení a další kritéria: jednotná zkouška musí tvořit aspoň 60 % celkového hodnocení (u Gymnázia se sportovní přípravou 40 %),
+              zbytek určuje škola a může započítat vysvědčení, soutěže nebo vlastní zkoušku
+              (<a class="text-primary underline" href={ADMISSION_LAW_URL} target="_blank" rel="noopener">školský zákon § 60i</a>).
+              Co škola počítá, nahlásila na <a class="text-primary underline" href={infoabsolventCardUrl} target="_blank" rel="noreferrer">Infoabsolvent.cz</a>{` (staženo ${extrasFetchedLabel}).`} Do konce ledna může podmínky upravit, závazná kritéria a jejich váhu zveřejní na svém webu.
+            </span>
           </p>
         </section>
 
@@ -738,6 +812,18 @@ const metadata = {
         updateProgramButtons();
       }));
       updateProgramButtons();
+
+      // The page is built ahead of time; hide open days that have passed since and highlight the next one.
+      const openDays = [...document.querySelectorAll<HTMLElement>("[data-open-day]")];
+      if (openDays.length > 0) {
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        const upcoming = openDays.filter((item) => (item.dataset.openDay ?? "") >= today);
+        openDays.forEach((item) => { item.hidden = !upcoming.includes(item); });
+        upcoming[0]?.classList.replace("bg-card", "bg-sun");
+        const pastNote = document.getElementById("open-days-past");
+        if (pastNote) pastNote.hidden = upcoming.length > 0;
+      }
       googleDirections?.addEventListener("click", () => track("directions", { fromHome: homeKnown }));
       selectA?.addEventListener("change", renderComparison);
       selectB?.addEventListener("change", renderComparison);
