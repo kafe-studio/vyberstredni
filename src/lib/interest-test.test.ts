@@ -4,10 +4,13 @@ import {
   emptyTotals,
   gymnasiumProfile,
   isNotForNinthGraders,
+  matchedInterests,
   programCategories,
   programLevel,
   rankInterests,
   rankSchools,
+  withoutInterests,
+  type Category,
   type HomeLocation,
   type StudyTrack,
 } from "./interest-test";
@@ -367,5 +370,42 @@ describe("sampled sets of answers", () => {
     const first = recommend(answers).schools.map((school) => school.id);
     const second = recommend(answers).schools.map((school) => school.id);
     expect(second).toEqual(first);
+  });
+});
+
+describe("switching interests on the results page", () => {
+  it("zeroes only the switched-off interests", () => {
+    const totals = { ...emptyTotals(), cars: 5, electro: 3, music: 1 };
+    const masked = withoutInterests(totals, new Set<Category>(["cars"]));
+    expect(masked.cars).toBe(0);
+    expect(masked.electro).toBe(3);
+    expect(masked.music).toBe(1);
+    expect(totals.cars).toBe(5);
+  });
+
+  it("lists the interests a program serves in the student's order", () => {
+    expect(matchedInterests(["electro", "cars", "practical"], ["cars", "music", "electro"])).toEqual(["cars", "electro"]);
+    expect(matchedInterests(["music"], ["cars"])).toEqual([]);
+  });
+
+  it("re-ranks the schools for the interests left on", () => {
+    const totals = { ...emptyTotals(), cars: 6, music: 4 };
+    const rank = (off: Set<Category>) => rankSchools({
+      schools: summaries,
+      programsById,
+      totals: withoutInterests(totals, off),
+      track: "any",
+      primaryInterest: off.has("cars") ? null : "cars",
+    });
+    const both = rank(new Set());
+    const musicOnly = rank(new Set<Category>(["cars"]));
+    expect(both.mainInterest).toBe("cars");
+    expect(musicOnly.mainInterest).toBe("music");
+    const firstMusic = musicOnly.schools[0];
+    expect(firstMusic?.programs[0]?.categories).toContain("music");
+    // With cars off, every listed program is there for music, the only interest left.
+    const listed = musicOnly.schools.flatMap((school) => school.programs);
+    expect(listed.length).toBeGreaterThan(0);
+    expect(listed.every((program) => program.categories.includes("music"))).toBe(true);
   });
 });

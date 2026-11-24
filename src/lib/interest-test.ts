@@ -277,6 +277,17 @@ export const rankInterests = (totals: Record<Category, number>, primary: Categor
     Number(right === primary) - Number(left === primary) ||
     CATEGORIES.indexOf(left) - CATEGORIES.indexOf(right));
 
+/** Totals with the interests the student switched off on the results page set to zero. */
+export const withoutInterests = (totals: Record<Category, number>, off: ReadonlySet<Category>): Record<Category, number> => {
+  const masked = emptyTotals();
+  for (const category of CATEGORIES) masked[category] = off.has(category) ? 0 : totals[category];
+  return masked;
+};
+
+/** The student's interests (in their order of strength) that a program serves; empty when it serves none. */
+export const matchedInterests = (programCategories: readonly Category[], interests: readonly Category[]): Category[] =>
+  interests.filter((category) => programCategories.includes(category));
+
 /** Keeps the first program per name; cards show names only, so names must not repeat. */
 const uniqueByName = <T extends { name: string }>(programs: readonly T[]) => {
   const seen = new Set<string>();

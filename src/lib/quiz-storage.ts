@@ -1,4 +1,5 @@
 import { readHistoryValue, writeHistoryValue } from "./history-state";
+import { isCategory, type Category } from "./interest-test";
 import { QUESTIONS } from "./quiz-questions";
 
 /**
@@ -21,6 +22,8 @@ export type SavedQuiz = {
   home: SavedHome | null;
   maxDistance: string;
   completed: boolean;
+  /** Interests switched off on the results page; cleared whenever the answers change. */
+  offInterests: Category[];
 };
 
 const validValues = new Map(QUESTIONS.map((question) => [question.id, new Set(question.options.map((option) => option.value))]));
@@ -58,7 +61,10 @@ export const loadQuiz = (): SavedQuiz | null => {
     const maxDistance = typeof parsed.maxDistance === "string" && /^\d*$/.test(parsed.maxDistance) ? parsed.maxDistance : "";
     const allAnswered = QUESTIONS.every((question) => question.id in answers);
     if (Object.keys(answers).length === 0 && !home) return null;
-    return { answers, home, maxDistance, completed: parsed.completed === true && allAnswered };
+    const offInterests = Array.isArray(parsed.offInterests)
+      ? parsed.offInterests.filter((value): value is Category => typeof value === "string" && isCategory(value))
+      : [];
+    return { answers, home, maxDistance, completed: parsed.completed === true && allAnswered, offInterests };
   } catch {
     return null;
   }
@@ -78,7 +84,13 @@ export const loadHome = (): SavedHome | null => loadQuiz()?.home ?? null;
 /** Changes only the home and keeps the quiz answers; the shown results are recomputed for the new home next time. */
 export const saveHome = (home: SavedHome) => {
   const saved = loadQuiz();
-  saveQuiz({ answers: saved?.answers ?? {}, home, maxDistance: saved?.maxDistance ?? "", completed: saved?.completed ?? false });
+  saveQuiz({
+    answers: saved?.answers ?? {},
+    home,
+    maxDistance: saved?.maxDistance ?? "",
+    completed: saved?.completed ?? false,
+    offInterests: saved?.offInterests ?? [],
+  });
 };
 
 export const clearQuiz = () => {
