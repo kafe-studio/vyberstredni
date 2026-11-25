@@ -447,7 +447,7 @@ const stepBackgrounds = Array.from({ length: totalSteps }, (_, index) => backgro
         const facts = schoolFacts(sortable(school), currentSort());
         return `
           <article class="school-card p-5" data-school-id="${escapeHtml(school.id)}">
-            <a class="text-lg font-semibold text-foreground hover:text-primary" href="${href}">${escapeHtml(school.name)}</a>
+            <a class="font-display text-xl font-extrabold leading-snug text-ink hover:text-primary" href="${href}">${escapeHtml(school.name)}</a>
             <p class="mt-1 text-sm text-muted-foreground">${escapeHtml(school.region)}</p>
             <p class="mt-2 flex flex-wrap gap-2 text-xs">
               ${tuitionChipHtml(school.founderCode)}
