@@ -1,0 +1,125 @@
+---
+export const prerender = true;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { withBase } from "../../lib/urls";
+
+const metadata = {
+  title: "Odhlášené e-maily",
+  description: "Adresy, které se odhlásily z e-mailů posílaných z jaknaskolu.cz.",
+};
+---
+
+<BaseLayout {metadata} showQuizBanner={false}>
+  <meta slot="head" name="robots" content="noindex, nofollow" />
+  <section class="px-4 pb-24 pt-24 sm:px-6">
+    <div class="mx-auto max-w-4xl">
+      <a href={withBase("/admin/")} class="text-sm font-semibold text-primary hover:underline">← Administrace</a>
+      <h1 class="mt-2 text-3xl font-extrabold md:text-4xl">Odhlášené e-maily</h1>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Adresy, které klikly na „Vypnout odběr“ v e-mailu nebo na tlačítko „Odhlásit odběr“ v poštovním programu.
+        Rozesílací skript je před každou dávkou přeskočí.
+      </p>
+
+      <p id="unsub-login" class="mt-8 hidden rounded-[3px] bg-card p-6 shadow-paper">
+        Pro zobrazení se nejdřív <a class="font-bold text-primary underline" href={withBase("/admin/")}>přihlas do administrace</a>.
+      </p>
+
+      <div id="unsub-body" class="mt-6 hidden">
+        <div class="flex flex-wrap items-center gap-3">
+          <p id="unsub-count" class="rounded-[3px] bg-card px-4 py-2 text-sm font-bold shadow-paper"></p>
+          <button id="unsub-copy" type="button" class="btn-outline px-4 py-2 text-sm">Kopírovat adresy</button>
+          <button id="unsub-refresh" type="button" class="btn-outline px-4 py-2 text-sm">Obnovit</button>
+          <p id="unsub-status" class="text-sm text-muted-foreground" aria-live="polite"></p>
+        </div>
+        <div class="mt-4 overflow-x-auto rounded-[3px] bg-card shadow-paper">
+          <table class="w-full text-left text-sm">
+            <thead class="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th scope="col" class="px-4 py-3">E-mail</th>
+                <th scope="col" class="px-4 py-3">Odhlášeno</th>
+                <th scope="col" class="px-4 py-3">Jak</th>
+              </tr>
+            </thead>
+            <tbody id="unsub-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { withBase } from "../../lib/urls";
+  import { escapeHtml } from "../../lib/school-data";
+
+  type Row = { email: string; ts: number; source: string };
+
+  const SOURCE_LABELS: Record<string, string> = {
+    page: "Tlačítko v e-mailu",
+    "one-click": "Tlačítko v poštovním programu",
+  };
+
+  document.addEventListener("astro:page-load", () => {
+    const body = document.getElementById("unsub-body");
+    if (!body) return;
+    const login = document.getElementById("unsub-login");
+    const rowsEl = document.getElementById("unsub-rows");
+    const count = document.getElementById("unsub-count");
+    const status = document.getElementById("unsub-status");
+    let emails: string[] = [];
+
+    const render = (rows: Row[]) => {
+      emails = rows.map((row) => row.email);
+      if (count) count.textContent = `Celkem odhlášeno: ${rows.length}`;
+      if (!rowsEl) return;
+      rowsEl.innerHTML = rows.length
+        ? [...rows]
+            .reverse()
+            .map(
+              (row) => `<tr class="border-b border-border last:border-0">
+                <td class="px-4 py-2 font-medium">${escapeHtml(row.email)}</td>
+                <td class="px-4 py-2 whitespace-nowrap">${escapeHtml(new Date(row.ts).toLocaleString("cs-CZ"))}</td>
+                <td class="px-4 py-2">${escapeHtml(SOURCE_LABELS[row.source] ?? row.source)}</td>
+              </tr>`,
+            )
+            .join("")
+        : `<tr><td colspan="3" class="px-4 py-6 text-center text-muted-foreground">Zatím se nikdo neodhlásil.</td></tr>`;
+    };
+
+    const load = async () => {
+      if (status) status.textContent = "Načítám…";
+      try {
+        const response = await fetch(withBase("/api/admin/unsubscribes/"), { credentials: "same-origin" });
+        if (response.status === 401) {
+          body.classList.add("hidden");
+          login?.classList.remove("hidden");
+          if (status) status.textContent = "";
+          return;
+        }
+        if (!response.ok) throw new Error(String(response.status));
+        const data: { rows: Row[] } = await response.json();
+        login?.classList.add("hidden");
+        body.classList.remove("hidden");
+        render(data.rows);
+        if (status) status.textContent = `Aktualizováno ${new Date().toLocaleTimeString("cs-CZ")}`;
+      } catch {
+        body.classList.remove("hidden");
+        if (status) status.textContent = "Seznam se nepodařilo načíst. Zkus to znovu.";
+      }
+    };
+
+    document.getElementById("unsub-refresh")?.addEventListener("click", () => void load());
+    document.getElementById("unsub-copy")?.addEventListener("click", () => {
+      void navigator.clipboard.writeText(emails.join("\n")).then(
+        () => {
+          if (status) status.textContent = `Zkopírováno ${emails.length} adres.`;
+        },
+        () => {
+          if (status) status.textContent = "Kopírování se nepovedlo.";
+        },
+      );
+    });
+    void load();
+  });
+</script>

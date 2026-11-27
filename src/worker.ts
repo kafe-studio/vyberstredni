@@ -1,5 +1,4 @@
 import { handle } from "@astrojs/cloudflare/handler";
-import { handleIncomingEmail } from "./lib/bounces";
 import { ONE_CLICK_UNSUBSCRIBE_PATH, handleOneClickUnsubscribe } from "./lib/unsubscribe";
 
 const PRIMARY_HOST = "jaknaskolu.cz";
@@ -24,9 +23,5 @@ export default {
     if (target) return Response.redirect(target, 301);
     if (url.pathname === ONE_CLICK_UNSUBSCRIBE_PATH) return handleOneClickUnsubscribe(request);
     return handle(request, env, ctx);
-  },
-  /** Email Routing sends info@jaknaskolu.cz here: forwarded to the inbox, bounces recorded for the admin. */
-  async email(message) {
-    await handleIncomingEmail(message);
   },
 } satisfies ExportedHandler<Env>;
