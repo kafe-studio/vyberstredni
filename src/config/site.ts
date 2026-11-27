@@ -15,9 +15,9 @@ export const siteConfig = {
   address: "",
   /** Donation account; the QR image (QR Platba) encodes the same IBAN. */
   support: {
-    account: "2877598001/5500",
-    iban: "CZ40 5500 0000 0028 7759 8001",
-    qrImage: "/images/support-qr.jpg",
+    account: "670100-2232934629/6210",
+    iban: "CZ95 6210 6701 0022 3293 4629",
+    qrImage: "/images/support-qr.png",
   },
   /** The project's own profiles (Jak na školu); also the schema.org sameAs links. */
   socialLinks: {
