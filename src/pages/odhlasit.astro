@@ -1,0 +1,92 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { withBase } from "../lib/urls";
+import { isUnsubscribeConfigured, recordUnsubscribe, verifyUnsubscribeLink } from "../lib/unsubscribe";
+
+type State = "confirm" | "done" | "invalid" | "unavailable";
+
+// Mail scanners open links in e-mails, so GET only shows the button; the opt-out itself is a POST.
+let state: State = "invalid";
+let email = "";
+let token = "";
+
+if (!isUnsubscribeConfigured()) {
+  state = "unavailable";
+} else if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData().catch(() => null);
+  const verified = await verifyUnsubscribeLink(form?.get("e"), form?.get("t"));
+  if (verified) {
+    await recordUnsubscribe(verified, "page");
+    email = verified;
+    state = "done";
+  }
+} else {
+  const verified = await verifyUnsubscribeLink(Astro.url.searchParams.get("e"), Astro.url.searchParams.get("t"));
+  if (verified) {
+    email = verified;
+    token = Astro.url.searchParams.get("t") ?? "";
+    state = "confirm";
+  }
+}
+
+Astro.response.headers.set("cache-control", "no-store");
+if (state === "invalid") Astro.response.status = 400;
+if (state === "unavailable") Astro.response.status = 503;
+
+const metadata = {
+  title: "Odhlášení z e-mailů",
+  description: "Odhlášení z e-mailů posílaných z jaknaskolu.cz.",
+};
+---
+
+<BaseLayout {metadata} showQuizBanner={false}>
+  <meta slot="head" name="robots" content="noindex, nofollow" />
+  <section class="px-6 pb-20 pt-28">
+    <div class="track-card mx-auto max-w-xl p-8 shadow-sm">
+      {state === "confirm" && (
+        <>
+          <h1 class="text-3xl font-extrabold">Odhlášení z e-mailů</h1>
+          <p class="mt-4 text-muted-foreground">
+            Na adresu <strong class="text-ink">{email}</strong> už nebudeme posílat žádné e-maily z jaknaskolu.cz.
+          </p>
+          <form method="post" class="mt-6">
+            <input type="hidden" name="e" value={email} />
+            <input type="hidden" name="t" value={token} />
+            <button type="submit" class="btn-primary">Vypnout odběr e-mailů z jaknaskolu.cz</button>
+          </form>
+        </>
+      )}
+      {state === "done" && (
+        <>
+          <h1 class="text-3xl font-extrabold">Hotovo, jste odhlášeni</h1>
+          <p class="mt-4 text-muted-foreground">
+            Na adresu <strong class="text-ink">{email}</strong> už od nás žádný e-mail nepřijde. Omlouváme se za vyrušení.
+          </p>
+          <a href={withBase("/")} class="btn-outline mt-6 inline-flex">Na úvodní stránku</a>
+        </>
+      )}
+      {state === "invalid" && (
+        <>
+          <h1 class="text-3xl font-extrabold">Odkaz pro odhlášení nefunguje</h1>
+          <p class="mt-4 text-muted-foreground">
+            Odkaz je neúplný nebo poškozený. Napište nám prosím na
+            <a class="font-semibold underline" href="mailto:info@jaknaskolu.cz?subject=Odhl%C3%A1sit">info@jaknaskolu.cz</a>
+            a adresu odhlásíme ručně.
+          </p>
+        </>
+      )}
+      {state === "unavailable" && (
+        <>
+          <h1 class="text-3xl font-extrabold">Odhlášení je dočasně nedostupné</h1>
+          <p class="mt-4 text-muted-foreground">
+            Napište nám prosím na
+            <a class="font-semibold underline" href="mailto:info@jaknaskolu.cz?subject=Odhl%C3%A1sit">info@jaknaskolu.cz</a>
+            a adresu odhlásíme ručně.
+          </p>
+        </>
+      )}
+    </div>
+  </section>
+</BaseLayout>
