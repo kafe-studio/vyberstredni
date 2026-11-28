@@ -4,12 +4,15 @@ import { withBase } from "../../lib/urls";
 ---
 
 <div id="support" transition:persist="support-panel" class="group">
+  <!-- Small on phones and hidden there until the visitor has spent a minute on the site (see the script below). -->
   <button
     type="button"
     data-support-open
+    data-support-tab
+    hidden
     aria-controls="support-panel"
     aria-expanded="false"
-    class="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-xl border-2 border-r-0 border-ink bg-primary px-2 py-4 text-sm font-bold uppercase tracking-widest text-white shadow-lg transition-transform duration-300 [writing-mode:vertical-rl] hover:pr-3 motion-reduce:transition-none group-data-[open]:translate-x-full"
+    class="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-md border border-r-0 border-ink bg-primary px-0.5 py-2 text-[0.5625rem] font-bold uppercase tracking-wider text-white opacity-80 shadow transition-transform duration-300 [writing-mode:vertical-rl] hover:pr-1 motion-reduce:transition-none group-data-[open]:translate-x-full sm:rounded-l-xl sm:border-2 sm:px-2 sm:py-4 sm:text-sm sm:tracking-widest sm:opacity-100 sm:shadow-lg sm:hover:pr-3"
   >
     <span class="inline-block rotate-180">Podpora projektu</span>
   </button>
@@ -106,4 +109,34 @@ import { withBase } from "../../lib/urls";
   });
   // A pending offer must not open the panel over the next page.
   document.addEventListener("astro:before-swap", () => window.clearTimeout(offerTimer));
+
+  /**
+   * The side tab: on phones it appears only after a minute on the site (counted from the first page of the visit,
+   * so navigating does not restart it); on larger screens right away. The panel persists across navigations.
+   */
+  const TAB_DELAY_MS = 60_000;
+  const TAB_SINCE_KEY = "vyberstredni-support-tab-since";
+  const phone = window.matchMedia("(max-width: 639px)");
+
+  const visitStart = () => {
+    try {
+      const stored = Number(sessionStorage.getItem(TAB_SINCE_KEY));
+      if (stored > 0) return stored;
+      const now = Date.now();
+      sessionStorage.setItem(TAB_SINCE_KEY, String(now));
+      return now;
+    } catch {
+      return Date.now();
+    }
+  };
+
+  const showTab = () => document.querySelector<HTMLElement>("[data-support-tab]")?.removeAttribute("hidden");
+  const tabDelay = Math.max(0, TAB_DELAY_MS - (Date.now() - visitStart()));
+  if (!phone.matches || tabDelay === 0) showTab();
+  else {
+    window.setTimeout(showTab, tabDelay);
+    phone.addEventListener("change", (event) => {
+      if (!event.matches) showTab();
+    });
+  }
 </script>
